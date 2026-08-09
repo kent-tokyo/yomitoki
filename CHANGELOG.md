@@ -103,42 +103,7 @@ non-alpha `0.1.0`.
 
 ### Changed
 
-- **Renamed the project from RENSEI to YOMITOKI.** Renamed the Rust crate,
-  binary, and CLI command from `rensei` to `yomitoki`; renamed `RenseiError`
-  to `YomitokiError` and `Provenance.rensei_version` to
-  `Provenance.yomitoki_version` (`schema_version` bumped 0.1.0 → 0.2.0 to
-  reflect the field rename). Every other public type name was already
-  generic (`SynthesizabilityReport`, `AnalysisConfig`, `Finding`, ...) and
-  is unchanged. The project was never published to crates.io under the old
-  name, so this is a clean rename with no deprecated alias. See the
-  "Migration" section below.
 - `chematic` dependency bumped 0.11 → 0.12.
 - `rust-version = "1.88"` declared explicitly in `Cargo.toml`.
 - `chematic`'s `mol` feature enabled (CLI-only, for `SdfReader`/
   `SmilesRecordReader`).
-
-### Migration
-
-Replace:
-
-```rust
-use rensei::analyze;
-```
-
-with:
-
-```rust
-use yomitoki::analyze;
-```
-
-Replace:
-
-```bash
-rensei analyze ...
-```
-
-with:
-
-```bash
-yomitoki analyze ...
-```

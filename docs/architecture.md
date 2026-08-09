@@ -6,10 +6,6 @@ scheme, and non-goals for yomitoki v0.1. It reflects what is actually
 implemented today, not the eventual full scope — see "Non-goals / deferred"
 at the end for what's intentionally missing.
 
-yomitoki was previously developed under the name RENSEI (renamed:
-crate/binary name, `RenseiError` → `YomitokiError`,
-`Provenance.rensei_version` → `yomitoki_version`; see `CHANGELOG.md` for
-the full rename entry). The rename also reflects the project's actual role:
 yomitoki reads and explains molecular structure — it does not modify,
 optimize, or regenerate molecules. That functionality, if it's ever built,
 belongs to a different, unrelated project.
@@ -454,7 +450,7 @@ strictness. See `analyze::tests` for the regression tests covering this.
 
 | Field | Source |
 |---|---|
-| `schema_version` | literal constant in `provenance.rs` (currently `0.2.0` — bumped from `0.1.0` when `Provenance.rensei_version` was renamed to `yomitoki_version`) |
+| `schema_version` | literal constant in `provenance.rs` (currently `0.2.0`) |
 | `yomitoki_version` | `env!("CARGO_PKG_VERSION")` |
 | `chematic_version` | chematic's declared version requirement |
 | `ruleset_version` | `rules::RULESET_VERSION` |

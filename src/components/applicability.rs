@@ -289,6 +289,27 @@ mod tests {
     }
 
     #[test]
+    fn guard_triggers_regardless_of_charge_magnitude() {
+        // The overflow happens on the sign bit alone (any negative i8 sign-
+        // extends before the u64 cast), not on how large the charge is —
+        // a doubly negative oxygen must trigger the guard exactly like a
+        // singly negative one.
+        let outcome = compute(&mol("[O-2]"), &AnalysisConfig::default());
+        assert!(outcome.report.stereo_uncheckable);
+    }
+
+    #[test]
+    fn zwitterion_with_both_charges_still_triggers_the_guard() {
+        // Glycine zwitterion: one positively and one negatively charged
+        // atom in the same connected molecule. Only the negative one is
+        // unsafe -- confirms the guard (`.any(charge < 0)`) still fires
+        // and doesn't get confused by the positive charge also present.
+        let outcome = compute(&mol("[NH3+]CC(=O)[O-]"), &AnalysisConfig::default());
+        assert!(outcome.report.stereo_uncheckable);
+        assert!(!outcome.out_of_domain);
+    }
+
+    #[test]
     fn positively_charged_atom_does_not_trigger_the_stereo_uncheckable_guard() {
         // Only negative charges overflow the u64 cast in chematic's
         // simple_morgan_ranks -- a positively charged atom (e.g. an

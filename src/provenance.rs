@@ -13,7 +13,7 @@ const SCHEMA_VERSION: &str = "0.1.0";
 /// The chematic version requirement rensei is built against (AGENTS.md
 /// §4.6). Not read from chematic itself — chematic doesn't expose a
 /// version constant — so this is kept in sync with `Cargo.toml` by hand.
-const CHEMATIC_VERSION_REQUIREMENT: &str = "0.11";
+const CHEMATIC_VERSION_REQUIREMENT: &str = "0.12";
 
 /// Deterministic config fingerprint: SHA-256 over the config's canonical
 /// JSON serialization. Not `std::hash::DefaultHasher` — that hasher is

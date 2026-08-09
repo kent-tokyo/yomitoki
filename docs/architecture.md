@@ -44,8 +44,11 @@ molecule is not an error).
 
 ## chematic API surface used
 
-Confirmed against `chematic 0.11.0` (published on crates.io) by reading
-source directly, not guessed:
+Confirmed against `chematic 0.12.0` (published on crates.io) by reading
+source directly, not guessed. (Upgraded from 0.11.0 — the 0.12.0 changes
+are scoped entirely to `chematic-ff`/`chematic-3d`, neither of which
+rensei's `smiles`/`perception`/`chem` features touch; verified zero output
+change across rensei's own test suite before and after the bump.)
 
 | Need | chematic API |
 |---|---|
@@ -59,7 +62,7 @@ source directly, not guessed:
 | Molecular weight | `chematic::chem::molecular_weight(&Molecule) -> f64` |
 | Rotatable bond count | `chematic::chem::rotatable_bond_count(&Molecule) -> usize` |
 
-Dependency declaration: `chematic = { version = "0.11", features = ["smiles",
+Dependency declaration: `chematic = { version = "0.12", features = ["smiles",
 "perception", "chem"] }`. The `chematic` facade crate has `default = []` —
 without explicit features it exposes nothing.
 

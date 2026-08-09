@@ -14,7 +14,7 @@ yomitokiは、[chematic](https://github.com/kent-tokyo/chematic)上に構築さ�
 
 > yomitokiは合成容易性を推定するだけではなく、その推定の根拠と推論過程を明らかにします。
 
-> **ステータス: v0.1開発中。** 計画中の6コンポーネントのうち5つが実装済みです: `input_quality`/`applicability`、`ring_topology`、`size_topology`、`stereochemical_burden`、`functional_group_liability`。残るは`fragment_rarity`のみです。現在のスコープと未実装部分については[`docs/architecture.md`](docs/architecture.md)を参照してください。
+> **ステータス: `0.1.0-alpha.1`、public preview。** 計画中の6コンポーネントのうち5つが実装済みです: `input_quality`/`applicability`、`ring_topology`、`size_topology`、`stereochemical_burden`、`functional_group_liability`。残るは`fragment_rarity`のみです — そのコーパス構築パイプライン(`tools/build-fragment-corpus/`)は存在しますが、それを利用するスコアリングコンポーネント自体はまだ実装されていません。これはpre-releaseであり、正式な`0.1.0`までに公開APIが変わる可能性があります。現在のスコープと未実装部分については[`docs/architecture.md`](docs/architecture.md)を参照してください。
 
 ## 位置付け
 

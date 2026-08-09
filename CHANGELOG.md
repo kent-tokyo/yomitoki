@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.1] - 2026-08-10
+
+Public preview — a pre-release, not the completed v0.1 scope. Five of six
+planned components are implemented; `fragment_rarity` remains (its
+corpus-build pipeline exists, the scoring component that consumes it
+doesn't). Published to reserve the crate name and let the public API,
+`docs.rs` rendering, and package metadata get real feedback before a
+non-alpha `0.1.0`.
+
 ### Added
 
 - Initial project scaffold.
@@ -64,6 +73,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suggestion is diagnostic-only and heuristic (`expected_effect` is always
   `MayReduceDifficulty`, confidence a flat named constant); the remaining 3
   codes have no underlying signal yet. `ruleset_version` bumped to 0.5.0.
+- `tools/build-fragment-corpus/`: a standalone, unpublished build tool
+  (not part of this package) that builds the fragment-frequency corpus
+  `fragment_rarity` needs — parse/filter/dedup/fragment a molecule corpus
+  into a `fragment_frequencies.json` + provenance manifest, reusing
+  `chematic::mol` readers, `canonical_smiles`, and `morgan_fp_counts`
+  directly. Validated against the real ChEMBL 37 chemreps file (2,897,819
+  records, zero parse errors). `yomitoki::SUPPORTED_ELEMENTS` is now `pub`
+  (`#[doc(hidden)]`) so the tool filters with the library's exact element
+  set. The `fragment_rarity` *scoring component* itself is not yet
+  implemented — this is the corpus-build pipeline only.
 
 ### Fixed
 
@@ -92,7 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generic (`SynthesizabilityReport`, `AnalysisConfig`, `Finding`, ...) and
   is unchanged. The project was never published to crates.io under the old
   name, so this is a clean rename with no deprecated alias. See the
-  README's "Migration from RENSEI" section.
+  "Migration" section below.
 - `chematic` dependency bumped 0.11 → 0.12.
 - `rust-version = "1.88"` declared explicitly in `Cargo.toml`.
 - `chematic`'s `mol` feature enabled (CLI-only, for `SdfReader`/

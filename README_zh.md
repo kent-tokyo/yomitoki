@@ -14,7 +14,7 @@ yomitoki 不仅仅返回一个单一的合成可及性分数,而是读取分子�
 
 > yomitoki 不仅仅是估算可合成性,它还揭示了该估算背后的证据与推理过程。
 
-> **状态:v0.1 开发中。** 计划中的六个组件已实现五个: `input_quality`/`applicability`、`ring_topology`、`size_topology`、`stereochemical_burden`、`functional_group_liability`。仅剩 `fragment_rarity`。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
+> **状态:`0.1.0-alpha.1`,公开预览版。** 计划中的六个组件已实现五个: `input_quality`/`applicability`、`ring_topology`、`size_topology`、`stereochemical_burden`、`functional_group_liability`。仅剩 `fragment_rarity` —— 其语料库构建流水线(`tools/build-fragment-corpus/`)已经存在,但使用它的评分组件本身尚未实现。这是一个预发布版本,在正式 `0.1.0` 之前公开 API 仍可能变化。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
 
 ## 生态定位
 

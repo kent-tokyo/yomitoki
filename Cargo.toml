@@ -1,12 +1,17 @@
 [package]
 name = "yomitoki"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2024"
 rust-version = "1.88"
 authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]
 description = "Fast, explainable, route-free molecular synthesizability diagnostics."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/kent-tokyo/yomitoki"
+homepage = "https://github.com/kent-tokyo/yomitoki"
+documentation = "https://docs.rs/yomitoki"
+readme = "README.md"
+keywords = ["chemistry", "cheminformatics", "smiles", "drug-discovery"]
+categories = ["science::computational-chemistry::cheminformatics"]
 
 [dependencies]
 chematic = { version = "0.12", features = ["smiles", "perception", "chem", "mol"] }

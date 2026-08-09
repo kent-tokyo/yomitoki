@@ -23,10 +23,13 @@ to read it and explain what it finds.
 > yomitoki does not merely estimate synthesizability; it exposes
 > the evidence and reasoning behind the estimate.
 
-> **Status: v0.1 in progress.** Five of six planned components are
-> implemented: `input_quality`/`applicability`, `ring_topology`,
-> `size_topology`, `stereochemical_burden`, and
-> `functional_group_liability`. Only `fragment_rarity` remains. See
+> **Status: `0.1.0-alpha.1`, a public preview.** Five of six planned
+> components are implemented: `input_quality`/`applicability`,
+> `ring_topology`, `size_topology`, `stereochemical_burden`, and
+> `functional_group_liability`. Only `fragment_rarity` remains — its
+> corpus-build pipeline exists (`tools/build-fragment-corpus/`) but the
+> scoring component that consumes it doesn't yet. This is a pre-release:
+> the public API may still change before a non-alpha `0.1.0`. See
 > [`docs/architecture.md`](docs/architecture.md) for the current scope and
 > what's still missing.
 

@@ -23,6 +23,16 @@ pub(crate) fn render(code: FindingCode, evidence: FindingEvidence, atom_count: u
             evidence.value.unwrap_or(0.0) as usize,
             evidence.threshold.unwrap_or(0.0) as usize
         ),
+        FindingCode::SizeLargeMolecularWeight => format!(
+            "Molecular weight of {:.1} Da is above the {:.0} Da size threshold.",
+            evidence.value.unwrap_or(0.0),
+            evidence.threshold.unwrap_or(0.0)
+        ),
+        FindingCode::SizeHighRotatableBondCount => format!(
+            "{} rotatable bonds, above the {}-bond threshold.",
+            evidence.value.unwrap_or(0.0) as usize,
+            evidence.threshold.unwrap_or(0.0) as usize
+        ),
         FindingCode::InputUnsupportedElement => format!(
             "Molecule contains {atom_count} atom(s) outside rensei's supported \
              element set."

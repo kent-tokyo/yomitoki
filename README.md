@@ -10,17 +10,17 @@ RENSEI reports why a molecule appears accessible or difficult,
 how confident that assessment is, and which structural factors
 dominate the result.
 
-> **Status: v0.1 in progress.** Only the `input_quality`/`applicability` and
-> `ring_topology` components are implemented so far. See
-> [`docs/architecture.md`](docs/architecture.md) for the current scope and
-> what's still missing.
+> **Status: v0.1 in progress.** Only the `input_quality`/`applicability`,
+> `ring_topology`, and `size_topology` components are implemented so far.
+> See [`docs/architecture.md`](docs/architecture.md) for the current scope
+> and what's still missing.
 
 ## What it does
 
 * Parses a molecule (via `chematic`) and returns a structured
   `SynthesizabilityReport`, not a single number.
 * Breaks the assessment down into independent components (ring topology,
-  input quality/applicability today; size/topology, stereochemical burden,
+  size/topology, input quality/applicability today; stereochemical burden,
   fragment rarity, and functional-group liabilities are planned).
 * Separates **score** (synthesizability/difficulty), **confidence** (how
   reliable the judgment is), and **applicability** (whether the molecule is
@@ -70,15 +70,15 @@ current as of this component set:
 
 ```text
 Verdict: ModeratelyAccessible
-Synthesizability: 0.67
+Synthesizability: 0.66
 Confidence: 1.00
 Dominant penalties:
 1. Bridged ring system spanning 7 atoms — bridgehead connectivity typically increases synthetic difficulty.
 ```
 
-With only `ring_topology` feeding `difficulty` so far, scores are lower than
-a full v0.1 (with stereochemical burden and fragment rarity also
-contributing) would produce for the same molecule.
+With only `ring_topology` and `size_topology` feeding `difficulty` so far,
+scores are lower than a full v0.1 (with stereochemical burden and fragment
+rarity also contributing) would produce for the same molecule.
 
 Every report also carries a `Provenance` block (schema version, rensei
 version, chematic version, ruleset version, config hash) so results are
@@ -91,7 +91,7 @@ comparable across versions — see §16 of the design spec (`AGENTS.md`) and
 |---|---|
 | `input_quality` / applicability | implemented |
 | `ring_topology` | implemented |
-| `size_topology` | not yet implemented |
+| `size_topology` | implemented |
 | `stereochemical_burden` | not yet implemented |
 | `fragment_rarity` | not yet implemented |
 | `functional_group_liability` | not yet implemented |
@@ -115,9 +115,15 @@ fabricated zero scores.
 
 ## Limitations
 
-* v0.1 only implements two of the six planned components (see table above);
-  `overall.difficulty`/`overall.synthesizability` currently reflect ring
-  topology burden alone.
+* v0.1 only implements three of the six planned components (see table
+  above); `overall.difficulty`/`overall.synthesizability` currently reflect
+  ring topology and size/topology burden only.
+* `size_topology`'s rotatable-bond term over-penalizes simple, commercially
+  available long unbranched chains (many rotatable bonds, essentially no
+  synthetic difficulty) — this is a known gap that fragment rarity (not yet
+  implemented) is meant to correct by recognizing such fragments as
+  common/precedented. See `docs/architecture.md`'s "Scoring direction"
+  section.
 * No fragment-rarity corpus exists yet, so novel/rare substructures are not
   detected.
 * `ApplicabilityReport.domain_distance` is always `None` until a calibration
@@ -144,7 +150,7 @@ No paper or citable release exists yet.
 
 ## Roadmap
 
-See `AGENTS.md` (development spec) for the full phased roadmap: size/topology
-and stereochemical-burden components, fragment rarity, functional-group
-liabilities, calibration against SAscore/RAscore/route-search outcomes, a
-CLI, and eventually Python bindings.
+See `AGENTS.md` (development spec) for the full phased roadmap:
+stereochemical-burden and functional-group-liability components, fragment
+rarity, calibration against SAscore/RAscore/route-search outcomes, a CLI,
+and eventually Python bindings.

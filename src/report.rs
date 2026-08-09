@@ -83,6 +83,8 @@ pub enum FindingCode {
     RingSpiro,
     RingFusedDense,
     RingMacrocycle,
+    SizeLargeMolecularWeight,
+    SizeHighRotatableBondCount,
     InputUnsupportedElement,
     InputDisconnected,
     InputUnusualValence,

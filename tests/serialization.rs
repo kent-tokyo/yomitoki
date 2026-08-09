@@ -100,8 +100,15 @@ fn no_nan_or_infinity_in_serialized_output() {
 
 #[test]
 fn unimplemented_components_are_none_not_fabricated_zero() {
-    let report = sample_report();
-    assert!(report.components.size_topology.is_none());
+    // Against real `analyze` output, not the hand-built fixture above —
+    // the fixture is only for exercising the schema shape, and would go
+    // stale (falsely claiming components are unimplemented) the moment a
+    // real component landed without this test being updated alongside it.
+    let config = rensei::AnalysisConfig::default();
+    let report = rensei::analyze_smiles("CCO", &config).expect("valid SMILES");
+    assert!(report.components.ring_topology.is_some());
+    assert!(report.components.size_topology.is_some());
+    assert!(report.components.input_quality.is_some());
     assert!(report.components.stereochemical_burden.is_none());
     assert!(report.components.fragment_rarity.is_none());
     assert!(report.components.functional_group_liability.is_none());

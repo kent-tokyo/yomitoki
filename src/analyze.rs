@@ -6,16 +6,16 @@
 
 use chematic::core::Molecule;
 
-use crate::components::{applicability, ring_topology};
+use crate::components::{applicability, ring_topology, size_topology};
 use crate::config::{AnalysisConfig, Strictness};
 use crate::error::RenseiError;
 use crate::report::{
-    ComponentScores, ConfidenceScore, Finding, OverallAssessment, ProbabilityLikeScore,
-    SynthesizabilityReport, Verdict,
+    ComponentScores, ConfidenceScore, Contribution, Finding, OverallAssessment,
+    ProbabilityLikeScore, SynthesizabilityReport, Verdict,
 };
 use crate::rules::{
-    DIFFICULTY_CHALLENGING_MAX, DIFFICULTY_LIKELY_ACCESSIBLE_MAX, DIFFICULTY_MODERATE_MAX,
-    indeterminate_confidence_threshold,
+    AGGREGATE_WEIGHT_RING_TOPOLOGY, AGGREGATE_WEIGHT_SIZE_TOPOLOGY, DIFFICULTY_CHALLENGING_MAX,
+    DIFFICULTY_LIKELY_ACCESSIBLE_MAX, DIFFICULTY_MODERATE_MAX, indeterminate_confidence_threshold,
 };
 
 pub fn analyze(
@@ -24,21 +24,31 @@ pub fn analyze(
 ) -> Result<SynthesizabilityReport, RenseiError> {
     let applicability_outcome = applicability::compute(molecule, config);
     let ring_outcome = ring_topology::compute(molecule);
+    let size_outcome = size_topology::compute(molecule);
 
     let mut findings: Vec<Finding> = Vec::new();
     findings.extend(applicability_outcome.findings);
     let ring_findings_offset = findings.len();
     findings.extend(ring_outcome.findings);
+    let size_findings_offset = findings.len();
+    findings.extend(size_outcome.findings);
 
     // `ComponentScore.findings` were built as offsets into each
-    // component's own finding list; rebase the ring-topology component's
+    // component's own finding list; rebase each difficulty component's
     // references onto the combined report-level `findings` Vec.
     let mut ring_score = ring_outcome.score;
     for finding_ref in &mut ring_score.findings {
         finding_ref.0 += ring_findings_offset;
     }
+    let mut size_score = size_outcome.score;
+    for finding_ref in &mut size_score.findings {
+        finding_ref.0 += size_findings_offset;
+    }
 
-    let difficulty = ring_score.normalized;
+    let difficulty = ProbabilityLikeScore::new(
+        AGGREGATE_WEIGHT_RING_TOPOLOGY * ring_score.normalized.value()
+            + AGGREGATE_WEIGHT_SIZE_TOPOLOGY * size_score.normalized.value(),
+    );
     let synthesizability = ProbabilityLikeScore::new(1.0 - difficulty.value());
     let confidence = ConfidenceScore::new(applicability_outcome.score.confidence.value());
 
@@ -49,10 +59,24 @@ pub fn analyze(
         config.strictness,
     );
 
-    // Ranked by ring-topology's actual per-finding weight (not shared
-    // across findings, not mixing in applicability/data-quality findings —
-    // AGENTS.md §5.6 forbids conflating score with input-quality signals).
-    let dominant_penalties = ring_outcome.contributions;
+    // Ranked by each finding's actual contribution weight across both
+    // difficulty-contributing components (not applicability/data-quality
+    // findings — AGENTS.md §5.6 forbids conflating score with input
+    // quality). Deliberately independent of `Finding.severity`: severity is
+    // a per-finding chemistry judgment, contribution is what actually fed
+    // `difficulty`. A `Severity::Low` finding can rank above a
+    // `Severity::High` one here if its weight is larger (e.g. a very high
+    // rotatable-bond count outweighing a bridged ring) — that's the two
+    // axes working as designed, not a bug.
+    let mut dominant_penalties: Vec<Contribution> = Vec::new();
+    dominant_penalties.extend(ring_outcome.contributions);
+    dominant_penalties.extend(size_outcome.contributions);
+    dominant_penalties.sort_by(|a, b| {
+        b.contribution
+            .value()
+            .partial_cmp(&a.contribution.value())
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     let overall = OverallAssessment {
         synthesizability,
@@ -62,7 +86,7 @@ pub fn analyze(
     };
 
     let components = ComponentScores {
-        size_topology: None,
+        size_topology: Some(size_score),
         ring_topology: Some(ring_score),
         stereochemical_burden: None,
         fragment_rarity: None,

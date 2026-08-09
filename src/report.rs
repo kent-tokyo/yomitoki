@@ -32,10 +32,12 @@ pub(crate) fn finite_or_zero(value: f64) -> f64 {
 pub struct ProbabilityLikeScore(f64);
 
 impl ProbabilityLikeScore {
+    /// Clamp `value` into `0.0..=1.0`, mapping non-finite input to `0.0`.
     pub fn new(value: f64) -> Self {
         Self(clamp01(value))
     }
 
+    /// The underlying `0.0..=1.0` value.
     pub fn value(&self) -> f64 {
         self.0
     }
@@ -50,10 +52,12 @@ impl ProbabilityLikeScore {
 pub struct ConfidenceScore(f64);
 
 impl ConfidenceScore {
+    /// Clamp `value` into `0.0..=1.0`, mapping non-finite input to `0.0`.
     pub fn new(value: f64) -> Self {
         Self(clamp01(value))
     }
 
+    /// The underlying `0.0..=1.0` value.
     pub fn value(&self) -> f64 {
         self.0
     }
@@ -79,28 +83,56 @@ impl From<chematic::core::AtomIdx> for AtomIndex {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum FindingCode {
+    /// A bridged polycyclic ring system (bridgehead connectivity).
     RingBridgedComplexity,
+    /// A spiro ring junction (two rings sharing exactly one atom).
     RingSpiro,
+    /// A fused ring system whose fusion density is above the threshold.
     RingFusedDense,
+    /// A ring at or above the macrocycle size threshold.
     RingMacrocycle,
+    /// Molecular weight above the size threshold.
     SizeLargeMolecularWeight,
+    /// Rotatable bond count above the threshold.
     SizeHighRotatableBondCount,
+    /// At least one tetrahedral stereocenter is present (specified or
+    /// unspecified — see `evidence.value` for the count).
     StereoCenterCount,
+    /// Stereocenter density (centers per heavy atom) above the threshold.
     StereoDensityHigh,
+    /// Stereo analysis could not be run at all for this molecule (currently:
+    /// a negatively charged atom — see `components::has_negatively_charged_atom`'s
+    /// doc and [chematic#267](https://github.com/kent-tokyo/chematic/issues/267)).
     StereoAnalysisSkipped,
+    /// A Brenk et al. (2008) reactive/unstable structural alert matched —
+    /// the specific alert name is in `explanation`, not a separate code
+    /// (AGENTS.md §8.1: one generic code per component concern, not one per
+    /// pattern).
     FunctionalGroupReactive,
+    /// Distinct functional-group cluster count (Ertl 2017) above the
+    /// threshold.
     FunctionalGroupDense,
+    /// The molecule contains an element outside yomitoki's supported set.
     InputUnsupportedElement,
+    /// The molecule consists of disconnected fragments.
     InputDisconnected,
+    /// At least one atom has a valence outside normal ranges for its
+    /// element.
     InputUnusualValence,
+    /// Heavy-atom count exceeds `AnalysisConfig.max_heavy_atoms`.
     InputTooLarge,
 }
 
+/// Author-assigned finding severity. A schema field today, not yet a
+/// calibrated signal — see `docs/architecture.md`'s Confidence contract.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Severity {
+    /// Minor concern.
     Low,
+    /// Moderate concern.
     Medium,
+    /// Major concern.
     High,
 }
 
@@ -108,7 +140,11 @@ pub enum Severity {
 /// Fields are `None` when not applicable to a given finding code.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub struct FindingEvidence {
+    /// The measured value this finding is based on (e.g. a ring size, a
+    /// stereocenter count, a molecular weight).
     pub value: Option<f64>,
+    /// The threshold `value` was compared against, if this finding is
+    /// threshold-triggered.
     pub threshold: Option<f64>,
 }
 
@@ -117,11 +153,19 @@ pub struct FindingEvidence {
 /// (AGENTS.md §8.3: structured data is the source of truth).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Finding {
+    /// Machine-readable identifier for this finding.
     pub code: FindingCode,
+    /// Author-assigned severity — see [`Severity`].
     pub severity: Severity,
+    /// How certain this specific finding is (distinct from the molecule's
+    /// overall `confidence` — see AGENTS.md §6).
     pub confidence: ProbabilityLikeScore,
+    /// Atom indices this finding is about. Empty for molecule-level
+    /// findings not tied to one specific region (e.g. density-based ones).
     pub atoms: Vec<AtomIndex>,
+    /// Structured numeric evidence backing this finding.
     pub evidence: FindingEvidence,
+    /// Human-readable explanation, generated from `code` and `evidence`.
     pub explanation: String,
 }
 
@@ -135,8 +179,15 @@ pub struct FindingRef(pub usize);
 /// `dominant_penalties`/`dominant_supports` (AGENTS.md §4.1).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Contribution {
+    /// The finding code this contribution corresponds to.
     pub code: FindingCode,
+    /// Human-readable name for this contribution (the finding's own
+    /// `explanation` text, so ranking lists stay self-explanatory without a
+    /// separate lookup).
     pub name: String,
+    /// This contribution's actual weight toward `overall.difficulty` — the
+    /// basis `dominant_penalties`/`dominant_supports` are ranked by, not
+    /// `Finding.severity` (independent axes; see `docs/architecture.md`).
     pub contribution: ProbabilityLikeScore,
 }
 
@@ -146,9 +197,18 @@ pub struct ComponentScore {
     /// Unnormalized burden; meaningful for debugging/tuning, not bounded to
     /// `0.0..=1.0`.
     pub raw: f64,
+    /// `raw` passed through the non-linear burden transform (AGENTS.md
+    /// §5.1) — the value actually used in aggregation.
     pub normalized: ProbabilityLikeScore,
+    /// How reliable this component's own score is, independent of the
+    /// molecule's overall `confidence` (which today comes entirely from
+    /// `input_quality` — see `docs/architecture.md`'s Confidence contract).
     pub confidence: ProbabilityLikeScore,
+    /// This component's actual weighted contribution to
+    /// `overall.difficulty`.
     pub contribution: ProbabilityLikeScore,
+    /// References into `SynthesizabilityReport.findings` for the findings
+    /// that justify this component's score.
     pub findings: Vec<FindingRef>,
 }
 
@@ -158,11 +218,21 @@ pub struct ComponentScore {
 /// other field is always `Some`; see `docs/architecture.md`.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ComponentScores {
+    /// The `size_topology` component's score (molecular weight, rotatable
+    /// bond count).
     pub size_topology: Option<ComponentScore>,
+    /// The `ring_topology` component's score (ring-shape complexity).
     pub ring_topology: Option<ComponentScore>,
+    /// The `stereochemical_burden` component's score (tetrahedral
+    /// stereocenter count and density).
     pub stereochemical_burden: Option<ComponentScore>,
+    /// The `fragment_rarity` component's score — always `None` in v0.1
+    /// (no fragment-frequency corpus exists yet; see `docs/architecture.md`).
     pub fragment_rarity: Option<ComponentScore>,
+    /// The `functional_group_liability` component's score (reactive/
+    /// unstable functional groups, dense functionalization).
     pub functional_group_liability: Option<ComponentScore>,
+    /// The `input_quality`/applicability component's score.
     pub input_quality: Option<ComponentScore>,
 }
 
@@ -173,11 +243,21 @@ pub struct ComponentScores {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Verdict {
+    /// Low difficulty, high confidence.
     LikelyAccessible,
+    /// Moderate difficulty.
     ModeratelyAccessible,
+    /// High difficulty.
     Challenging,
+    /// Very high difficulty.
     HighlyChallenging,
+    /// Confidence too low to bucket by difficulty at all (see
+    /// `docs/architecture.md`'s Abstention contract) — not the same as
+    /// `OutOfDomain`, which is a hard structural trigger.
     Indeterminate,
+    /// A hard applicability trigger fired (unsupported element,
+    /// disconnected input, or exceeds the configured size limit) — the
+    /// molecule is outside yomitoki's v0.1 scope, not merely low-confidence.
     OutOfDomain,
 }
 
@@ -185,9 +265,15 @@ pub enum Verdict {
 /// as an implementation choice, not a permanent API guarantee.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OverallAssessment {
+    /// `1.0 - difficulty.value()` in v0.1.
     pub synthesizability: ProbabilityLikeScore,
+    /// The weighted-sum aggregate of every implemented difficulty-
+    /// contributing component's `normalized` score.
     pub difficulty: ProbabilityLikeScore,
+    /// How reliable this assessment is — from `input_quality`/applicability
+    /// only in v0.1, never conflated with `difficulty` (AGENTS.md §6).
     pub confidence: ConfidenceScore,
+    /// The bucketed verdict — see [`Verdict`].
     pub verdict: Verdict,
 }
 
@@ -195,8 +281,13 @@ pub struct OverallAssessment {
 /// is never conflated with score or confidence.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApplicabilityReport {
+    /// `false` if any atom's element is outside yomitoki's supported set —
+    /// a hard `OutOfDomain` trigger.
     pub supported_elements: bool,
+    /// `false` if `validate_valence` reported any violation.
     pub sanitized: bool,
+    /// `false` if at least one tetrahedral stereocenter is unspecified —
+    /// or if stereo analysis couldn't run at all, see `stereo_uncheckable`.
     pub stereo_complete: bool,
     /// `true` when stereo analysis (`stereo_complete`, and
     /// `stereochemical_burden`'s own score) could not be run at all, rather
@@ -209,7 +300,11 @@ pub struct ApplicabilityReport {
     /// unspecified" and "we could not check at all" are different findings
     /// that call for different actions from a report reader.
     pub stereo_uncheckable: bool,
+    /// `true` if the molecule consists of disconnected fragments — a hard
+    /// `OutOfDomain` trigger.
     pub disconnected: bool,
+    /// `true` if any atom has a valence outside normal ranges for its
+    /// element — a soft confidence penalty, not a hard trigger.
     pub unusual_valence: bool,
     /// Distance from the calibration corpus. Always `None` until a
     /// calibration corpus exists (Phase 2+).
@@ -221,19 +316,37 @@ pub struct ApplicabilityReport {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SuggestionCode {
+    /// Reduce the number/concentration of stereocenters.
     ReduceStereocenterDensity,
+    /// Replace a bridged ring system with a monocyclic analog.
     ReplaceBridgedRingWithMonocyclicAnalog,
+    /// Reduce adjacent quaternary stereocenters — not yet reachable in
+    /// v0.1 (no quaternary-adjacency detector exists; see
+    /// `docs/architecture.md`).
     ReduceAdjacentQuaternaryCenters,
+    /// Remove one of several similar reactive functional groups — not yet
+    /// reachable in v0.1 (`brenk_matches_detailed` unions atoms per
+    /// pattern, not per occurrence; see `docs/architecture.md`).
     RemoveSimilarReactiveGroup,
+    /// Favor a more precedented/common fragment — not yet reachable in
+    /// v0.1 (`fragment_rarity` is deferred; see `docs/architecture.md`).
     IncreaseFragmentPrecedent,
+    /// Simplify a macrocyclic ring closure.
     SimplifyMacrocyclicClosure,
 }
 
+/// How likely a [`SimplificationSuggestion`] is to actually reduce
+/// difficulty, if followed. Every v0.1 suggestion uses
+/// `MayReduceDifficulty` — nothing is calibrated yet, so
+/// `LikelyReducesDifficulty` is never emitted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ExpectedEffect {
+    /// Calibrated evidence the change would help — not used in v0.1.
     LikelyReducesDifficulty,
+    /// A structural heuristic suggests the change would help, unvalidated.
     MayReduceDifficulty,
+    /// No basis to predict direction.
     Uncertain,
 }
 
@@ -244,30 +357,54 @@ pub enum ExpectedEffect {
 /// calibrated against real synthesis outcomes.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SimplificationSuggestion {
+    /// Machine-readable identifier for this suggestion.
     pub code: SuggestionCode,
+    /// Atom indices this suggestion targets, copied from the source
+    /// finding's own `atoms` — may be empty if that finding never carries
+    /// atom indices (e.g. density-based ones).
     pub target_atoms: Vec<AtomIndex>,
+    /// Human-readable rationale, generated from the source finding.
     pub rationale: String,
+    /// How likely this suggestion is to help, if followed.
     pub expected_effect: ExpectedEffect,
+    /// How confident this suggestion is — a flat, named constant across
+    /// every v0.1 suggestion, not a calibrated per-suggestion value.
     pub confidence: ProbabilityLikeScore,
 }
 
 /// AGENTS.md §16.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Provenance {
+    /// Version of the report schema itself (independent of `yomitoki_version`).
     pub schema_version: String,
+    /// The yomitoki crate version that produced this report.
     pub yomitoki_version: String,
+    /// The chematic version dependency requirement.
     pub chematic_version: String,
+    /// Version of the named thresholds/weights in `rules.rs` — bumped
+    /// whenever any scoring constant changes.
     pub ruleset_version: String,
+    /// SHA-256 of the `AnalysisConfig`'s canonical JSON serialization, so
+    /// reports produced under different configs are distinguishable.
     pub config_hash: String,
 }
 
 /// The top-level report returned by `analyze`/`analyze_smiles`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SynthesizabilityReport {
+    /// The bucketed verdict, difficulty/synthesizability scores, and
+    /// overall confidence.
     pub overall: OverallAssessment,
+    /// Each implemented component's own score, in isolation.
     pub components: ComponentScores,
+    /// Every finding raised by every component, in a single flat list.
     pub findings: Vec<Finding>,
+    /// Findings ranked by contribution magnitude, highest first — the
+    /// "Dominant penalties" list in AGENTS.md §4.1/§15. Access via
+    /// [`SynthesizabilityReport::dominant_penalties`].
     pub dominant_penalties: Vec<Contribution>,
+    /// Reserved for factors that *reduce* difficulty — always empty in
+    /// v0.1 (no component currently identifies these).
     pub dominant_supports: Vec<Contribution>,
     /// Derived from `findings` regardless of `overall.verdict` — a finding
     /// is real whether or not the molecule is also `OutOfDomain`/
@@ -275,7 +412,10 @@ pub struct SynthesizabilityReport {
     /// alongside either verdict. Only 3 of `SuggestionCode`'s 6 variants
     /// are reachable in v0.1; see `suggestions.rs`/`docs/architecture.md`.
     pub suggestions: Vec<SimplificationSuggestion>,
+    /// Input-quality/domain-applicability signals, kept separate from
+    /// `overall` (AGENTS.md §5.6).
     pub applicability: ApplicabilityReport,
+    /// Schema/tool/ruleset versions this report was produced under.
     pub provenance: Provenance,
 }
 

@@ -3,6 +3,7 @@
 //!
 //! See `docs/architecture.md` for the full design contract and current
 //! implementation status.
+#![warn(missing_docs)]
 
 mod analyze;
 mod components;

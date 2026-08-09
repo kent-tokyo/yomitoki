@@ -8,6 +8,7 @@ use serde::Serialize;
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
 pub enum ScoringProfile {
+    /// General organic chemistry — the only profile implemented in v0.1.
     #[default]
     GeneralOrganic,
 }
@@ -17,9 +18,13 @@ pub enum ScoringProfile {
 /// applicability component's confidence-penalty weighting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
 pub enum Strictness {
+    /// Lowest confidence threshold for `Verdict::Indeterminate` — most
+    /// tolerant of low-confidence input.
     Lenient,
+    /// The default threshold.
     #[default]
     Standard,
+    /// Highest confidence threshold — abstains most readily.
     Strict,
 }
 
@@ -31,8 +36,13 @@ pub enum Strictness {
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct AnalysisConfig {
+    /// Which scoring profile to use — see [`ScoringProfile`].
     pub profile: ScoringProfile,
+    /// How readily to abstain (`Verdict::Indeterminate`) on low-confidence
+    /// input — see [`Strictness`].
     pub strictness: Strictness,
+    /// Heavy-atom count above which a molecule is `Verdict::OutOfDomain`
+    /// (`FindingCode::InputTooLarge`). Defaults to 150.
     pub max_heavy_atoms: usize,
 }
 

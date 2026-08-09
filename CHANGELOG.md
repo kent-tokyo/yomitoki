@@ -37,6 +37,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (parallelism is optional per spec, not required); each molecule's result
   is independent of every other's, so it's safe to parallelize later
   without changing output.
+- `#![warn(missing_docs)]` on the crate root, and every public item now has
+  its own rustdoc (previously only container-level doc comments existed —
+  97 individual items across `report.rs`/`config.rs`/`error.rs`/`analyze.rs`
+  had none). Permanent, not a one-time cleanup: this lint now catches any
+  future public API addition that lands without documentation, per
+  AGENTS.md §29 ("public APIにはrustdocを書く").
 - `analyze` / `analyze_smiles` entry points.
 - CI workflow (`.github/workflows/ci.yml`): fmt/clippy/doc, `cargo test`
   on Linux and macOS, MSRV (1.88) check, `cargo-deny` license/advisory

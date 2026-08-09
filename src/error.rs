@@ -10,7 +10,10 @@ use std::fmt;
 #[non_exhaustive]
 #[derive(Debug)]
 pub enum YomitokiError {
+    /// The input SMILES could not be parsed by chematic.
     ParseError(chematic::smiles::SmilesError),
+    /// `AnalysisConfig` itself was invalid (not currently reachable — no
+    /// v0.1 config field has invalid states to detect yet).
     InvalidConfiguration(String),
 }
 

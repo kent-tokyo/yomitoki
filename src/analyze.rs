@@ -22,6 +22,10 @@ use crate::rules::{
     indeterminate_confidence_threshold,
 };
 
+/// Analyze an already-parsed molecule. Infallible in practice — `Result` is
+/// kept for API-signature symmetry with `analyze_smiles`, but every branch
+/// below returns `Ok`; parsing (upstream, in `analyze_smiles`) is the only
+/// fallible step (AGENTS.md §17).
 pub fn analyze(
     molecule: &Molecule,
     config: &AnalysisConfig,
@@ -130,6 +134,9 @@ pub fn analyze(
     })
 }
 
+/// Parse `smiles` (via chematic) and analyze it. `Err` only if `smiles`
+/// fails to parse — a hard-to-synthesize or out-of-domain molecule is
+/// never an error (AGENTS.md §17).
 pub fn analyze_smiles(
     smiles: &str,
     config: &AnalysisConfig,

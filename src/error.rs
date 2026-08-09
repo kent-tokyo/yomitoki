@@ -9,31 +9,31 @@ use std::fmt;
 /// actually raise them.
 #[non_exhaustive]
 #[derive(Debug)]
-pub enum RenseiError {
+pub enum YomitokiError {
     ParseError(chematic::smiles::SmilesError),
     InvalidConfiguration(String),
 }
 
-impl fmt::Display for RenseiError {
+impl fmt::Display for YomitokiError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RenseiError::ParseError(e) => write!(f, "failed to parse molecule: {e}"),
-            RenseiError::InvalidConfiguration(msg) => write!(f, "invalid configuration: {msg}"),
+            YomitokiError::ParseError(e) => write!(f, "failed to parse molecule: {e}"),
+            YomitokiError::InvalidConfiguration(msg) => write!(f, "invalid configuration: {msg}"),
         }
     }
 }
 
-impl std::error::Error for RenseiError {
+impl std::error::Error for YomitokiError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            RenseiError::ParseError(e) => Some(e),
-            RenseiError::InvalidConfiguration(_) => None,
+            YomitokiError::ParseError(e) => Some(e),
+            YomitokiError::InvalidConfiguration(_) => None,
         }
     }
 }
 
-impl From<chematic::smiles::SmilesError> for RenseiError {
+impl From<chematic::smiles::SmilesError> for YomitokiError {
     fn from(e: chematic::smiles::SmilesError) -> Self {
-        RenseiError::ParseError(e)
+        YomitokiError::ParseError(e)
     }
 }

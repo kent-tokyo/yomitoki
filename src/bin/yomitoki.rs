@@ -1,8 +1,8 @@
-//! `rensei` CLI (AGENTS.md §15).
+//! `yomitoki` CLI (AGENTS.md §15).
 //!
 //! ```text
-//! rensei analyze "<SMILES>" [--format human|json|jsonl]
-//! rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]
+//! yomitoki analyze "<SMILES>" [--format human|json|jsonl]
+//! yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>]
 //! ```
 //!
 //! `jsonl` output uses the same `{"input", "report"|"error"}` shape in both
@@ -22,8 +22,8 @@ use std::fs::File;
 use std::io::{BufReader, Write};
 use std::process::ExitCode;
 
-use rensei::{AnalysisConfig, SynthesizabilityReport, analyze, analyze_smiles};
 use serde::Serialize;
+use yomitoki::{AnalysisConfig, SynthesizabilityReport, analyze, analyze_smiles};
 
 #[derive(Clone, Copy, PartialEq)]
 enum Format {
@@ -86,8 +86,8 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
 
 const USAGE: &str = "\
 Usage:
-  rensei analyze \"<SMILES>\" [--format human|json|jsonl]
-  rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]
+  yomitoki analyze \"<SMILES>\" [--format human|json|jsonl]
+  yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>]
 
 <file> may be a .sdf file or a SMILES-per-line file (optionally with a
 whitespace-separated name column).";

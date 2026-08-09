@@ -1,4 +1,4 @@
-//! RENSEI: fast, explainable, route-free molecular synthesizability
+//! YOMITOKI: fast, explainable, route-free molecular synthesizability
 //! diagnostics, built on [chematic](https://docs.rs/chematic).
 //!
 //! See `docs/architecture.md` for the full design contract and current
@@ -16,7 +16,7 @@ mod suggestions;
 
 pub use analyze::{analyze, analyze_smiles};
 pub use config::{AnalysisConfig, ScoringProfile, Strictness};
-pub use error::RenseiError;
+pub use error::YomitokiError;
 pub use report::{
     ApplicabilityReport, AtomIndex, ComponentScore, ComponentScores, ConfidenceScore, Contribution,
     ExpectedEffect, Finding, FindingCode, FindingEvidence, FindingRef, OverallAssessment,

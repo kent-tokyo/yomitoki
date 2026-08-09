@@ -1,22 +1,22 @@
-//! End-to-end tests of the `rensei` binary (AGENTS.md §15), run as a
+//! End-to-end tests of the `yomitoki` binary (AGENTS.md §15), run as a
 //! separate process via `Command` — this is the only way to exercise the
 //! real arg parsing, exit codes, and file I/O together (unit tests inside
-//! `src/bin/rensei.rs` cover `parse_args`/`render_human` in isolation).
+//! `src/bin/yomitoki.rs` cover `parse_args`/`render_human` in isolation).
 
 use std::io::Write;
 use std::process::Command;
 use tempfile::NamedTempFile;
 
-fn rensei() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_rensei"))
+fn yomitoki() -> Command {
+    Command::new(env!("CARGO_BIN_EXE_yomitoki"))
 }
 
 #[test]
 fn single_molecule_human_output_and_success_exit_code() {
-    let output = rensei()
+    let output = yomitoki()
         .args(["analyze", "C1CC2CCC1C2"])
         .output()
-        .expect("run rensei");
+        .expect("run yomitoki");
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).expect("utf8");
     assert!(stdout.starts_with("Verdict: ModeratelyAccessible"));
@@ -26,10 +26,10 @@ fn single_molecule_human_output_and_success_exit_code() {
 
 #[test]
 fn invalid_smiles_exits_nonzero_and_reports_to_stderr() {
-    let output = rensei()
+    let output = yomitoki()
         .args(["analyze", "not_a_smiles((("])
         .output()
-        .expect("run rensei");
+        .expect("run yomitoki");
     assert!(!output.status.success());
     assert!(output.stdout.is_empty());
     let stderr = String::from_utf8(output.stderr).expect("utf8");
@@ -38,7 +38,7 @@ fn invalid_smiles_exits_nonzero_and_reports_to_stderr() {
 
 #[test]
 fn no_arguments_prints_usage_and_succeeds() {
-    let output = rensei().output().expect("run rensei");
+    let output = yomitoki().output().expect("run yomitoki");
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).expect("utf8");
     assert!(stdout.contains("Usage:"));
@@ -46,7 +46,7 @@ fn no_arguments_prints_usage_and_succeeds() {
 
 #[test]
 fn missing_smiles_or_input_is_a_usage_error() {
-    let output = rensei().args(["analyze"]).output().expect("run rensei");
+    let output = yomitoki().args(["analyze"]).output().expect("run yomitoki");
     assert_eq!(output.status.code(), Some(2));
 }
 
@@ -63,12 +63,12 @@ c1ccccc1 benzene
     )
     .expect("write temp input");
 
-    let output = rensei()
+    let output = yomitoki()
         .args(["analyze", "--input"])
         .arg(input.path())
         .args(["--format", "jsonl"])
         .output()
-        .expect("run rensei");
+        .expect("run yomitoki");
 
     // At least one record failed, so the process must signal that via a
     // non-zero exit code -- but it must still have processed every record.
@@ -135,12 +135,12 @@ $$$$
         .expect("create temp input");
     write!(input, "{good_a}{bad}{good_b}").expect("write temp input");
 
-    let output = rensei()
+    let output = yomitoki()
         .args(["analyze", "--input"])
         .arg(input.path())
         .args(["--format", "jsonl"])
         .output()
-        .expect("run rensei");
+        .expect("run yomitoki");
 
     assert!(!output.status.success());
     let stdout = String::from_utf8(output.stdout).expect("utf8");
@@ -163,13 +163,13 @@ fn output_flag_writes_to_a_file_instead_of_stdout() {
     writeln!(input, "CCO").expect("write temp input");
     let output_file = NamedTempFile::new().expect("create temp output");
 
-    let status = rensei()
+    let status = yomitoki()
         .args(["analyze", "--input"])
         .arg(input.path())
         .args(["--output"])
         .arg(output_file.path())
         .status()
-        .expect("run rensei");
+        .expect("run yomitoki");
     assert!(status.success());
 
     let written = std::fs::read_to_string(output_file.path()).expect("read output file");

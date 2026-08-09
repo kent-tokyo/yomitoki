@@ -8,9 +8,9 @@ use crate::rules::RULESET_VERSION;
 
 /// Bumped whenever the shape of `SynthesizabilityReport` changes in a way
 /// that could affect existing consumers.
-const SCHEMA_VERSION: &str = "0.1.0";
+const SCHEMA_VERSION: &str = "0.2.0";
 
-/// The chematic version requirement rensei is built against (AGENTS.md
+/// The chematic version requirement yomitoki is built against (AGENTS.md
 /// §4.6). Not read from chematic itself — chematic doesn't expose a
 /// version constant — so this is kept in sync with `Cargo.toml` by hand.
 const CHEMATIC_VERSION_REQUIREMENT: &str = "0.12";
@@ -28,7 +28,7 @@ fn config_hash(config: &AnalysisConfig) -> String {
 pub(crate) fn build(config: &AnalysisConfig) -> Provenance {
     Provenance {
         schema_version: SCHEMA_VERSION.to_string(),
-        rensei_version: env!("CARGO_PKG_VERSION").to_string(),
+        yomitoki_version: env!("CARGO_PKG_VERSION").to_string(),
         chematic_version: CHEMATIC_VERSION_REQUIREMENT.to_string(),
         ruleset_version: RULESET_VERSION.to_string(),
         config_hash: config_hash(config),

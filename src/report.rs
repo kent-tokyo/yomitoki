@@ -59,7 +59,7 @@ impl ConfidenceScore {
     }
 }
 
-/// A rensei-owned atom index, decoupled from chematic's internal `AtomIdx`
+/// A yomitoki-owned atom index, decoupled from chematic's internal `AtomIdx`
 /// representation (AGENTS.md §11: don't over-couple the public API to
 /// chematic internals).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -242,7 +242,7 @@ pub struct SimplificationSuggestion {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Provenance {
     pub schema_version: String,
-    pub rensei_version: String,
+    pub yomitoki_version: String,
     pub chematic_version: String,
     pub ruleset_version: String,
     pub config_hash: String,

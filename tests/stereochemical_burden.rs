@@ -2,7 +2,7 @@
 //! against chematic's actual `stereo_completeness` output before being used
 //! here (see `tasks/lessons.md` for the general practice).
 
-use rensei::{AnalysisConfig, FindingCode, analyze_smiles};
+use yomitoki::{AnalysisConfig, FindingCode, analyze_smiles};
 
 fn stereo_difficulty(smiles: &str) -> f64 {
     let config = AnalysisConfig::default();

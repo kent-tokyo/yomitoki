@@ -1,7 +1,7 @@
 //! Schema round-trip: serde round-trips, no NaN/Infinity ever hits the
 //! wire, and enums serialize as strings (AGENTS.md §16).
 
-use rensei::{
+use yomitoki::{
     ApplicabilityReport, AtomIndex, ComponentScore, ComponentScores, ConfidenceScore, Contribution,
     ExpectedEffect, Finding, FindingCode, FindingEvidence, FindingRef, OverallAssessment,
     ProbabilityLikeScore, Provenance, Severity, SimplificationSuggestion, SuggestionCode,
@@ -63,7 +63,7 @@ fn sample_report() -> SynthesizabilityReport {
         },
         provenance: Provenance {
             schema_version: "0.1.0".to_string(),
-            rensei_version: "0.1.0".to_string(),
+            yomitoki_version: "0.1.0".to_string(),
             chematic_version: "0.11".to_string(),
             ruleset_version: "0.1.0".to_string(),
             config_hash: "sha256:deadbeef".to_string(),
@@ -119,8 +119,8 @@ fn unimplemented_components_are_none_not_fabricated_zero() {
     // the fixture is only for exercising the schema shape, and would go
     // stale (falsely claiming components are unimplemented) the moment a
     // real component landed without this test being updated alongside it.
-    let config = rensei::AnalysisConfig::default();
-    let report = rensei::analyze_smiles("CCO", &config).expect("valid SMILES");
+    let config = yomitoki::AnalysisConfig::default();
+    let report = yomitoki::analyze_smiles("CCO", &config).expect("valid SMILES");
     assert!(report.components.ring_topology.is_some());
     assert!(report.components.size_topology.is_some());
     assert!(report.components.stereochemical_burden.is_some());
@@ -131,8 +131,8 @@ fn unimplemented_components_are_none_not_fabricated_zero() {
 
 #[test]
 fn scores_from_a_real_analysis_also_round_trip_and_stay_finite() {
-    let config = rensei::AnalysisConfig::default();
-    let report = rensei::analyze_smiles("C1CC2CCC1C2", &config).expect("valid SMILES");
+    let config = yomitoki::AnalysisConfig::default();
+    let report = yomitoki::analyze_smiles("C1CC2CCC1C2", &config).expect("valid SMILES");
 
     let json = serde_json::to_string(&report).expect("serializes");
     assert!(!json.contains("NaN"));

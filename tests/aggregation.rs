@@ -3,7 +3,7 @@
 //! wired into `analyze`, so they can't live in a single component's test
 //! file.
 
-use rensei::{AnalysisConfig, FindingCode};
+use yomitoki::{AnalysisConfig, FindingCode};
 
 #[test]
 fn ring_topology_is_a_full_pass_through_floor_for_difficulty() {
@@ -22,7 +22,7 @@ fn ring_topology_is_a_full_pass_through_floor_for_difficulty() {
     // masking that. Caught by an advisor review, not by this test.
     let config = AnalysisConfig::default();
     let report =
-        rensei::analyze_smiles("C1CC2CCC1C2C(N)C(O)C(Cl)C", &config).expect("valid SMILES");
+        yomitoki::analyze_smiles("C1CC2CCC1C2C(N)C(O)C(Cl)C", &config).expect("valid SMILES");
 
     let ring_alone = report
         .components
@@ -49,8 +49,8 @@ fn adding_a_functional_group_liability_never_lowers_difficulty() {
     // (confirmed via probe: 0.0090 vs 0.0122), so functional_group_
     // liability (0.0 vs 0.0769) is what actually drives the difference.
     let config = AnalysisConfig::default();
-    let plain = rensei::analyze_smiles("CC", &config).expect("ethane");
-    let with_fg_alert = rensei::analyze_smiles("CC#N", &config).expect("acetonitrile");
+    let plain = yomitoki::analyze_smiles("CC", &config).expect("ethane");
+    let with_fg_alert = yomitoki::analyze_smiles("CC#N", &config).expect("acetonitrile");
 
     assert!(
         with_fg_alert.overall.difficulty.value() >= plain.overall.difficulty.value(),
@@ -71,7 +71,7 @@ fn dominant_penalties_rank_across_components_by_contribution_not_by_component_id
 
     // 2 stereocenters (weight 0.24) vs. one bridged ring (weight 0.6):
     // ring wins under the current STEREO_WEIGHT_PER_CENTER.
-    let ring_wins = rensei::analyze_smiles("C1CC2CCC1C2C(N)C(O)C(Cl)C", &config)
+    let ring_wins = yomitoki::analyze_smiles("C1CC2CCC1C2C(N)C(O)C(Cl)C", &config)
         .expect("valid SMILES")
         .dominant_penalties()[0]
         .code;
@@ -81,7 +81,7 @@ fn dominant_penalties_rank_across_components_by_contribution_not_by_component_id
     // 0.6): stereo burden outranks ring burden once enough centers pile
     // up. Documents that this is expected under the current weights, not
     // a bug.
-    let stereo_wins = rensei::analyze_smiles("OC1CC2(C(N)C(O)C(Cl)C(N)C)CCC1C2", &config)
+    let stereo_wins = yomitoki::analyze_smiles("OC1CC2(C(N)C(O)C(Cl)C(N)C)CCC1C2", &config)
         .expect("valid SMILES")
         .dominant_penalties()[0]
         .code;
@@ -95,8 +95,8 @@ fn heavier_molecules_are_not_prematurely_saturated_to_the_same_difficulty() {
     // 0.0..=1.0 clamp does its job — that would make them indistinguishable
     // even though they clearly differ in size/flexibility.
     let config = AnalysisConfig::default();
-    let lighter = rensei::analyze_smiles("CCCCCCCCCCCCCC", &config).expect("14-carbon chain");
-    let heavier = rensei::analyze_smiles("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", &config)
+    let lighter = yomitoki::analyze_smiles("CCCCCCCCCCCCCC", &config).expect("14-carbon chain");
+    let heavier = yomitoki::analyze_smiles("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", &config)
         .expect("40-carbon chain");
 
     let lighter_difficulty = lighter.overall.difficulty.value();

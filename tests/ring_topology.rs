@@ -3,7 +3,7 @@
 //! (see commit history / architecture notes) — not assumed from SMILES
 //! alone.
 
-use rensei::{AnalysisConfig, FindingCode, Verdict, analyze_smiles};
+use yomitoki::{AnalysisConfig, FindingCode, Verdict, analyze_smiles};
 
 fn ring_difficulty(smiles: &str) -> f64 {
     let config = AnalysisConfig::default();

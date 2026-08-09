@@ -60,7 +60,7 @@ pub(crate) const RING_WEIGHT_MACROCYCLE_BONUS: f64 = 0.25;
 /// Ring size at/above which a ring counts as a macrocycle. Chosen to match
 /// the threshold `chematic-3d`'s internal (non-public) macrocycle
 /// classifier uses, for consistency even though that constant isn't
-/// reachable from the `perception`/`chem` features rensei depends on.
+/// reachable from the `perception`/`chem` features yomitoki depends on.
 pub(crate) const MACROCYCLE_MIN_RING_SIZE: usize = 9;
 
 /// Fusion density above which a `RingFusedDense` finding is emitted (in

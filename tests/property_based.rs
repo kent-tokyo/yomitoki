@@ -24,7 +24,7 @@
 
 use chematic::smiles::parse;
 use proptest::prelude::*;
-use rensei::{AnalysisConfig, Strictness, analyze};
+use yomitoki::{AnalysisConfig, Strictness, analyze};
 
 fn linear_chain_smiles(n: usize) -> String {
     "C".repeat(n.max(1))

@@ -1,4 +1,4 @@
-use rensei::{AnalysisConfig, analyze_smiles};
+use yomitoki::{AnalysisConfig, analyze_smiles};
 
 fn main() {
     let config = AnalysisConfig::default();

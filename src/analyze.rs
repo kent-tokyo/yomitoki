@@ -10,7 +10,7 @@ use crate::components::{
     applicability, functional_group_liability, ring_topology, size_topology, stereochemical_burden,
 };
 use crate::config::{AnalysisConfig, Strictness};
-use crate::error::RenseiError;
+use crate::error::YomitokiError;
 use crate::report::{
     ComponentScores, ConfidenceScore, Contribution, Finding, OverallAssessment,
     ProbabilityLikeScore, SynthesizabilityReport, Verdict,
@@ -25,7 +25,7 @@ use crate::rules::{
 pub fn analyze(
     molecule: &Molecule,
     config: &AnalysisConfig,
-) -> Result<SynthesizabilityReport, RenseiError> {
+) -> Result<SynthesizabilityReport, YomitokiError> {
     let applicability_outcome = applicability::compute(molecule, config);
     let ring_outcome = ring_topology::compute(molecule);
     let size_outcome = size_topology::compute(molecule);
@@ -133,7 +133,7 @@ pub fn analyze(
 pub fn analyze_smiles(
     smiles: &str,
     config: &AnalysisConfig,
-) -> Result<SynthesizabilityReport, RenseiError> {
+) -> Result<SynthesizabilityReport, YomitokiError> {
     let molecule = chematic::smiles::parse(smiles)?;
     analyze(&molecule, config)
 }

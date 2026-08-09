@@ -71,7 +71,7 @@ pub(crate) fn render(
             }
         }
         FindingCode::InputUnsupportedElement => format!(
-            "Molecule contains {atom_count} atom(s) outside rensei's supported \
+            "Molecule contains {atom_count} atom(s) outside yomitoki's supported \
              element set."
         ),
         FindingCode::InputDisconnected => {

@@ -1,16 +1,29 @@
-# rensei
+# YOMITOKI
 
-[![CI](https://github.com/kent-tokyo/rensei/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/rensei/actions/workflows/ci.yml)
+[![CI](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml)
 
 Fast, explainable, route-free molecular synthesizability diagnostics.
 
-RENSEI is a fast, explainable, route-free molecular
+YOMITOKI is a fast, explainable, route-free molecular
 synthesizability diagnostics library built on [chematic](https://github.com/kent-tokyo/chematic).
 
 Instead of returning only a synthetic accessibility score,
-RENSEI reports why a molecule appears accessible or difficult,
-how confident that assessment is, and which structural factors
-dominate the result.
+YOMITOKI reads molecular structure and explains why a molecule
+appears easy or difficult to synthesize. It identifies the
+structural evidence behind the assessment and reports how
+confident that judgment is.
+
+The name comes from the Japanese word *yomitoki*（読み解き）,
+meaning to carefully examine something and uncover its meaning —
+that is the library's whole job: not to change the molecule, but
+to read it and explain what it finds.
+
+> YOMITOKI does not merely estimate synthesizability; it exposes
+> the evidence and reasoning behind the estimate.
+
+> **Formerly named RENSEI.** The project was renamed to better match
+> its actual role — see "Migration from RENSEI" below if you have
+> existing code or links pointing at the old name.
 
 > **Status: v0.1 in progress.** Five of six planned components are
 > implemented: `input_quality`/`applicability`, `ring_topology`,
@@ -18,6 +31,19 @@ dominate the result.
 > `functional_group_liability`. Only `fragment_rarity` remains. See
 > [`docs/architecture.md`](docs/architecture.md) for the current scope and
 > what's still missing.
+
+## Where it sits
+
+```text
+chematic    Molecular representation and cheminformatics
+    |
+YOMITOKI    Read and explain molecular synthesizability
+    |
+renkin      Plan retrosynthetic routes
+```
+
+YOMITOKI never runs route search — that boundary is permanent, not a v0.1
+scoping choice. See "What it does not do" below.
 
 ## What it does
 
@@ -32,9 +58,9 @@ dominate the result.
   is not automatically a low-confidence one.
 * Emits machine-readable finding codes with structured evidence, not just
   prose.
-* Never runs retrosynthesis search. RENSEI evaluates a molecule on its own;
+* Never runs retrosynthesis search. YOMITOKI evaluates a molecule on its own;
   it does not plan a route to make it.
-* Ships a `rensei` CLI for single-molecule and batch (`.sdf`/SMILES-file)
+* Ships a `yomitoki` CLI for single-molecule and batch (`.sdf`/SMILES-file)
   analysis — see Command-line interface below.
 
 ## What it does not do
@@ -42,14 +68,14 @@ dominate the result.
 * Retrosynthesis planning, reaction template application, precursor
   generation, or route ranking — that's [RENKIN](https://github.com/kent-tokyo/renkin)'s job.
 * Molecule parsing, ring perception, aromaticity, or stereochemistry
-  assignment — that's [chematic](https://github.com/kent-tokyo/chematic)'s job; RENSEI only consumes it.
+  assignment — that's [chematic](https://github.com/kent-tokyo/chematic)'s job; YOMITOKI only consumes it.
 * Toxicity, SDS/hazard classification, yield prediction, or cost prediction.
 * Full periodic-table or organometallic/polymer coverage in v0.1.
 
 ## Quick start
 
 ```rust
-use rensei::{analyze_smiles, AnalysisConfig};
+use yomitoki::{analyze_smiles, AnalysisConfig};
 
 let config = AnalysisConfig::default();
 let report = analyze_smiles("C1CC2CCC1C2", &config)?; // norbornane
@@ -72,13 +98,13 @@ cargo run --example basic
 ## Command-line interface
 
 ```bash
-rensei analyze "C1CC2CCC1C2" --format json
-rensei analyze --input molecules.sdf --format jsonl --output reports.jsonl
+yomitoki analyze "C1CC2CCC1C2" --format json
+yomitoki analyze --input molecules.sdf --format jsonl --output reports.jsonl
 ```
 
-* `rensei analyze "<SMILES>" [--format human|json|jsonl]` — analyze one
+* `yomitoki analyze "<SMILES>" [--format human|json|jsonl]` — analyze one
   molecule from an argument.
-* `rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]`
+* `yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>]`
   — batch mode. `<file>` may be a `.sdf` file or a SMILES-per-line file
   (optionally with a whitespace-separated name column, the standard `.smi`
   convention).
@@ -156,7 +182,7 @@ Simplification suggestions (heuristic, not a guarantee):
 With fragment rarity still missing, scores overall remain lower than a
 full v0.1 would produce.
 
-Every report also carries a `Provenance` block (schema version, rensei
+Every report also carries a `Provenance` block (schema version, yomitoki
 version, chematic version, ruleset version, config hash) so results are
 comparable across versions — see `docs/architecture.md`.
 
@@ -184,15 +210,15 @@ claims certainty (`expected_effect` is always `MayReduceDifficulty`, never
 ## How this differs from existing tools
 
 * **SAscore** returns fragment-frequency and complexity penalties as a
-  single number. RENSEI returns component-wise diagnostics, confidence,
+  single number. YOMITOKI returns component-wise diagnostics, confidence,
   applicability, evidence, and simplification suggestions.
-* **SYBA** is an easy/hard classifier. RENSEI is a diagnostic and
+* **SYBA** is an easy/hard classifier. YOMITOKI is a diagnostic and
   explanation tool.
-* **SCScore** is a learned synthetic-complexity score. RENSEI decomposes
+* **SCScore** is a learned synthetic-complexity score. YOMITOKI decomposes
   transparent, chemically-named factors instead.
-* **RAscore** approximates retrosynthesis success. RENSEI is route-free and
+* **RAscore** approximates retrosynthesis success. YOMITOKI is route-free and
   explains the structural reasons behind its assessment.
-* **AiZynthFinder, ASKCOS, RENKIN** are route planners. RENSEI never
+* **AiZynthFinder, ASKCOS, RENKIN** are route planners. YOMITOKI never
   generates a route.
 
 ## Limitations
@@ -245,9 +271,37 @@ claims certainty (`expected_effect` is always `MayReduceDifficulty`, never
 
 ## Reproducibility
 
-Given the same input, `AnalysisConfig`, and rensei/chematic/ruleset
+Given the same input, `AnalysisConfig`, and yomitoki/chematic/ruleset
 versions, `analyze`/`analyze_smiles` always return the same report — no
 randomness is used in the core evaluation path.
+
+## Migration from RENSEI
+
+YOMITOKI was previously developed under the name RENSEI. The project was
+never published to crates.io under that name, so this is a clean rename,
+not a deprecated alias — update any local references:
+
+```rust
+// before
+use rensei::{analyze_smiles, AnalysisConfig};
+
+// after
+use yomitoki::{analyze_smiles, AnalysisConfig};
+```
+
+```bash
+# before
+rensei analyze "CCO"
+
+# after
+yomitoki analyze "CCO"
+```
+
+`RenseiError` is now `YomitokiError`; `Provenance.rensei_version` is now
+`Provenance.yomitoki_version` (`schema_version` bumped to `0.2.0` to reflect
+the field rename). Every other public type name was already generic
+(`SynthesizabilityReport`, `AnalysisConfig`, `Finding`, ...) and is
+unchanged.
 
 ## License
 

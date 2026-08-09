@@ -1,35 +1,53 @@
-# rensei
+# YOMITOKI
 
-[![CI](https://github.com/kent-tokyo/rensei/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/rensei/actions/workflows/ci.yml)
+[![CI](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml)
 
 快速、可解释、无需路线搜索的分子可合成性诊断库。
 
-RENSEI 是一个基于 [chematic](https://github.com/kent-tokyo/chematic) 构建的、快速、可解释、route-free(无需逆合成路线搜索)的分子可合成性诊断库。
+YOMITOKI 是一个基于 [chematic](https://github.com/kent-tokyo/chematic) 构建的、快速、可解释、route-free(无需逆合成路线搜索)的分子可合成性诊断库。
 
-RENSEI 不仅仅返回一个单一的合成可及性分数,而是报告一个分子为何看起来易于合成或难以合成、该判断的可信程度如何,以及哪些结构因素主导了这一结果。
+YOMITOKI 不仅仅返回一个单一的合成可及性分数,而是读取分子结构,解释一个分子为何看起来易于合成或难以合成。它会指出支撑该评估的结构性证据,并报告这一判断的可信程度。
+
+名称来自日文词汇「読み解き」(yomitoki),意为仔细审视某事物并揭示其含义 — 这正是本库的核心职责:不是改造分子,而是读懂并解释它。
+
+> YOMITOKI 不仅仅是估算可合成性,它还揭示了该估算背后的证据与推理过程。
+
+> **曾用名 RENSEI。** 项目已更名,以更准确地反映其实际职责。如果你的代码或链接仍指向旧名称,请参见下方“从 RENSEI 迁移”。
 
 > **状态:v0.1 开发中。** 计划中的六个组件已实现五个: `input_quality`/`applicability`、`ring_topology`、`size_topology`、`stereochemical_burden`、`functional_group_liability`。仅剩 `fragment_rarity`。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
 
-## RENSEI 做什么
+## 生态定位
+
+```text
+chematic    分子表示与化学信息学
+    |
+YOMITOKI    读取并解释分子的可合成性
+    |
+renkin      规划逆合成路线
+```
+
+YOMITOKI 从不执行路线搜索 — 这不是 v0.1 阶段的范围限制,而是永久性的职责边界。详见下方“YOMITOKI 不做什么”。
+
+## YOMITOKI 做什么
 
 * 解析分子(通过 `chematic`),返回结构化的 `SynthesizabilityReport`,而不是单一数值。
 * 将评估分解为独立的组件(目前有 ring topology、size/topology、stereochemical burden、functional-group liability、input quality/applicability;fragment rarity 计划中)。
 * 将 **score**(可合成性/难度)、**confidence**(判断的可信度)与 **applicability**(该分子是否在模型的适用范围内)分为不同字段 — 难以合成的分子不会因此自动被判定为低置信度。
 * 输出机器可读的 finding code 与结构化 evidence,而非仅有文字说明。
-* 从不运行逆合成搜索。RENSEI 仅对分子本身进行评估,不会为其规划合成路线。
-* 提供 `rensei` 命令行工具,支持单分子及批量(`.sdf`/SMILES 文件)分析 — 详见下方“命令行界面”。
+* 从不运行逆合成搜索。YOMITOKI 仅对分子本身进行评估,不会为其规划合成路线。
+* 提供 `yomitoki` 命令行工具,支持单分子及批量(`.sdf`/SMILES 文件)分析 — 详见下方“命令行界面”。
 
-## RENSEI 不做什么
+## YOMITOKI 不做什么
 
 * 逆合成规划、反应模板应用、前体生成、路线排序 — 这些是 [RENKIN](https://github.com/kent-tokyo/renkin) 的职责。
-* 分子解析、环感知(ring perception)、芳香性判定、立体化学指认 — 这些是 [chematic](https://github.com/kent-tokyo/chematic) 的职责,RENSEI 仅调用它。
+* 分子解析、环感知(ring perception)、芳香性判定、立体化学指认 — 这些是 [chematic](https://github.com/kent-tokyo/chematic) 的职责,YOMITOKI 仅调用它。
 * 毒性预测、SDS/危险品分类、产率预测、成本预测。
 * v0.1 不追求完整元素周期表覆盖或有机金属化合物的完整支持。
 
 ## 快速开始
 
 ```rust
-use rensei::{analyze_smiles, AnalysisConfig};
+use yomitoki::{analyze_smiles, AnalysisConfig};
 
 let config = AnalysisConfig::default();
 let report = analyze_smiles("C1CC2CCC1C2", &config)?; // 降冰片烷 (norbornane)
@@ -52,12 +70,12 @@ cargo run --example basic
 ## 命令行界面
 
 ```bash
-rensei analyze "C1CC2CCC1C2" --format json
-rensei analyze --input molecules.sdf --format jsonl --output reports.jsonl
+yomitoki analyze "C1CC2CCC1C2" --format json
+yomitoki analyze --input molecules.sdf --format jsonl --output reports.jsonl
 ```
 
-* `rensei analyze "<SMILES>" [--format human|json|jsonl]` — 分析作为参数传入的单个分子。
-* `rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]` — 批处理模式。`<file>` 可以是 `.sdf` 文件,也可以是每行一个 SMILES 的文件(可选择带有以空白分隔的名称列,即标准的 `.smi` 约定)。
+* `yomitoki analyze "<SMILES>" [--format human|json|jsonl]` — 分析作为参数传入的单个分子。
+* `yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>]` — 批处理模式。`<file>` 可以是 `.sdf` 文件,也可以是每行一个 SMILES 的文件(可选择带有以空白分隔的名称列,即标准的 `.smi` 约定)。
 * 批处理模式保持输入顺序,且不会因单条记录失败而中止整体处理 — 失败的记录会成为一条错误条目(JSON 中的 `"error"` 字段,或 human 格式下的 `ERROR:` 区块),而不是被跳过。只有在所有记录都处理完毕后,若存在任何失败,进程退出码才会为非零。
 * `jsonl` 格式在单分子模式与批处理模式下使用相同的 `{"input", "report"|"error"}` 包装结构 — 无论以哪种方式调用,下游逐行解析器看到的都是同一套 schema。
 * 退出码:`0` 表示成功,`1` 表示分子解析/分析失败(单分子模式)或批处理中至少一条记录失败,`2` 表示用法错误(参数不正确)。
@@ -115,7 +133,7 @@ Simplification suggestions (heuristic, not a guarantee):
 
 由于 fragment rarity 仍未实现,总体分数仍会低于完整版 v0.1 给出的结果。
 
-每份报告还包含一个 `Provenance` 区块(schema 版本、rensei 版本、chematic 版本、ruleset 版本、config hash),使不同版本之间的结果具有可比性 — 详见 `docs/architecture.md`。
+每份报告还包含一个 `Provenance` 区块(schema 版本、yomitoki 版本、chematic 版本、ruleset 版本、config hash),使不同版本之间的结果具有可比性 — 详见 `docs/architecture.md`。
 
 ## 组件实现状态(v0.1)
 
@@ -134,11 +152,11 @@ Simplification suggestions (heuristic, not a guarantee):
 
 ## 与现有工具的区别
 
-* **SAscore** 将片段频率与复杂度惩罚合并为单一数值返回。RENSEI 返回按组件划分的诊断结果、置信度、适用性、证据,以及简化建议。
-* **SYBA** 是一个易/难二分类器。RENSEI 则以诊断与解释为核心。
-* **SCScore** 是一个学习得到的合成复杂度分数。RENSEI 则分解为透明的、具有化学意义命名的因素。
-* **RAscore** 近似逆合成成功率。RENSEI 是 route-free 的,并解释其评估背后的结构性原因。
-* **AiZynthFinder、ASKCOS、RENKIN** 都是路线规划器。RENSEI 从不生成合成路线。
+* **SAscore** 将片段频率与复杂度惩罚合并为单一数值返回。YOMITOKI 返回按组件划分的诊断结果、置信度、适用性、证据,以及简化建议。
+* **SYBA** 是一个易/难二分类器。YOMITOKI 则以诊断与解释为核心。
+* **SCScore** 是一个学习得到的合成复杂度分数。YOMITOKI 则分解为透明的、具有化学意义命名的因素。
+* **RAscore** 近似逆合成成功率。YOMITOKI 是 route-free 的,并解释其评估背后的结构性原因。
+* **AiZynthFinder、ASKCOS、RENKIN** 都是路线规划器。YOMITOKI 从不生成合成路线。
 
 ## 局限性
 
@@ -154,7 +172,29 @@ Simplification suggestions (heuristic, not a guarantee):
 
 ## 可复现性
 
-给定相同的输入、相同的 `AnalysisConfig`,以及相同的 rensei/chematic/ruleset 版本,`analyze`/`analyze_smiles` 总是返回相同的报告 — 核心评估流程中不使用任何随机性。
+给定相同的输入、相同的 `AnalysisConfig`,以及相同的 yomitoki/chematic/ruleset 版本,`analyze`/`analyze_smiles` 总是返回相同的报告 — 核心评估流程中不使用任何随机性。
+
+## 从 RENSEI 迁移
+
+YOMITOKI 此前以 RENSEI 之名开发。该名称从未在 crates.io 上发布过,因此这是一次干净的重命名,而不是一个废弃别名 — 请更新本地引用:
+
+```rust
+// 之前
+use rensei::{analyze_smiles, AnalysisConfig};
+
+// 之后
+use yomitoki::{analyze_smiles, AnalysisConfig};
+```
+
+```bash
+# 之前
+rensei analyze "CCO"
+
+# 之后
+yomitoki analyze "CCO"
+```
+
+`RenseiError` 现更名为 `YomitokiError`;`Provenance.rensei_version` 现更名为 `Provenance.yomitoki_version`(为反映字段重命名,`schema_version` 已提升至 `0.2.0`)。其余公开类型名称(`SynthesizabilityReport`、`AnalysisConfig`、`Finding` 等)原本就是通用名称,未作更改。
 
 ## 许可协议
 

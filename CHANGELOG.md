@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial project scaffold.
 - `SynthesizabilityReport` schema (`report.rs`), `AnalysisConfig` (`config.rs`),
-  `RenseiError` (`error.rs`).
+  `YomitokiError` (`error.rs`).
 - `input_quality`/applicability component.
 - `ring_topology` burden component.
 - `size_topology` burden component (molecular weight, rotatable bond count).
@@ -26,9 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Property-based tests (`tests/property_based.rs`, `proptest` dev-dependency):
   no panics, no NaN/Infinity, all scores stay in `0.0..=1.0`, finding atom
   indices stay in range, across randomized molecules and configs.
-- `rensei` CLI binary (`src/bin/rensei.rs`): `rensei analyze "<SMILES>"
+- `yomitoki` CLI binary (`src/bin/yomitoki.rs`): `yomitoki analyze "<SMILES>"
   [--format human|json|jsonl]` for a single molecule, and
-  `rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]`
+  `yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>]`
   for batch analysis of a `.sdf` file or a SMILES-per-line file. Batch mode
   preserves input order and never stops on one record's failure. `jsonl`
   output uses the same `{"input", "report"|"error"}` wrapper shape in both
@@ -43,7 +43,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renamed the project from RENSEI to YOMITOKI.** Renamed the Rust crate,
+  binary, and CLI command from `rensei` to `yomitoki`; renamed `RenseiError`
+  to `YomitokiError` and `Provenance.rensei_version` to
+  `Provenance.yomitoki_version` (`schema_version` bumped 0.1.0 → 0.2.0 to
+  reflect the field rename). Every other public type name was already
+  generic (`SynthesizabilityReport`, `AnalysisConfig`, `Finding`, ...) and
+  is unchanged. The project was never published to crates.io under the old
+  name, so this is a clean rename with no deprecated alias. See the
+  README's "Migration from RENSEI" section.
 - `chematic` dependency bumped 0.11 → 0.12.
 - `rust-version = "1.88"` declared explicitly in `Cargo.toml`.
 - `chematic`'s `mol` feature enabled (CLI-only, for `SdfReader`/
   `SmilesRecordReader`).
+
+### Migration
+
+Replace:
+
+```rust
+use rensei::analyze;
+```
+
+with:
+
+```rust
+use yomitoki::analyze;
+```
+
+Replace:
+
+```bash
+rensei analyze ...
+```
+
+with:
+
+```bash
+yomitoki analyze ...
+```

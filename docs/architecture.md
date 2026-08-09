@@ -1,25 +1,33 @@
-# RENSEI architecture (v0.1)
+# YOMITOKI architecture (v0.1)
 
 This document defines the crate boundary, public API, report schema, component
 interface, scoring direction, confidence/abstention contract, versioning
-scheme, and non-goals for RENSEI v0.1. It reflects what is actually
+scheme, and non-goals for YOMITOKI v0.1. It reflects what is actually
 implemented today, not the eventual full scope — see "Non-goals / deferred"
 at the end for what's intentionally missing.
 
+YOMITOKI was previously developed under the name RENSEI; see the README's
+"Migration from RENSEI" section for the concrete rename (crate/binary name,
+`RenseiError` → `YomitokiError`, `Provenance.rensei_version` →
+`yomitoki_version`). The rename also reflects the project's actual role:
+YOMITOKI reads and explains molecular structure — it does not modify,
+optimize, or regenerate molecules. That functionality, if it's ever built,
+belongs to a different, unrelated project.
+
 ## Crate boundary
 
-Single crate, `rensei`, no workspace split — there is no large embedded
-model yet that would justify separate `rensei-core`/`rensei-models`/
-`rensei-cli` crates. That split is revisited when fragment-rarity model files
+Single crate, `yomitoki`, no workspace split — there is no large embedded
+model yet that would justify separate `yomitoki-core`/`yomitoki-models`/
+`yomitoki-cli` crates. That split is revisited when fragment-rarity model files
 exist.
 
-RENSEI depends on `chematic` (registry dependency, not a path dependency) for
+YOMITOKI depends on `chematic` (registry dependency, not a path dependency) for
 all molecule representation, SMILES parsing, ring perception, and
-stereochemistry. RENSEI does not reimplement any of that. See "chematic API
+stereochemistry. YOMITOKI does not reimplement any of that. See "chematic API
 surface used" below for exactly what's called.
 
-RENSEI does not depend on RENKIN, and RENKIN must never depend on RENSEI.
-RENSEI never runs retrosynthesis search or template application.
+YOMITOKI does not depend on RENKIN, and RENKIN must never depend on YOMITOKI.
+YOMITOKI never runs retrosynthesis search or template application.
 
 ## Public API
 
@@ -27,12 +35,12 @@ RENSEI never runs retrosynthesis search or template application.
 pub fn analyze(
     molecule: &chematic::core::Molecule,
     config: &AnalysisConfig,
-) -> Result<SynthesizabilityReport, RenseiError>;
+) -> Result<SynthesizabilityReport, YomitokiError>;
 
 pub fn analyze_smiles(
     smiles: &str,
     config: &AnalysisConfig,
-) -> Result<SynthesizabilityReport, RenseiError>;
+) -> Result<SynthesizabilityReport, YomitokiError>;
 ```
 
 `analyze_smiles` is `chematic::smiles::parse` followed by `analyze`. Parsing
@@ -41,13 +49,13 @@ successfully always returns `Ok(report)`, never `Err`, no matter how
 difficult or out-of-domain it is. A hard-to-synthesize molecule is not an
 error.
 
-### CLI (`src/bin/rensei.rs`)
+### CLI (`src/bin/yomitoki.rs`)
 
 A thin binary over the same `analyze`/`analyze_smiles` entry points — no
 scoring logic lives in the binary. Two modes:
 
-* Single molecule: `rensei analyze "<SMILES>" [--format human|json|jsonl]`.
-* Batch: `rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]`,
+* Single molecule: `yomitoki analyze "<SMILES>" [--format human|json|jsonl]`.
+* Batch: `yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>]`,
   reading either a `.sdf` file (via `chematic::mol::SdfReader`) or a
   SMILES-per-line file (via `chematic::mol::SmilesRecordReader`).
 
@@ -57,7 +65,7 @@ reader iterators surface a per-record `Result`, and mapping each item to a
 labeled tuple before `.collect()`-ing into a plain `Vec` means one bad
 record never short-circuits the collection (unlike collecting directly into
 `Result<Vec<_>, _>`, which chematic's own `parse_sdf` convenience wrapper
-does — rensei intentionally uses the lower-level `SdfReader` iterator
+does — yomitoki intentionally uses the lower-level `SdfReader` iterator
 instead of that wrapper for this reason). A failed record becomes an error
 entry in the output, at its original position, never a silent skip.
 `SmilesRecordReader` has its own independent stop-on-error mechanism (its
@@ -78,8 +86,8 @@ was ever released.
 Confirmed against `chematic 0.12.0` (published on crates.io) by reading
 source directly, not guessed. (Upgraded from 0.11.0 — the 0.12.0 changes
 are scoped entirely to `chematic-ff`/`chematic-3d`, neither of which
-rensei's `smiles`/`perception`/`chem` features touch; verified zero output
-change across rensei's own test suite before and after the bump.)
+yomitoki's `smiles`/`perception`/`chem` features touch; verified zero output
+change across yomitoki's own test suite before and after the bump.)
 
 | Need | chematic API |
 |---|---|
@@ -99,9 +107,9 @@ change across rensei's own test suite before and after the bump.)
 Dependency declaration: `chematic = { version = "0.12", features = ["smiles",
 "perception", "chem", "mol"] }`. The `chematic` facade crate has
 `default = []` — without explicit features it exposes nothing. `mol` is used
-only by the CLI binary (`src/bin/rensei.rs`), not by the library.
+only by the CLI binary (`src/bin/yomitoki.rs`), not by the library.
 
-Known gaps in chematic's public API (relevant to RENSEI, not filed upstream
+Known gaps in chematic's public API (relevant to YOMITOKI, not filed upstream
 yet): no macrocycle predicate in `chematic-perception` (only
 `chematic-3d::detect_macrocycle_status`, gated behind the unrelated `threed`
 feature); no single unified `sanitize()`/`validate()` entry point (valence,
@@ -350,8 +358,8 @@ strictness. See `analyze::tests` for the regression tests covering this.
 
 | Field | Source |
 |---|---|
-| `schema_version` | literal constant in `report.rs` |
-| `rensei_version` | `env!("CARGO_PKG_VERSION")` |
+| `schema_version` | literal constant in `provenance.rs` (currently `0.2.0` — bumped from `0.1.0` when `Provenance.rensei_version` was renamed to `yomitoki_version`) |
+| `yomitoki_version` | `env!("CARGO_PKG_VERSION")` |
 | `chematic_version` | chematic's declared version requirement |
 | `ruleset_version` | `rules::RULESET_VERSION` |
 | `config_hash` | SHA-256 (via the `sha2` crate) of the config's canonical JSON serialization |

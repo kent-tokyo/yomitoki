@@ -17,6 +17,7 @@ RENSEIは、[chematic](https://github.com/kent-tokyo/chematic)上に構築され
 * **score**(合成容易性/困難性)、**confidence**(その判断の信頼性)、**applicability**(その分子がそもそもモデルの適用範囲内かどうか)を別々のフィールドとして分離する — 作りにくい分子だからといって自動的に低confidenceになるわけではない。
 * 単なる文章ではなく、機械可読なfinding codeと構造化されたevidenceを出力する。
 * retrosynthesis探索を一切実行しない。RENSEIは分子単体を評価するのみで、それを作るための経路を計画することはしない。
+* 単一分子およびバッチ(`.sdf`/SMILESファイル)解析用の`rensei` CLIを同梱する — 詳細は下記「コマンドラインインターフェース」を参照。
 
 ## RENSEIがしないこと
 
@@ -47,6 +48,20 @@ for finding in &report.findings {
 ```bash
 cargo run --example basic
 ```
+
+## コマンドラインインターフェース
+
+```bash
+rensei analyze "C1CC2CCC1C2" --format json
+rensei analyze --input molecules.sdf --format jsonl --output reports.jsonl
+```
+
+* `rensei analyze "<SMILES>" [--format human|json|jsonl]` — 引数として渡した単一分子を解析する。
+* `rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]` — バッチモード。`<file>`は`.sdf`ファイル、またはSMILES-per-lineファイル(空白区切りの名前列を任意で含む、標準的な`.smi`形式)のいずれか。
+* バッチモードは入力順序を維持し、1レコードの失敗で全体を停止しない — 失敗したレコードはスキップされるのではなくエラーエントリになる(JSONの`"error"`フィールド、またはhuman形式の`ERROR:`ブロック)。プロセスの終了コードは、全レコードの処理が完了した後、1件でも失敗があった場合にのみ非ゼロになる。
+* `jsonl`形式は単一分子モードとバッチモードの両方で同じ`{"input", "report"|"error"}`ラッパー形式を使う — どちらの呼び出し形式で生成しても、下流のline-by-lineパーサーは単一のスキーマを見ることになる。
+* 終了コード: `0`成功、`1`分子のパース/解析失敗(単一分子モード)またはバッチ内の1件以上の失敗、`2`使用方法エラー(引数不正)。
+* CLIが出力するレポートも、他のレポートと同じく`fragment_rarity: null`のギャップを持つ — 下記「制限事項」を参照。
 
 ## レポートの形式
 
@@ -132,4 +147,4 @@ fragment rarityが未実装のため、全体的なスコアは完全なv0.1が�
 
 ## ロードマップ
 
-残りの計画: fragment rarity、SAscore/RAscore/route-search outcomeに対するキャリブレーション、CLI、そして将来的にはPythonバインディング。
+残りの計画: fragment rarity、SAscore/RAscore/route-search outcomeに対するキャリブレーション、そして将来的にはPythonバインディング。

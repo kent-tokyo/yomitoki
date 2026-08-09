@@ -34,6 +34,8 @@ dominate the result.
   prose.
 * Never runs retrosynthesis search. RENSEI evaluates a molecule on its own;
   it does not plan a route to make it.
+* Ships a `rensei` CLI for single-molecule and batch (`.sdf`/SMILES-file)
+  analysis — see Command-line interface below.
 
 ## What it does not do
 
@@ -66,6 +68,32 @@ Run the full example:
 ```bash
 cargo run --example basic
 ```
+
+## Command-line interface
+
+```bash
+rensei analyze "C1CC2CCC1C2" --format json
+rensei analyze --input molecules.sdf --format jsonl --output reports.jsonl
+```
+
+* `rensei analyze "<SMILES>" [--format human|json|jsonl]` — analyze one
+  molecule from an argument.
+* `rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]`
+  — batch mode. `<file>` may be a `.sdf` file or a SMILES-per-line file
+  (optionally with a whitespace-separated name column, the standard `.smi`
+  convention).
+* Batch mode preserves input order and never stops on one record's failure —
+  a failed record becomes an error entry (JSON `"error"` field, or an
+  `ERROR:` block in human format), not a skipped one. The process exits
+  non-zero only after every record has been attempted, if any failed.
+* `jsonl` output uses the same `{"input", "report"|"error"}` wrapper shape
+  in both single-molecule and batch mode, so a downstream line-by-line
+  parser sees one schema regardless of which invocation form produced it.
+* Exit codes: `0` success, `1` a molecule failed to parse/analyze (single
+  mode) or at least one batch record failed, `2` a usage error (bad
+  arguments).
+* Reports emitted by the CLI have the same `fragment_rarity: null` gap as
+  every other report — see Limitations below.
 
 ## Report shape
 
@@ -199,5 +227,4 @@ No paper or citable release exists yet.
 ## Roadmap
 
 Remaining planned work: fragment rarity, calibration against
-SAscore/RAscore/route-search outcomes, a CLI, and eventually Python
-bindings.
+SAscore/RAscore/route-search outcomes, and eventually Python bindings.

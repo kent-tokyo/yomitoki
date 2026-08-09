@@ -26,8 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Property-based tests (`tests/property_based.rs`, `proptest` dev-dependency):
   no panics, no NaN/Infinity, all scores stay in `0.0..=1.0`, finding atom
   indices stay in range, across randomized molecules and configs.
+- `rensei` CLI binary (`src/bin/rensei.rs`): `rensei analyze "<SMILES>"
+  [--format human|json|jsonl]` for a single molecule, and
+  `rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]`
+  for batch analysis of a `.sdf` file or a SMILES-per-line file. Batch mode
+  preserves input order and never stops on one record's failure. `jsonl`
+  output uses the same `{"input", "report"|"error"}` wrapper shape in both
+  single-molecule and batch mode.
 
 ### Changed
 
 - `chematic` dependency bumped 0.11 → 0.12.
 - `rust-version = "1.88"` declared explicitly in `Cargo.toml`.
+- `chematic`'s `mol` feature enabled (CLI-only, for `SdfReader`/
+  `SmilesRecordReader`).

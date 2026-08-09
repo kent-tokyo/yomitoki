@@ -41,6 +41,38 @@ successfully always returns `Ok(report)`, never `Err`, no matter how
 difficult or out-of-domain it is. A hard-to-synthesize molecule is not an
 error.
 
+### CLI (`src/bin/rensei.rs`)
+
+A thin binary over the same `analyze`/`analyze_smiles` entry points — no
+scoring logic lives in the binary. Two modes:
+
+* Single molecule: `rensei analyze "<SMILES>" [--format human|json|jsonl]`.
+* Batch: `rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]`,
+  reading either a `.sdf` file (via `chematic::mol::SdfReader`) or a
+  SMILES-per-line file (via `chematic::mol::SmilesRecordReader`).
+
+Batch mode reads all records into a `Vec<(label, Result<Molecule, String>)>`
+before analyzing — this is a deliberate choice, not an oversight: both
+reader iterators surface a per-record `Result`, and mapping each item to a
+labeled tuple before `.collect()`-ing into a plain `Vec` means one bad
+record never short-circuits the collection (unlike collecting directly into
+`Result<Vec<_>, _>`, which chematic's own `parse_sdf` convenience wrapper
+does — rensei intentionally uses the lower-level `SdfReader` iterator
+instead of that wrapper for this reason). A failed record becomes an error
+entry in the output, at its original position, never a silent skip.
+`SmilesRecordReader` has its own independent stop-on-error mechanism (its
+`strict_parsing` option, which the CLI leaves at its default, `false` — the
+"continue past a bad row" behavior, not the "stop" one) that is unrelated to
+the `.collect()` short-circuiting above but produces the same required
+outcome.
+
+`jsonl` output uses one wrapper shape, `{"input", "report"|"error"}`, in
+both single-molecule and batch mode — this was originally two different
+shapes (a bare `SynthesizabilityReport` in single mode) until a review
+caught that a downstream line-by-line parser would see incompatible schemas
+depending on which invocation form produced the output; unified before this
+was ever released.
+
 ## chematic API surface used
 
 Confirmed against `chematic 0.12.0` (published on crates.io) by reading
@@ -61,10 +93,13 @@ change across rensei's own test suite before and after the bump.)
 | Molecular weight | `chematic::chem::molecular_weight(&Molecule) -> f64` |
 | Rotatable bond count | `chematic::chem::rotatable_bond_count(&Molecule) -> usize` |
 | Reactive/unstable functional groups | `chematic::chem::brenk_matches_detailed(&Molecule) -> Vec<(&'static str, Vec<AtomIdx>)>` (Brenk et al. 2008 structural alerts; an entry with an empty atom list means that alert's search was budget-cut, not a zero-atom match) |
+| SDF batch reading | `chematic::mol::SdfReader::new(&str) -> impl Iterator<Item = Result<(Molecule, MolMetadata), MolParseError>>` — CLI-only, gated on the `mol` feature |
+| SMILES-table batch reading | `chematic::mol::SmilesRecordReader::new(impl BufRead, SmilesReaderOptions) -> impl Iterator<Item = Result<MoleculeRecord, SmilesTableError>>` — CLI-only, gated on the `mol` feature |
 
 Dependency declaration: `chematic = { version = "0.12", features = ["smiles",
-"perception", "chem"] }`. The `chematic` facade crate has `default = []` —
-without explicit features it exposes nothing.
+"perception", "chem", "mol"] }`. The `chematic` facade crate has
+`default = []` — without explicit features it exposes nothing. `mol` is used
+only by the CLI binary (`src/bin/rensei.rs`), not by the library.
 
 Known gaps in chematic's public API (relevant to RENSEI, not filed upstream
 yet): no macrocycle predicate in `chematic-perception` (only
@@ -284,7 +319,6 @@ break both determinism and cross-run provenance comparability.
 
 Not implemented in v0.1 so far (tracked, not stubbed with fake data):
 
-* CLI.
 * `fragment_rarity` component.
 * E/Z double-bond stereo, atropisomerism, contiguous stereocenter runs,
   quaternary-carbon adjacency, meso detection — all candidate

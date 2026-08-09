@@ -17,6 +17,7 @@ RENSEI 不仅仅返回一个单一的合成可及性分数,而是报告一个分
 * 将 **score**(可合成性/难度)、**confidence**(判断的可信度)与 **applicability**(该分子是否在模型的适用范围内)分为不同字段 — 难以合成的分子不会因此自动被判定为低置信度。
 * 输出机器可读的 finding code 与结构化 evidence,而非仅有文字说明。
 * 从不运行逆合成搜索。RENSEI 仅对分子本身进行评估,不会为其规划合成路线。
+* 提供 `rensei` 命令行工具,支持单分子及批量(`.sdf`/SMILES 文件)分析 — 详见下方“命令行界面”。
 
 ## RENSEI 不做什么
 
@@ -47,6 +48,20 @@ for finding in &report.findings {
 ```bash
 cargo run --example basic
 ```
+
+## 命令行界面
+
+```bash
+rensei analyze "C1CC2CCC1C2" --format json
+rensei analyze --input molecules.sdf --format jsonl --output reports.jsonl
+```
+
+* `rensei analyze "<SMILES>" [--format human|json|jsonl]` — 分析作为参数传入的单个分子。
+* `rensei analyze --input <file> [--format human|json|jsonl] [--output <file>]` — 批处理模式。`<file>` 可以是 `.sdf` 文件,也可以是每行一个 SMILES 的文件(可选择带有以空白分隔的名称列,即标准的 `.smi` 约定)。
+* 批处理模式保持输入顺序,且不会因单条记录失败而中止整体处理 — 失败的记录会成为一条错误条目(JSON 中的 `"error"` 字段,或 human 格式下的 `ERROR:` 区块),而不是被跳过。只有在所有记录都处理完毕后,若存在任何失败,进程退出码才会为非零。
+* `jsonl` 格式在单分子模式与批处理模式下使用相同的 `{"input", "report"|"error"}` 包装结构 — 无论以哪种方式调用,下游逐行解析器看到的都是同一套 schema。
+* 退出码:`0` 表示成功,`1` 表示分子解析/分析失败(单分子模式)或批处理中至少一条记录失败,`2` 表示用法错误(参数不正确)。
+* 命令行工具输出的报告与其他报告一样存在 `fragment_rarity: null` 的缺口 — 详见下方“局限性”。
 
 ## 报告结构示例
 
@@ -132,4 +147,4 @@ Dominant penalties:
 
 ## 路线图
 
-剩余计划:fragment rarity、针对 SAscore/RAscore/路线搜索结果的校准、CLI,以及未来的 Python 绑定。
+剩余计划:fragment rarity、针对 SAscore/RAscore/路线搜索结果的校准,以及未来的 Python 绑定。

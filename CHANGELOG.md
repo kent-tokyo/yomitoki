@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI workflow (`.github/workflows/ci.yml`): fmt/clippy/doc, `cargo test`
   on Linux and macOS, MSRV (1.88) check, `cargo-deny` license/advisory
   audit.
+- Property-based tests (`tests/property_based.rs`, `proptest` dev-dependency):
+  no panics, no NaN/Infinity, all scores stay in `0.0..=1.0`, finding atom
+  indices stay in range, across randomized molecules and configs.
 
 ### Changed
 

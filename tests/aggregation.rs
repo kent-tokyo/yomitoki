@@ -6,37 +6,58 @@
 use rensei::{AnalysisConfig, FindingCode};
 
 #[test]
-fn adding_a_component_never_lowers_difficulty_below_any_single_component_alone() {
-    // AGGREGATE_WEIGHT_RING_TOPOLOGY = 1.0 (full pass-through) plus
-    // non-negative additive size/stereo terms is the property under test:
-    // a molecule must not read as *easier* just because more components
-    // were wired into the aggregation. Uses a fixture with real ring,
-    // size, and stereo burden simultaneously so all three are exercised,
-    // not just ring_topology as in the original single-component version
-    // of this test.
+fn ring_topology_is_a_full_pass_through_floor_for_difficulty() {
+    // AGGREGATE_WEIGHT_RING_TOPOLOGY = 1.0 is the *only* aggregation weight
+    // that's a full pass-through (see rules.rs) — every other component
+    // contributes at a fractional weight (0.4/0.5/0.4), so
+    // `difficulty >= component.normalized` is only guaranteed to hold for
+    // ring_topology specifically, not for size/stereo/functional-group
+    // liability in general.
+    //
+    // An earlier version of this test asserted that inequality for all
+    // four components — false in general: a plain 40-carbon alkane has
+    // size_topology.normalized ~0.52 but difficulty ~0.21, since
+    // AGGREGATE_WEIGHT_SIZE_TOPOLOGY (0.4) dilutes it. It only passed
+    // because its one fixture happened to have dominant ring burden
+    // masking that. Caught by an advisor review, not by this test.
     let config = AnalysisConfig::default();
     let report =
         rensei::analyze_smiles("C1CC2CCC1C2C(N)C(O)C(Cl)C", &config).expect("valid SMILES");
 
-    let components = &report.components;
-    let each_alone = [
-        ("ring_topology", &components.ring_topology),
-        ("size_topology", &components.size_topology),
-        ("stereochemical_burden", &components.stereochemical_burden),
-    ];
+    let ring_alone = report
+        .components
+        .ring_topology
+        .as_ref()
+        .expect("ring_topology always runs")
+        .normalized
+        .value();
+    assert!(
+        report.overall.difficulty.value() >= ring_alone,
+        "overall difficulty {} fell below ring_topology alone {ring_alone}",
+        report.overall.difficulty.value(),
+    );
+}
 
-    for (name, component) in each_alone {
-        let normalized = component
-            .as_ref()
-            .unwrap_or_else(|| panic!("{name} always runs"))
-            .normalized
-            .value();
-        assert!(
-            report.overall.difficulty.value() >= normalized,
-            "overall difficulty {} fell below {name} alone {normalized}",
-            report.overall.difficulty.value(),
-        );
-    }
+#[test]
+fn adding_a_functional_group_liability_never_lowers_difficulty() {
+    // Metamorphic property (AGENTS.md §14.3 style): a molecule that gains a
+    // Brenk-alert-triggering feature, with the rest of its structure held
+    // equal, must not read as *easier*. Ethane (no alerts) vs. acetonitrile
+    // (CC#N, triggers the `nitrile` alert) isolates functional_group_
+    // liability's contribution — both have zero ring and stereo burden,
+    // and size_topology's own contribution barely moves between them
+    // (confirmed via probe: 0.0090 vs 0.0122), so functional_group_
+    // liability (0.0 vs 0.0769) is what actually drives the difference.
+    let config = AnalysisConfig::default();
+    let plain = rensei::analyze_smiles("CC", &config).expect("ethane");
+    let with_fg_alert = rensei::analyze_smiles("CC#N", &config).expect("acetonitrile");
+
+    assert!(
+        with_fg_alert.overall.difficulty.value() >= plain.overall.difficulty.value(),
+        "plain={} with_alert={}",
+        plain.overall.difficulty.value(),
+        with_fg_alert.overall.difficulty.value()
+    );
 }
 
 #[test]

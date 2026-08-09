@@ -1,5 +1,7 @@
 # rensei
 
+[![CI](https://github.com/kent-tokyo/rensei/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/rensei/actions/workflows/ci.yml)
+
 高速で説明可能な、経路探索を伴わない分子合成容易性診断ライブラリ。
 
 RENSEIは、[chematic](https://github.com/kent-tokyo/chematic)上に構築された、高速・説明可能・route-free(経路探索を伴わない)な分子合成容易性診断ライブラリです。

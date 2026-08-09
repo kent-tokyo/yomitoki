@@ -20,7 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `functional_group_liability` component (reactive/unstable functional
   groups, via chematic's Brenk et al. 2008 structural-alert set).
 - `analyze` / `analyze_smiles` entry points.
+- CI workflow (`.github/workflows/ci.yml`): fmt/clippy/doc, `cargo test`
+  on Linux and macOS, MSRV (1.88) check, `cargo-deny` license/advisory
+  audit.
 
 ### Changed
 
 - `chematic` dependency bumped 0.11 → 0.12.
+- `rust-version = "1.88"` declared explicitly in `Cargo.toml`.

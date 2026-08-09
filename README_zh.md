@@ -1,5 +1,7 @@
 # rensei
 
+[![CI](https://github.com/kent-tokyo/rensei/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/rensei/actions/workflows/ci.yml)
+
 快速、可解释、无需路线搜索的分子可合成性诊断库。
 
 RENSEI 是一个基于 [chematic](https://github.com/kent-tokyo/chematic) 构建的、快速、可解释、route-free(无需逆合成路线搜索)的分子可合成性诊断库。

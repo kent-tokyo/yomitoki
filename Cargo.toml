@@ -2,6 +2,7 @@
 name = "rensei"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
 authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]
 description = "Fast, explainable, route-free molecular synthesizability diagnostics."
 license = "MIT OR Apache-2.0"

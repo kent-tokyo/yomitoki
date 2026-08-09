@@ -1,5 +1,7 @@
 # rensei
 
+[![CI](https://github.com/kent-tokyo/rensei/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/rensei/actions/workflows/ci.yml)
+
 Fast, explainable, route-free molecular synthesizability diagnostics.
 
 RENSEI is a fast, explainable, route-free molecular

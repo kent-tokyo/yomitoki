@@ -82,6 +82,39 @@ fn macrocycle_at_threshold_is_flagged() {
 }
 
 #[test]
+fn dominant_penalties_are_ranked_by_actual_weight_not_evidence_magnitude() {
+    // Bridged bicyclic system whose larger ring is also macrocycle-sized
+    // (5- and 10-membered rings, bridged). Produces both a
+    // RingBridgedComplexity finding (weight 0.6) and a RingMacrocycle
+    // finding (weight 0.25, but with evidence.value = 10.0 — the ring
+    // size). A naive sort by evidence magnitude would rank macrocycle
+    // first; ranking must follow the actual contribution weight instead.
+    let config = AnalysisConfig::default();
+    let report = analyze_smiles("C1CC2CCCCCCCC1C2", &config).expect("valid SMILES");
+
+    let codes: Vec<FindingCode> = report.dominant_penalties().iter().map(|c| c.code).collect();
+    assert_eq!(
+        codes,
+        vec![
+            FindingCode::RingBridgedComplexity,
+            FindingCode::RingMacrocycle
+        ],
+        "dominant_penalties order: {codes:?}"
+    );
+    let contributions: Vec<f64> = report
+        .dominant_penalties()
+        .iter()
+        .map(|c| c.contribution.value())
+        .collect();
+    assert!(
+        contributions[0] > contributions[1],
+        "bridged contribution {} should exceed macrocycle contribution {}",
+        contributions[0],
+        contributions[1]
+    );
+}
+
+#[test]
 fn ring_below_macrocycle_threshold_is_not_flagged() {
     let config = AnalysisConfig::default();
     let report = analyze_smiles("c1ccccc1", &config).expect("valid SMILES"); // 6-membered

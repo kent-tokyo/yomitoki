@@ -150,3 +150,102 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
         out_of_domain,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::report::FindingCode;
+
+    fn mol(smiles: &str) -> Molecule {
+        chematic::smiles::parse(smiles).expect("valid SMILES")
+    }
+
+    #[test]
+    fn disconnected_fragments_trigger_out_of_domain() {
+        let outcome = compute(&mol("CCO.CCO"), &AnalysisConfig::default());
+        assert!(outcome.report.disconnected);
+        assert!(outcome.out_of_domain);
+        assert!(
+            outcome
+                .findings
+                .iter()
+                .any(|f| f.code == FindingCode::InputDisconnected)
+        );
+    }
+
+    #[test]
+    fn unsupported_element_triggers_out_of_domain() {
+        let outcome = compute(&mol("C[Se]C"), &AnalysisConfig::default());
+        assert!(!outcome.report.supported_elements);
+        assert!(outcome.out_of_domain);
+        assert!(
+            outcome
+                .findings
+                .iter()
+                .any(|f| f.code == FindingCode::InputUnsupportedElement)
+        );
+    }
+
+    #[test]
+    fn unspecified_stereocenter_lowers_confidence_but_stays_in_domain() {
+        // Alanine without stereo annotation: one unspecified tetrahedral
+        // center, otherwise unremarkable.
+        let outcome = compute(&mol("CC(N)C(=O)O"), &AnalysisConfig::default());
+        assert!(!outcome.report.stereo_complete);
+        assert!(!outcome.out_of_domain);
+        assert!(
+            (outcome.score.confidence.value() - CONFIDENCE_PENALTY_STEREO_INCOMPLETE).abs() < 1e-9
+        );
+    }
+
+    #[test]
+    fn unusual_valence_lowers_confidence_but_stays_in_domain() {
+        let outcome = compute(&mol("CC(C)(C)(C)C"), &AnalysisConfig::default());
+        assert!(outcome.report.unusual_valence);
+        assert!(!outcome.out_of_domain);
+        assert!(
+            (outcome.score.confidence.value() - CONFIDENCE_PENALTY_UNUSUAL_VALENCE).abs() < 1e-9
+        );
+    }
+
+    #[test]
+    fn combined_valence_and_stereo_penalties_multiply() {
+        // Both a 5-bonded carbon (unusual valence) and an unspecified
+        // stereocenter (F, Cl, Br, H substituents) in one connected,
+        // fully-supported-element molecule.
+        let outcome = compute(&mol("FC(Cl)(Br)C(C)(C)(C)C"), &AnalysisConfig::default());
+        assert!(outcome.report.unusual_valence);
+        assert!(!outcome.report.stereo_complete);
+        assert!(!outcome.out_of_domain);
+        let expected = CONFIDENCE_PENALTY_UNUSUAL_VALENCE * CONFIDENCE_PENALTY_STEREO_INCOMPLETE;
+        assert!(
+            (outcome.score.confidence.value() - expected).abs() < 1e-9,
+            "confidence={} expected={expected}",
+            outcome.score.confidence.value()
+        );
+    }
+
+    #[test]
+    fn extreme_size_triggers_out_of_domain() {
+        let config = AnalysisConfig {
+            max_heavy_atoms: 2,
+            ..AnalysisConfig::default()
+        };
+        let outcome = compute(&mol("CCO"), &config);
+        assert!(outcome.out_of_domain);
+        assert!(
+            outcome
+                .findings
+                .iter()
+                .any(|f| f.code == FindingCode::InputTooLarge)
+        );
+    }
+
+    #[test]
+    fn clean_molecule_has_full_confidence_and_stays_in_domain() {
+        let outcome = compute(&mol("CCO"), &AnalysisConfig::default());
+        assert!(!outcome.out_of_domain);
+        assert_eq!(outcome.score.confidence.value(), 1.0);
+        assert!(outcome.findings.is_empty());
+    }
+}

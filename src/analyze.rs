@@ -7,15 +7,15 @@
 use chematic::core::Molecule;
 
 use crate::components::{applicability, ring_topology};
-use crate::config::AnalysisConfig;
+use crate::config::{AnalysisConfig, Strictness};
 use crate::error::RenseiError;
 use crate::report::{
-    ComponentScores, ConfidenceScore, Contribution, Finding, OverallAssessment,
-    ProbabilityLikeScore, SynthesizabilityReport, Verdict, finite_or_zero,
+    ComponentScores, ConfidenceScore, Finding, OverallAssessment, ProbabilityLikeScore,
+    SynthesizabilityReport, Verdict,
 };
 use crate::rules::{
     DIFFICULTY_CHALLENGING_MAX, DIFFICULTY_LIKELY_ACCESSIBLE_MAX, DIFFICULTY_MODERATE_MAX,
-    INDETERMINATE_CONFIDENCE_THRESHOLD,
+    indeterminate_confidence_threshold,
 };
 
 pub fn analyze(
@@ -42,40 +42,17 @@ pub fn analyze(
     let synthesizability = ProbabilityLikeScore::new(1.0 - difficulty.value());
     let confidence = ConfidenceScore::new(applicability_outcome.score.confidence.value());
 
-    let verdict = if applicability_outcome.out_of_domain {
-        Verdict::OutOfDomain
-    } else if confidence.value() < INDETERMINATE_CONFIDENCE_THRESHOLD {
-        Verdict::Indeterminate
-    } else if difficulty.value() < DIFFICULTY_LIKELY_ACCESSIBLE_MAX {
-        Verdict::LikelyAccessible
-    } else if difficulty.value() < DIFFICULTY_MODERATE_MAX {
-        Verdict::ModeratelyAccessible
-    } else if difficulty.value() < DIFFICULTY_CHALLENGING_MAX {
-        Verdict::Challenging
-    } else {
-        Verdict::HighlyChallenging
-    };
+    let verdict = select_verdict(
+        applicability_outcome.out_of_domain,
+        confidence.value(),
+        difficulty.value(),
+        config.strictness,
+    );
 
-    let dominant_penalties: Vec<Contribution> = {
-        let mut ranked: Vec<&Finding> = findings.iter().collect();
-        ranked.sort_by(|a, b| {
-            b.evidence
-                .value
-                .unwrap_or(1.0)
-                .partial_cmp(&a.evidence.value.unwrap_or(1.0))
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-        ranked
-            .into_iter()
-            .map(|f| Contribution {
-                code: f.code,
-                name: f.explanation.clone(),
-                contribution: ProbabilityLikeScore::new(finite_or_zero(
-                    ring_score.contribution.value(),
-                )),
-            })
-            .collect()
-    };
+    // Ranked by ring-topology's actual per-finding weight (not shared
+    // across findings, not mixing in applicability/data-quality findings —
+    // AGENTS.md §5.6 forbids conflating score with input-quality signals).
+    let dominant_penalties = ring_outcome.contributions;
 
     let overall = OverallAssessment {
         synthesizability,
@@ -111,4 +88,97 @@ pub fn analyze_smiles(
 ) -> Result<SynthesizabilityReport, RenseiError> {
     let molecule = chematic::smiles::parse(smiles)?;
     analyze(&molecule, config)
+}
+
+/// Pure verdict-selection logic, factored out of `analyze` so it's testable
+/// without constructing a molecule (AGENTS.md §7: `OutOfDomain` and
+/// `Indeterminate` must be genuinely distinct and independently reachable).
+fn select_verdict(
+    out_of_domain: bool,
+    confidence: f64,
+    difficulty: f64,
+    strictness: Strictness,
+) -> Verdict {
+    if out_of_domain {
+        return Verdict::OutOfDomain;
+    }
+    if confidence < indeterminate_confidence_threshold(strictness) {
+        return Verdict::Indeterminate;
+    }
+    if difficulty < DIFFICULTY_LIKELY_ACCESSIBLE_MAX {
+        Verdict::LikelyAccessible
+    } else if difficulty < DIFFICULTY_MODERATE_MAX {
+        Verdict::ModeratelyAccessible
+    } else if difficulty < DIFFICULTY_CHALLENGING_MAX {
+        Verdict::Challenging
+    } else {
+        Verdict::HighlyChallenging
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The confidence floor reachable by applicability's two soft penalties
+    // combined (CONFIDENCE_PENALTY_UNUSUAL_VALENCE * CONFIDENCE_PENALTY_STEREO_INCOMPLETE
+    // = 0.5 * 0.85 = 0.425, see components/applicability.rs). Standard
+    // strictness's threshold (0.45) must sit above this floor or
+    // `Indeterminate` can never fire — this test is what would have caught
+    // it before shipping.
+    const PENALTY_FLOOR_CONFIDENCE: f64 = 0.425;
+
+    #[test]
+    fn out_of_domain_wins_regardless_of_confidence_or_difficulty() {
+        assert_eq!(
+            select_verdict(true, 1.0, 0.0, Strictness::Standard),
+            Verdict::OutOfDomain
+        );
+    }
+
+    #[test]
+    fn indeterminate_is_reachable_at_standard_strictness() {
+        assert_eq!(
+            select_verdict(false, PENALTY_FLOOR_CONFIDENCE, 0.1, Strictness::Standard),
+            Verdict::Indeterminate
+        );
+    }
+
+    #[test]
+    fn lenient_strictness_tolerates_the_penalty_floor() {
+        assert_ne!(
+            select_verdict(false, PENALTY_FLOOR_CONFIDENCE, 0.1, Strictness::Lenient),
+            Verdict::Indeterminate
+        );
+    }
+
+    #[test]
+    fn strict_strictness_is_at_least_as_eager_to_abstain_as_standard() {
+        let standard = indeterminate_confidence_threshold(Strictness::Standard);
+        let strict = indeterminate_confidence_threshold(Strictness::Strict);
+        let lenient = indeterminate_confidence_threshold(Strictness::Lenient);
+        assert!(strict >= standard);
+        assert!(standard >= lenient);
+    }
+
+    #[test]
+    fn difficulty_buckets_are_all_reachable() {
+        let full_confidence = 1.0;
+        assert_eq!(
+            select_verdict(false, full_confidence, 0.0, Strictness::Standard),
+            Verdict::LikelyAccessible
+        );
+        assert_eq!(
+            select_verdict(false, full_confidence, 0.4, Strictness::Standard),
+            Verdict::ModeratelyAccessible
+        );
+        assert_eq!(
+            select_verdict(false, full_confidence, 0.6, Strictness::Standard),
+            Verdict::Challenging
+        );
+        assert_eq!(
+            select_verdict(false, full_confidence, 0.9, Strictness::Standard),
+            Verdict::HighlyChallenging
+        );
+    }
 }

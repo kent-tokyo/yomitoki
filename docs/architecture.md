@@ -160,9 +160,14 @@ returns `Ok(report)` in this case with whatever partial diagnostics were
 computable (§21: "abstain時も可能な範囲のpartial diagnosticsを返す") — abstention is
 never an `Err`.
 
-`Verdict::Indeterminate` fires when confidence is below a named threshold
-(`rules::INDETERMINATE_CONFIDENCE_THRESHOLD`) without an outright
-applicability hard fail.
+`Verdict::Indeterminate` fires when confidence is below a threshold that
+depends on `AnalysisConfig::strictness`
+(`rules::indeterminate_confidence_threshold`: 0.3 lenient / 0.45 standard /
+0.6 strict) without an outright applicability hard fail. The standard
+threshold is deliberately set above the confidence floor applicability's two
+soft penalties can reach together (0.5 × 0.85 = 0.425) — a threshold at or
+below that floor would make `Indeterminate` unreachable at standard
+strictness. See `analyze::tests` for the regression tests covering this.
 
 ## Versioning
 

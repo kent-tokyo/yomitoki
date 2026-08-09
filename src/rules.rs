@@ -77,7 +77,26 @@ pub(crate) const RING_BURDEN_SCALE: f64 = 1.5;
 
 /// Below this confidence (and absent a hard applicability failure), the
 /// verdict is `Indeterminate` rather than a difficulty-based bucket.
-pub(crate) const INDETERMINATE_CONFIDENCE_THRESHOLD: f64 = 0.4;
+/// Strictness-dependent — see [`indeterminate_confidence_threshold`].
+/// `Standard`'s value (0.45) is deliberately above the confidence floor
+/// applicability's two soft penalties combined can reach (0.5 * 0.85 =
+/// 0.425, see `components/applicability.rs`) — a threshold below that
+/// floor would make `Indeterminate` unreachable at that strictness level.
+const INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT: f64 = 0.3;
+const INDETERMINATE_CONFIDENCE_THRESHOLD_STANDARD: f64 = 0.45;
+const INDETERMINATE_CONFIDENCE_THRESHOLD_STRICT: f64 = 0.6;
+
+/// The confidence floor below which the verdict becomes `Indeterminate`,
+/// for a given [`crate::config::Strictness`]. Higher strictness abstains
+/// more readily (higher threshold).
+pub(crate) fn indeterminate_confidence_threshold(strictness: crate::config::Strictness) -> f64 {
+    use crate::config::Strictness;
+    match strictness {
+        Strictness::Lenient => INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT,
+        Strictness::Standard => INDETERMINATE_CONFIDENCE_THRESHOLD_STANDARD,
+        Strictness::Strict => INDETERMINATE_CONFIDENCE_THRESHOLD_STRICT,
+    }
+}
 
 /// Difficulty upper bounds for the three lowest verdict buckets; anything
 /// above the last bound is `HighlyChallenging`.

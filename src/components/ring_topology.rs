@@ -4,7 +4,7 @@ use chematic::core::Molecule;
 use chematic::perception::{RingSystemKind, find_ring_families, find_sssr};
 
 use crate::report::{
-    AtomIndex, ComponentScore, Finding, FindingCode, FindingEvidence, FindingRef,
+    AtomIndex, ComponentScore, Contribution, Finding, FindingCode, FindingEvidence, FindingRef,
     ProbabilityLikeScore, Severity, finite_or_zero,
 };
 use crate::rules::{
@@ -16,6 +16,10 @@ use crate::rules::{
 pub(crate) struct RingTopologyOutcome {
     pub(crate) score: ComponentScore,
     pub(crate) findings: Vec<Finding>,
+    /// One entry per finding in `findings` (same order), carrying the
+    /// *actual* weight that finding contributed to `raw` — not a shared
+    /// component-wide number. This is what `dominant_penalties` ranks by.
+    pub(crate) contributions: Vec<Contribution>,
 }
 
 pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
@@ -23,7 +27,32 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
     let families = find_ring_families(mol, &sssr);
 
     let mut findings = Vec::new();
+    let mut contributions = Vec::new();
     let mut raw = 0.0;
+
+    let push = |findings: &mut Vec<Finding>,
+                contributions: &mut Vec<Contribution>,
+                code: FindingCode,
+                severity: Severity,
+                atoms: Vec<AtomIndex>,
+                evidence: FindingEvidence,
+                weight: f64| {
+        let atom_count = atoms.len();
+        let explanation = crate::explain::render(code, evidence, atom_count);
+        findings.push(Finding {
+            code,
+            severity,
+            confidence: ProbabilityLikeScore::new(1.0),
+            atoms,
+            evidence,
+            explanation: explanation.clone(),
+        });
+        contributions.push(Contribution {
+            code,
+            name: explanation,
+            contribution: ProbabilityLikeScore::new(finite_or_zero(weight)),
+        });
+    };
 
     for family in &families {
         let atoms: Vec<AtomIndex> = family.atoms.iter().map(|&a| AtomIndex::from(a)).collect();
@@ -37,23 +66,27 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
         let kind_weight = match family.kind {
             RingSystemKind::Simple => RING_WEIGHT_SIMPLE,
             RingSystemKind::Spiro => {
-                findings.push(finding(
+                push(
+                    &mut findings,
+                    &mut contributions,
                     FindingCode::RingSpiro,
                     Severity::Medium,
                     atoms.clone(),
                     FindingEvidence::default(),
-                    atoms.len(),
-                ));
+                    RING_WEIGHT_SPIRO,
+                );
                 RING_WEIGHT_SPIRO
             }
             RingSystemKind::Bridged => {
-                findings.push(finding(
+                push(
+                    &mut findings,
+                    &mut contributions,
                     FindingCode::RingBridgedComplexity,
                     Severity::High,
                     atoms.clone(),
                     FindingEvidence::default(),
-                    atoms.len(),
-                ));
+                    RING_WEIGHT_BRIDGED,
+                );
                 RING_WEIGHT_BRIDGED
             }
             RingSystemKind::Fused => {
@@ -72,8 +105,11 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
                 } else {
                     overlap as f64 / family.atoms.len() as f64
                 };
+                let weight = RING_WEIGHT_FUSED_BASE + RING_WEIGHT_FUSED_DENSITY * density;
                 if density > RING_FUSED_DENSITY_FINDING_THRESHOLD {
-                    findings.push(finding(
+                    push(
+                        &mut findings,
+                        &mut contributions,
                         FindingCode::RingFusedDense,
                         Severity::Medium,
                         atoms.clone(),
@@ -81,17 +117,19 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
                             value: Some(density),
                             threshold: Some(RING_FUSED_DENSITY_FINDING_THRESHOLD),
                         },
-                        atoms.len(),
-                    ));
+                        weight,
+                    );
                 }
-                RING_WEIGHT_FUSED_BASE + RING_WEIGHT_FUSED_DENSITY * density
+                weight
             }
         };
 
         raw += kind_weight;
 
         if max_ring_size >= MACROCYCLE_MIN_RING_SIZE {
-            findings.push(finding(
+            push(
+                &mut findings,
+                &mut contributions,
                 FindingCode::RingMacrocycle,
                 Severity::Medium,
                 atoms.clone(),
@@ -99,8 +137,8 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
                     value: Some(max_ring_size as f64),
                     threshold: Some(MACROCYCLE_MIN_RING_SIZE as f64),
                 },
-                atoms.len(),
-            ));
+                RING_WEIGHT_MACROCYCLE_BONUS,
+            );
             raw += RING_WEIGHT_MACROCYCLE_BONUS;
         }
     }
@@ -109,6 +147,20 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
     // Non-linear burden (AGENTS.md §5.1): bounded, monotonic, and saturates
     // rather than being capped or growing unbounded with ring count.
     let normalized = ProbabilityLikeScore::new(1.0 - (-raw / RING_BURDEN_SCALE).exp());
+
+    // Rank by actual per-finding weight, highest first — this is what
+    // `SynthesizabilityReport::dominant_penalties` surfaces (AGENTS.md
+    // §4.1, §15). Ordering must reflect the weights that fed `raw`, not a
+    // single component-wide number repeated across every finding.
+    let mut ranked: Vec<(Finding, Contribution)> =
+        findings.into_iter().zip(contributions).collect();
+    ranked.sort_by(|(_, a), (_, b)| {
+        b.contribution
+            .value()
+            .partial_cmp(&a.contribution.value())
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    let (findings, contributions): (Vec<Finding>, Vec<Contribution>) = ranked.into_iter().unzip();
 
     let score = ComponentScore {
         raw,
@@ -121,22 +173,9 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
         findings: (0..findings.len()).map(FindingRef).collect(),
     };
 
-    RingTopologyOutcome { score, findings }
-}
-
-fn finding(
-    code: FindingCode,
-    severity: Severity,
-    atoms: Vec<AtomIndex>,
-    evidence: FindingEvidence,
-    atom_count: usize,
-) -> Finding {
-    Finding {
-        code,
-        severity,
-        confidence: ProbabilityLikeScore::new(1.0),
-        atoms,
-        evidence,
-        explanation: crate::explain::render(code, evidence, atom_count),
+    RingTopologyOutcome {
+        score,
+        findings,
+        contributions,
     }
 }

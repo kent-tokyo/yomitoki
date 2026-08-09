@@ -65,14 +65,20 @@ cargo run --example basic
 
 ## Report shape
 
-```text
-Verdict: Challenging
-Synthesizability: 0.41
-Confidence: 0.86
+Actual output of `cargo run --example basic` for norbornane (`C1CC2CCC1C2`),
+current as of this component set:
 
-Findings:
-- RING_BRIDGED_COMPLEXITY: bridged bicyclic ring system
+```text
+Verdict: ModeratelyAccessible
+Synthesizability: 0.67
+Confidence: 1.00
+Dominant penalties:
+1. Bridged ring system spanning 7 atoms — bridgehead connectivity typically increases synthetic difficulty.
 ```
+
+With only `ring_topology` feeding `difficulty` so far, scores are lower than
+a full v0.1 (with stereochemical burden and fragment rarity also
+contributing) would produce for the same molecule.
 
 Every report also carries a `Provenance` block (schema version, rensei
 version, chematic version, ruleset version, config hash) so results are

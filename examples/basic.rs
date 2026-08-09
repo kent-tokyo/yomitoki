@@ -3,7 +3,7 @@ use rensei::{AnalysisConfig, analyze_smiles};
 fn main() {
     let config = AnalysisConfig::default();
 
-    for smiles in ["CCO", "c1ccccc1", "C1CC2CCC1C2"] {
+    for smiles in ["CCO", "c1ccccc1", "C1CC2CCC1C2", "CC(O)C(N)C(C)C(O)C(N)C"] {
         let report = analyze_smiles(smiles, &config).expect("valid SMILES");
 
         println!("=== {smiles} ===");

@@ -11,17 +11,17 @@ how confident that assessment is, and which structural factors
 dominate the result.
 
 > **Status: v0.1 in progress.** Only the `input_quality`/`applicability`,
-> `ring_topology`, and `size_topology` components are implemented so far.
-> See [`docs/architecture.md`](docs/architecture.md) for the current scope
-> and what's still missing.
+> `ring_topology`, `size_topology`, and `stereochemical_burden` components
+> are implemented so far. See [`docs/architecture.md`](docs/architecture.md)
+> for the current scope and what's still missing.
 
 ## What it does
 
 * Parses a molecule (via `chematic`) and returns a structured
   `SynthesizabilityReport`, not a single number.
 * Breaks the assessment down into independent components (ring topology,
-  size/topology, input quality/applicability today; stereochemical burden,
-  fragment rarity, and functional-group liabilities are planned).
+  size/topology, stereochemical burden, input quality/applicability today;
+  fragment rarity and functional-group liabilities are planned).
 * Separates **score** (synthesizability/difficulty), **confidence** (how
   reliable the judgment is), and **applicability** (whether the molecule is
   even in the model's domain) into distinct fields — a hard-to-make molecule
@@ -65,8 +65,8 @@ cargo run --example basic
 
 ## Report shape
 
-Actual output of `cargo run --example basic` for norbornane (`C1CC2CCC1C2`),
-current as of this component set:
+Actual output of `cargo run --example basic`, current as of this component
+set. Norbornane (`C1CC2CCC1C2`) exercises ring topology only:
 
 ```text
 Verdict: ModeratelyAccessible
@@ -76,9 +76,22 @@ Dominant penalties:
 1. Bridged ring system spanning 7 atoms — bridgehead connectivity typically increases synthetic difficulty.
 ```
 
-With only `ring_topology` and `size_topology` feeding `difficulty` so far,
-scores are lower than a full v0.1 (with stereochemical burden and fragment
-rarity also contributing) would produce for the same molecule.
+A stereocenter-dense fragment (`CC(O)C(N)C(C)C(O)C(N)C`) exercises both
+`stereochemical_burden` (difficulty) and applicability's independent
+confidence penalty for unspecified stereochemistry — note that difficulty
+and confidence move separately, not together:
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.78
+Confidence: 0.85
+Dominant penalties:
+1. 4 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
+2. Stereocenter density 0.33 is above the 0.25 threshold — stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal control.
+```
+
+With fragment rarity and functional-group liabilities still missing,
+scores overall remain lower than a full v0.1 would produce.
 
 Every report also carries a `Provenance` block (schema version, rensei
 version, chematic version, ruleset version, config hash) so results are
@@ -92,7 +105,7 @@ comparable across versions — see §16 of the design spec (`AGENTS.md`) and
 | `input_quality` / applicability | implemented |
 | `ring_topology` | implemented |
 | `size_topology` | implemented |
-| `stereochemical_burden` | not yet implemented |
+| `stereochemical_burden` | implemented (tetrahedral centers only — see Limitations) |
 | `fragment_rarity` | not yet implemented |
 | `functional_group_liability` | not yet implemented |
 
@@ -115,15 +128,20 @@ fabricated zero scores.
 
 ## Limitations
 
-* v0.1 only implements three of the six planned components (see table
+* v0.1 only implements four of the six planned components (see table
   above); `overall.difficulty`/`overall.synthesizability` currently reflect
-  ring topology and size/topology burden only.
+  ring topology, size/topology, and stereochemical burden only.
 * `size_topology`'s rotatable-bond term over-penalizes simple, commercially
   available long unbranched chains (many rotatable bonds, essentially no
   synthetic difficulty) — this is a known gap that fragment rarity (not yet
   implemented) is meant to correct by recognizing such fragments as
   common/precedented. See `docs/architecture.md`'s "Scoring direction"
   section.
+* `stereochemical_burden` only covers tetrahedral stereocenter count and
+  density. E/Z double-bond stereo, atropisomerism, contiguous stereocenter
+  runs, quaternary-carbon adjacency, and meso detection are not implemented
+  — E/Z specifically because chematic's E/Z assignment needs 2D coordinates
+  the SMILES-only pipeline doesn't have.
 * No fragment-rarity corpus exists yet, so novel/rare substructures are not
   detected.
 * `ApplicabilityReport.domain_distance` is always `None` until a calibration
@@ -151,6 +169,6 @@ No paper or citable release exists yet.
 ## Roadmap
 
 See `AGENTS.md` (development spec) for the full phased roadmap:
-stereochemical-burden and functional-group-liability components, fragment
-rarity, calibration against SAscore/RAscore/route-search outcomes, a CLI,
-and eventually Python bindings.
+fragment rarity, functional-group-liability component, calibration against
+SAscore/RAscore/route-search outcomes, a CLI, and eventually Python
+bindings.

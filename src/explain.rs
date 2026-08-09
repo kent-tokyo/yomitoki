@@ -33,6 +33,18 @@ pub(crate) fn render(code: FindingCode, evidence: FindingEvidence, atom_count: u
             evidence.value.unwrap_or(0.0) as usize,
             evidence.threshold.unwrap_or(0.0) as usize
         ),
+        FindingCode::StereoCenterCount => format!(
+            "{} tetrahedral stereocenter(s) (specified or unspecified) requiring \
+             synthetic control.",
+            evidence.value.unwrap_or(0.0) as usize
+        ),
+        FindingCode::StereoDensityHigh => format!(
+            "Stereocenter density {:.2} is above the {:.2} threshold — stereocenters \
+             are concentrated in a compact region, leaving little room for staged, \
+             orthogonal control.",
+            evidence.value.unwrap_or(0.0),
+            evidence.threshold.unwrap_or(0.0)
+        ),
         FindingCode::InputUnsupportedElement => format!(
             "Molecule contains {atom_count} atom(s) outside rensei's supported \
              element set."

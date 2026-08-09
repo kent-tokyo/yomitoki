@@ -85,6 +85,8 @@ pub enum FindingCode {
     RingMacrocycle,
     SizeLargeMolecularWeight,
     SizeHighRotatableBondCount,
+    StereoCenterCount,
+    StereoDensityHigh,
     InputUnsupportedElement,
     InputDisconnected,
     InputUnusualValence,

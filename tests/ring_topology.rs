@@ -89,28 +89,40 @@ fn dominant_penalties_are_ranked_by_actual_weight_not_evidence_magnitude() {
     // finding (weight 0.25, but with evidence.value = 10.0 — the ring
     // size). A naive sort by evidence magnitude would rank macrocycle
     // first; ranking must follow the actual contribution weight instead.
+    //
+    // Checks relative order (position of A before B), not an exact/closed
+    // finding list — this fixture's bridgehead atoms also happen to be
+    // stereocenters, so stereochemical_burden legitimately contributes a
+    // third, lower-weight finding here too; a closed-list assertion would
+    // make this test spuriously fragile to other components' correct
+    // behavior on the same fixture.
     let config = AnalysisConfig::default();
     let report = analyze_smiles("C1CC2CCCCCCCC1C2", &config).expect("valid SMILES");
 
     let codes: Vec<FindingCode> = report.dominant_penalties().iter().map(|c| c.code).collect();
-    assert_eq!(
-        codes,
-        vec![
-            FindingCode::RingBridgedComplexity,
-            FindingCode::RingMacrocycle
-        ],
+    let bridged_pos = codes
+        .iter()
+        .position(|c| *c == FindingCode::RingBridgedComplexity)
+        .expect("RingBridgedComplexity present");
+    let macrocycle_pos = codes
+        .iter()
+        .position(|c| *c == FindingCode::RingMacrocycle)
+        .expect("RingMacrocycle present");
+    assert!(
+        bridged_pos < macrocycle_pos,
         "dominant_penalties order: {codes:?}"
     );
+
     let contributions: Vec<f64> = report
         .dominant_penalties()
         .iter()
         .map(|c| c.contribution.value())
         .collect();
     assert!(
-        contributions[0] > contributions[1],
+        contributions[bridged_pos] > contributions[macrocycle_pos],
         "bridged contribution {} should exceed macrocycle contribution {}",
-        contributions[0],
-        contributions[1]
+        contributions[bridged_pos],
+        contributions[macrocycle_pos]
     );
 }
 

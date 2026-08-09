@@ -108,8 +108,8 @@ fn unimplemented_components_are_none_not_fabricated_zero() {
     let report = rensei::analyze_smiles("CCO", &config).expect("valid SMILES");
     assert!(report.components.ring_topology.is_some());
     assert!(report.components.size_topology.is_some());
+    assert!(report.components.stereochemical_burden.is_some());
     assert!(report.components.input_quality.is_some());
-    assert!(report.components.stereochemical_burden.is_none());
     assert!(report.components.fragment_rarity.is_none());
     assert!(report.components.functional_group_liability.is_none());
 }

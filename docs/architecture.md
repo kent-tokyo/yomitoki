@@ -88,39 +88,47 @@ SynthesizabilityReport
 ```
 
 `dominant_penalties` is sorted by each finding's actual contribution weight
-(from `ring_topology`/`size_topology`), not by `Finding.severity` — the two
-are deliberately independent axes (severity is a per-finding chemistry
-judgment; contribution is what actually fed `difficulty`). A `Severity::Low`
-finding can legitimately rank above a `Severity::High` one if its weight is
-larger.
+(from `ring_topology`/`size_topology`/`stereochemical_burden`), not by
+`Finding.severity` — the two are deliberately independent axes (severity is
+a per-finding chemistry judgment; contribution is what actually fed
+`difficulty`). A `Severity::Low` finding can legitimately rank above a
+`Severity::High` one if its weight is larger.
+
+`Finding.severity` is currently a fixed, author-assigned constant per
+`FindingCode` (set at the call site in each component, e.g.
+`Severity::Medium` for `StereoDensityHigh`) — no code in this crate reads it
+back. It is part of the public schema for forward compatibility (a future
+severity-aware consumer, or a v0.2 that derives it from evidence) but should
+not yet be treated as a calibrated signal.
 
 `ComponentScores` has all six fields from `AGENTS.md` §7
 (`size_topology`, `ring_topology`, `stereochemical_burden`, `fragment_rarity`,
 `functional_group_liability`, `input_quality`), each typed
-`Option<ComponentScore>`. `ring_topology`, `size_topology`, and
-`input_quality` are `Some` in v0.1; the rest are `None`. This is a
-deliberate choice over populating unimplemented ones with dummy zero
-scores — `None` says "not evaluated," a zero score would falsely say
-"evaluated, found no burden." Going from `Option` to always-`Some` later is
-additive; the reverse would be a breaking schema change, so starting with
-`Option` is also the safer long-term default.
+`Option<ComponentScore>`. `ring_topology`, `size_topology`,
+`stereochemical_burden`, and `input_quality` are `Some` in v0.1; the rest
+are `None`. This is a deliberate choice over populating unimplemented ones
+with dummy zero scores — `None` says "not evaluated," a zero score would
+falsely say "evaluated, found no burden." Going from `Option` to always-`Some`
+later is additive; the reverse would be a breaking schema change, so starting
+with `Option` is also the safer long-term default.
 
 `Verdict` (§7) defines all six variants (`LikelyAccessible`,
 `ModeratelyAccessible`, `Challenging`, `HighlyChallenging`, `Indeterminate`,
 `OutOfDomain`) for schema stability, marked `#[non_exhaustive]`. All six are
 reachable today (see `analyze::tests` for a unit test per branch): the four
-accessibility levels come from the weighted combination of `ring_topology`
-and `size_topology`'s normalized burden, `OutOfDomain` from applicability's
-hard-fail triggers, and `Indeterminate` when confidence falls below a
-strictness-dependent threshold without an outright hard fail.
+accessibility levels come from the weighted combination of
+`ring_topology`/`size_topology`/`stereochemical_burden`'s normalized burden,
+`OutOfDomain` from applicability's hard-fail triggers, and `Indeterminate`
+when confidence falls below a strictness-dependent threshold without an
+outright hard fail.
 
 `FindingCode` (§8.1) is `#[non_exhaustive]` and currently only defines the
-codes the three implemented components actually emit: `RingBridgedComplexity`,
+codes the four implemented components actually emit: `RingBridgedComplexity`,
 `RingSpiro`, `RingFusedDense`, `RingMacrocycle`, `SizeLargeMolecularWeight`,
-`SizeHighRotatableBondCount`, `InputUnsupportedElement`,
-`InputDisconnected`, `InputUnusualValence`, `InputTooLarge`. Codes for
-not-yet-implemented components (e.g. `STEREO_DENSITY_HIGH`, `FRAGMENT_RARE`)
-are added when those components are.
+`SizeHighRotatableBondCount`, `StereoCenterCount`, `StereoDensityHigh`,
+`InputUnsupportedElement`, `InputDisconnected`, `InputUnusualValence`,
+`InputTooLarge`. Codes for not-yet-implemented components (e.g.
+`FRAGMENT_RARE`) are added when those components are.
 
 Every finding's `explanation: String` is generated from its structured code +
 parameters (`explain.rs`), never authored by hand per instance — this keeps
@@ -140,7 +148,7 @@ output — aggregation happens once, centrally, in `analyze.rs`.
 * `synthesizability`: 1.0 = easy to make.
 * `difficulty`: 1.0 = hard to make.
 
-`difficulty` is a **weighted sum**, not a weighted average, of the two
+`difficulty` is a **weighted sum**, not a weighted average, of the three
 difficulty-contributing components' normalized scores — matching AGENTS.md
 §20's own formula (`difficulty = w_topology*topology + w_rings*ring_topology
 + ...`), which adds `w * normalized` terms directly rather than dividing by
@@ -149,15 +157,16 @@ the weight total:
 ```text
 difficulty = AGGREGATE_WEIGHT_RING_TOPOLOGY * ring_topology.normalized
            + AGGREGATE_WEIGHT_SIZE_TOPOLOGY * size_topology.normalized
+           + AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN * stereochemical_burden.normalized
 ```
 
 clamped to `0.0..=1.0` by `ProbabilityLikeScore::new` (weights don't need to
 sum to 1). Ring topology's weight is `1.0` — full pass-through — so a
-molecule with negligible size burden scores identically to the
-single-ring-topology-component model this crate started with; size
-contributes additively on top at a smaller weight, so it registers as extra
-burden without diluting a strong ring-topology signal when size itself is
-small. See `rules.rs` for the exact weights and the reasoning against a
+molecule with negligible size/stereo burden scores identically to the
+single-ring-topology-component model this crate started with; size and
+stereo contribute additively on top at smaller weights, so each registers as
+extra burden without diluting a strong ring-topology signal when it itself
+is small. See `rules.rs` for the exact weights and the reasoning against a
 normalized (divide-by-total) average.
 
 `synthesizability = 1.0 - difficulty`. This complementary relationship is a
@@ -184,9 +193,10 @@ difficulty to never be conflated — a structurally complex molecule is not
 automatically low-confidence; only actual input-quality/applicability
 problems lower confidence.
 
-`ring_topology`'s and `size_topology`'s own `ComponentScore.confidence` are
-both fixed at `1.0`: both are plain deterministic descriptor computations
-(`find_ring_families`, `molecular_weight`, `rotatable_bond_count`) for any
+`ring_topology`'s, `size_topology`'s, and `stereochemical_burden`'s own
+`ComponentScore.confidence` are all fixed at `1.0`: all three are plain
+deterministic descriptor computations (`find_ring_families`,
+`molecular_weight`, `rotatable_bond_count`, `stereo_completeness`) for any
 molecule that parsed and passed valence validation, so there's no additional
 uncertainty to express there yet. This will stop being a constant once a
 component with genuinely variable rule coverage (e.g. fragment rarity, which
@@ -231,8 +241,13 @@ break both determinism (§4.5) and cross-run provenance comparability (§4.6).
 Not implemented in v0.1 so far (tracked, not stubbed with fake data):
 
 * CLI (§15).
-* `stereochemical_burden`, `fragment_rarity`, `functional_group_liability`
-  components.
+* `fragment_rarity`, `functional_group_liability` components.
+* E/Z double-bond stereo, atropisomerism, contiguous stereocenter runs,
+  quaternary-carbon adjacency, meso detection — all named as candidate
+  `stereochemical_burden` indicators in §5.3, none implemented in this
+  slice (see `components/stereochemical_burden.rs` for why: chematic's
+  E/Z assignment needs 2D coordinates the SMILES-only pipeline doesn't
+  have; the rest are additive future work, not blocked on anything).
 * Simplification suggestions (§9) — `suggestions` is always an empty `Vec`.
 * Fragment corpus, model files, calibration, ML (§19, §28).
 * `ApplicabilityReport.domain_distance` — needs a calibration corpus that

@@ -6,7 +6,7 @@
 //! any constant below changes — it's recorded in every report's
 //! `Provenance`.
 
-pub const RULESET_VERSION: &str = "0.2.0";
+pub const RULESET_VERSION: &str = "0.3.0";
 
 // ---------------------------------------------------------------------------
 // Applicability
@@ -118,6 +118,38 @@ pub(crate) const SIZE_LARGE_MOLECULAR_WEIGHT_THRESHOLD: f64 = 500.0;
 pub(crate) const SIZE_HIGH_ROTATABLE_BOND_THRESHOLD: usize = 10;
 
 // ---------------------------------------------------------------------------
+// Stereochemical burden
+// ---------------------------------------------------------------------------
+
+/// Burden per tetrahedral stereocenter (specified or unspecified — the
+/// molecule needs the same synthetic control over its configuration either
+/// way; whether the input SMILES wrote it out is an input-quality/
+/// confidence concern, handled separately by the applicability component,
+/// not a difficulty concern).
+pub(crate) const STEREO_WEIGHT_PER_CENTER: f64 = 0.12;
+
+/// Multiplier on stereocenter density (`total_centers / heavy_atom_count`)
+/// — AGENTS.md §8.3's own worked example frames the concern as "three
+/// defined stereocenters within a compact eight-heavy-atom region," i.e.
+/// concentration, not raw count alone: the same center count in a much
+/// larger molecule leaves more room for orthogonal, staged control.
+pub(crate) const STEREO_WEIGHT_DENSITY: f64 = 0.6;
+
+/// Scale in the `normalized = 1 - exp(-raw / scale)` burden transform
+/// (AGENTS.md §5.1: burden should be non-linear).
+pub(crate) const STEREO_BURDEN_SCALE: f64 = 1.5;
+
+/// Stereocenter density above which a `StereoDensityHigh` finding is
+/// emitted. Chosen independently (not copied from AGENTS.md §8.2's
+/// worked-example value of 0.12, which pairs with an unspecified,
+/// differently-defined local density metric, not this whole-molecule
+/// `centers / heavy_atom_count` ratio — reusing that number without
+/// knowing what it actually measures would be false precision, not
+/// consistency). 0.25 means roughly one in every four heavy atoms is a
+/// stereocenter.
+pub(crate) const STEREO_DENSITY_FINDING_THRESHOLD: f64 = 0.25;
+
+// ---------------------------------------------------------------------------
 // Aggregation / verdict
 // ---------------------------------------------------------------------------
 
@@ -137,6 +169,7 @@ pub(crate) const SIZE_HIGH_ROTATABLE_BOND_THRESHOLD: usize = 10;
 /// lower verdict bucket by "diluting" the average.
 pub(crate) const AGGREGATE_WEIGHT_RING_TOPOLOGY: f64 = 1.0;
 pub(crate) const AGGREGATE_WEIGHT_SIZE_TOPOLOGY: f64 = 0.4;
+pub(crate) const AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN: f64 = 0.5;
 
 /// Below this confidence (and absent a hard applicability failure), the
 /// verdict is `Indeterminate` rather than a difficulty-based bucket.

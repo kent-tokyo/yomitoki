@@ -6,7 +6,7 @@
 
 use chematic::core::Molecule;
 
-use crate::components::{applicability, ring_topology, size_topology};
+use crate::components::{applicability, ring_topology, size_topology, stereochemical_burden};
 use crate::config::{AnalysisConfig, Strictness};
 use crate::error::RenseiError;
 use crate::report::{
@@ -14,7 +14,8 @@ use crate::report::{
     ProbabilityLikeScore, SynthesizabilityReport, Verdict,
 };
 use crate::rules::{
-    AGGREGATE_WEIGHT_RING_TOPOLOGY, AGGREGATE_WEIGHT_SIZE_TOPOLOGY, DIFFICULTY_CHALLENGING_MAX,
+    AGGREGATE_WEIGHT_RING_TOPOLOGY, AGGREGATE_WEIGHT_SIZE_TOPOLOGY,
+    AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN, DIFFICULTY_CHALLENGING_MAX,
     DIFFICULTY_LIKELY_ACCESSIBLE_MAX, DIFFICULTY_MODERATE_MAX, indeterminate_confidence_threshold,
 };
 
@@ -25,6 +26,7 @@ pub fn analyze(
     let applicability_outcome = applicability::compute(molecule, config);
     let ring_outcome = ring_topology::compute(molecule);
     let size_outcome = size_topology::compute(molecule);
+    let stereo_outcome = stereochemical_burden::compute(molecule);
 
     let mut findings: Vec<Finding> = Vec::new();
     findings.extend(applicability_outcome.findings);
@@ -32,6 +34,8 @@ pub fn analyze(
     findings.extend(ring_outcome.findings);
     let size_findings_offset = findings.len();
     findings.extend(size_outcome.findings);
+    let stereo_findings_offset = findings.len();
+    findings.extend(stereo_outcome.findings);
 
     // `ComponentScore.findings` were built as offsets into each
     // component's own finding list; rebase each difficulty component's
@@ -44,10 +48,15 @@ pub fn analyze(
     for finding_ref in &mut size_score.findings {
         finding_ref.0 += size_findings_offset;
     }
+    let mut stereo_score = stereo_outcome.score;
+    for finding_ref in &mut stereo_score.findings {
+        finding_ref.0 += stereo_findings_offset;
+    }
 
     let difficulty = ProbabilityLikeScore::new(
         AGGREGATE_WEIGHT_RING_TOPOLOGY * ring_score.normalized.value()
-            + AGGREGATE_WEIGHT_SIZE_TOPOLOGY * size_score.normalized.value(),
+            + AGGREGATE_WEIGHT_SIZE_TOPOLOGY * size_score.normalized.value()
+            + AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN * stereo_score.normalized.value(),
     );
     let synthesizability = ProbabilityLikeScore::new(1.0 - difficulty.value());
     let confidence = ConfidenceScore::new(applicability_outcome.score.confidence.value());
@@ -71,6 +80,7 @@ pub fn analyze(
     let mut dominant_penalties: Vec<Contribution> = Vec::new();
     dominant_penalties.extend(ring_outcome.contributions);
     dominant_penalties.extend(size_outcome.contributions);
+    dominant_penalties.extend(stereo_outcome.contributions);
     dominant_penalties.sort_by(|a, b| {
         b.contribution
             .value()
@@ -88,7 +98,7 @@ pub fn analyze(
     let components = ComponentScores {
         size_topology: Some(size_score),
         ring_topology: Some(ring_score),
-        stereochemical_burden: None,
+        stereochemical_burden: Some(stereo_score),
         fragment_rarity: None,
         functional_group_liability: None,
         input_quality: Some(applicability_outcome.score),

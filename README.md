@@ -237,6 +237,46 @@ claims certainty (`expected_effect` is always `MayReduceDifficulty`, never
 * **AiZynthFinder, ASKCOS, RENKIN** are route planners. YOMITOKI never
   generates a route.
 
+## Comparison with SAscore
+
+A minimum in-process comparison against `chematic::chem::sa_score` (Ertl &
+Schuffenhauer 2009) — the completion criterion in AGENTS.md §27. Not a
+calibration or accuracy claim: the two scores aren't fit against each other
+and measure different things (SAscore: fragment frequency + complexity
+penalty; YOMITOKI: structural burden, decomposed by component). Scales run
+in opposite directions and aren't rescaled onto a shared axis here — SAscore
+is `1` (easy) to `10` (hard); YOMITOKI's `difficulty` is `0.0` to `1.0`.
+
+Real output of `cargo run --example sa_score_comparison`:
+
+```text
+molecule                                sa_score      yomitoki_diff  verdict
+ethanol                                     3.45               0.01  LikelyAccessible
+benzene                                     2.40               0.10  LikelyAccessible
+norbornane (bridged)                        8.20               0.34  ModeratelyAccessible
+stereocenter-dense fragment                 8.32               0.27  ModeratelyAccessible
+epoxide                                     6.23               0.13  LikelyAccessible
+aspirin                                     4.67               0.27  ModeratelyAccessible
+paracetamol                                 4.56               0.24  LikelyAccessible
+caffeine (fused heterocycle)                4.94               0.29  ModeratelyAccessible
+acyl halide                                 6.62               0.09  LikelyAccessible
+cyclopropane (strained)                     3.94               0.13  LikelyAccessible
+nitrile                                     4.97               0.04  LikelyAccessible
+alanine (specified stereocenter)            3.55               0.14  LikelyAccessible
+bridged ring + several stereocenters       10.00               0.69  Challenging
+spiro ring system                           5.52               0.20  LikelyAccessible
+```
+
+The interesting rows are where the two diverge, not where they agree — a
+divergence isn't automatically a YOMITOKI bug. Acyl halide is the sharpest
+case: SAscore rates it `6.62` (fragment-uncommon), YOMITOKI rates it `0.09`
+(`LikelyAccessible`) — a small, cheap, extremely common acylating reagent
+with essentially no structural burden by YOMITOKI's own model. Aspirin
+(`4.67` vs. `0.27`) is the same shape as the Brenk-validity gap already
+described in Limitations. Where they broadly agree (caffeine, spiro,
+bridged-plus-stereo), that's not evidence either one is "correct" — neither
+has been validated against real synthesis outcomes yet.
+
 ## Limitations
 
 * v0.1 only implements five of the six planned components (see table
@@ -250,10 +290,33 @@ claims certainty (`expected_effect` is always `MayReduceDifficulty`, never
   common/precedented. See `docs/architecture.md`'s "Scoring direction"
   section.
 * `stereochemical_burden` only covers tetrahedral stereocenter count and
-  density. E/Z double-bond stereo, atropisomerism, contiguous stereocenter
-  runs, quaternary-carbon adjacency, and meso detection are not implemented
-  — E/Z specifically because chematic's E/Z assignment needs 2D coordinates
-  the SMILES-only pipeline doesn't have.
+  density. Investigated and still not implemented, each for a different
+  reason (see `docs/architecture.md` for the full evidence):
+  * E/Z double-bond stereo — chematic *can* assign E/Z directly from SMILES
+    `/`/`\` bond markers (no 2D coordinates needed, correcting an earlier,
+    inaccurate note here), but only for bonds the input SMILES already
+    marked. There's no detector for a stereogenic-but-*unspecified* double
+    bond the way tetrahedral centers have one, so a specified-only count
+    would measure how carefully the SMILES was written, not how many E/Z
+    centers exist — the same class of problem atropisomerism was rejected
+    for below, arriving a different way.
+  * Atropisomerism — chematic's `detect_atropisomers` was tested directly
+    and disqualified: it rates unsubstituted biphenyl as an atropisomer
+    when written `c1ccccc1-c2ccccc2` but not when written
+    `c1ccccc1c2ccccc2` (same molecule), and rates *para*-substituted
+    biphenyl identically to genuinely hindered *ortho*-substituted biphenyl.
+    Wrapping it would violate YOMITOKI's own atom-order/representation
+    invariance guarantee.
+  * Contiguous stereocenter runs, quaternary-carbon adjacency — both need
+    an atom-level list of stereocenter candidates (specified *and*
+    unspecified), which chematic doesn't expose (only aggregate counts).
+    Building that inside YOMITOKI would make this crate the owner of
+    stereocenter perception instead of a consumer of a validated chematic
+    primitive — a line every implemented component has stayed on the other
+    side of so far.
+  * Meso compound detection — needs graph automorphism / topological
+    symmetry classes; chematic has this internally
+    (`chematic-smiles::canonical_automorphism`) but doesn't expose it.
 * `functional_group_liability` covers reactive/unstable functional groups
   (chematic's Brenk et al. 2008 structural-alert set directly) and dense
   functionalization (distinct functional-group cluster count, via
@@ -339,5 +402,7 @@ No paper or citable release exists yet.
 
 ## Roadmap
 
-Remaining planned work: fragment rarity, calibration against
-SAscore/RAscore/route-search outcomes, and eventually Python bindings.
+Remaining planned work: fragment rarity, *calibration* against
+SAscore/RAscore/route-search outcomes (a minimum *comparison* against
+SAscore, not calibration, now exists — see above), and eventually Python
+bindings.

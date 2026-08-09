@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   region (known gap: fused/interconnected polyfunctional systems, e.g.
   glucose or penicillin V, collapse to a single cluster and don't register).
   `ruleset_version` bumped to 0.6.0.
+- `examples/sa_score_comparison.rs`: minimum in-process comparison against
+  `chematic::chem::sa_score` (Ertl & Schuffenhauer 2009), satisfying the
+  AGENTS.md §27 v0.1 completion criterion. Not a calibration/accuracy
+  claim — see `docs/architecture.md`'s "Comparison with SAscore" section.
+  No `ruleset_version` bump: no scoring thresholds or weights changed.
 - `analyze` / `analyze_smiles` entry points.
 - CI workflow (`.github/workflows/ci.yml`): fmt/clippy/doc, `cargo test`
   on Linux and macOS, MSRV (1.88) check, `cargo-deny` license/advisory

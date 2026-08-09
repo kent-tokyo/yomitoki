@@ -170,11 +170,41 @@ Dominant penalties:
 * **RAscore** 近似逆合成成功率。YOMITOKI 是 route-free 的,并解释其评估背后的结构性原因。
 * **AiZynthFinder、ASKCOS、RENKIN** 都是路线规划器。YOMITOKI 从不生成合成路线。
 
+## 与 SAscore 的比较
+
+针对 `chematic::chem::sa_score`(Ertl & Schuffenhauer 2009)的最小化进程内比较 — 这是 AGENTS.md §27 的一项完成标准。这不是校准或准确性声明:两个分数彼此并未做过拟合,衡量的也是不同的东西(SAscore:片段频率 + 复杂度惩罚;YOMITOKI:按组件分解的结构性负担)。两者的量表方向也相反 — SAscore 为 `1`(容易)到 `10`(困难),YOMITOKI 的 `difficulty` 为 `0.0` 到 `1.0`,这里没有将两者重新缩放到同一轴上。
+
+`cargo run --example sa_score_comparison` 的真实输出:
+
+```text
+molecule                                sa_score      yomitoki_diff  verdict
+ethanol                                     3.45               0.01  LikelyAccessible
+benzene                                     2.40               0.10  LikelyAccessible
+norbornane (bridged)                        8.20               0.34  ModeratelyAccessible
+stereocenter-dense fragment                 8.32               0.27  ModeratelyAccessible
+epoxide                                     6.23               0.13  LikelyAccessible
+aspirin                                     4.67               0.27  ModeratelyAccessible
+paracetamol                                 4.56               0.24  LikelyAccessible
+caffeine (fused heterocycle)                4.94               0.29  ModeratelyAccessible
+acyl halide                                 6.62               0.09  LikelyAccessible
+cyclopropane (strained)                     3.94               0.13  LikelyAccessible
+nitrile                                     4.97               0.04  LikelyAccessible
+alanine (specified stereocenter)            3.55               0.14  LikelyAccessible
+bridged ring + several stereocenters       10.00               0.69  Challenging
+spiro ring system                           5.52               0.20  LikelyAccessible
+```
+
+真正有意思的是两者出现分歧的行,而不是一致的行 — 分歧并不自动意味着 YOMITOKI 有 bug。最明显的例子是酰氯:SAscore 给出 `6.62`(片段少见),YOMITOKI 给出 `0.09`(`LikelyAccessible`)— 一种廉价、极为常见的酰化试剂,在 YOMITOKI 自身模型中几乎没有结构性负担。阿司匹林(`4.67` 对 `0.27`)与"局限性"中已经描述过的 Brenk 有效性缺口是同一种形状。两者大体一致的情况(咖啡因、螺环、桥环 + 多个立体中心)也不能证明其中任何一个是"正确的"— 二者都尚未针对真实合成结果进行过验证。
+
 ## 局限性
 
 * v0.1 目前仅实现了计划中六个组件里的五个(见上表);`overall.difficulty`/`overall.synthesizability` 目前仅反映 ring topology、size/topology、stereochemical burden 与 functional-group liability 带来的负担。
 * `size_topology` 中的可旋转键(rotatable bond)项会过度惩罚简单的、可商业购得的无支链长链分子(可旋转键很多,但合成难度几乎为零)— 这是一个已知的缺口,预计在 fragment rarity(尚未实现)将此类片段识别为常见/有先例的片段后得到纠正。详见 `docs/architecture.md` 的 "Scoring direction" 一节。
-* `stereochemical_burden` 仅覆盖四面体立体中心的数量与密度。E/Z 双键立体化学、atropisomerism、连续立体中心、季碳邻位效应,以及 meso 化合物检测均未实现 — 其中 E/Z 未实现的原因是:chematic 的 E/Z 判定需要 2D 坐标,而仅基于 SMILES 的处理流程中并不具备这些坐标。
+* `stereochemical_burden` 仅覆盖四面体立体中心的数量与密度。以下各项经过调查后仍未实现,原因各不相同(完整依据见 `docs/architecture.md`):
+  * E/Z 双键立体化学 — chematic 其实可以直接从 SMILES 的 `/`/`\` 键方向标记指定 E/Z(不需要 2D 坐标 — 此前这里的说法有误),但仅限于输入 SMILES 中实际标注过的键。目前没有类似四面体中心 `stereo_completeness` 那样的检测器,能识别"具有立体化学意义但未标注"的双键,因此仅统计已标注的双键,衡量的其实是 SMILES 书写得有多仔细,而非真实存在多少个 E/Z 中心 —— 这与下面 atropisomerism 被否决的原因属于同一类问题,只是以另一种方式出现。
+  * Atropisomerism — 直接测试了 chematic 的 `detect_atropisomers` 后予以否决:同一个分子写作 `c1ccccc1-c2ccccc2` 会被判定为 atropisomer,写作 `c1ccccc1c2ccccc2` 则不会,并且它把 *para* 位取代的联苯与真正受阻的 *ortho* 位取代联苯判定为相同结果。若直接包装使用,将违反 YOMITOKI 自身关于原子顺序/表示形式不变性的保证。
+  * 连续立体中心、季碳邻位效应 — 二者都需要一份原子级别的立体中心候选列表(包括已指定和未指定的),而 chematic 只公开了汇总计数。若在 YOMITOKI 内部自行实现,将使本 crate 从"使用已验证的 chematic primitive 的消费者"变为"立体中心感知本身的所有者"—— 这是迄今为止每一个已实现组件都未曾跨越的界线。
+  * meso 化合物检测 — 需要图自同构 / 拓扑对称类。chematic 内部拥有此能力(`chematic-smiles::canonical_automorphism`),但并未对外公开。
 * `functional_group_liability` 覆盖反应性/不稳定官能团(直接使用 chematic 的 Brenk et al. 2008 结构警示集)以及 dense functionalization(通过 chematic 的 Ertl 2017 `identify_functional_groups`,统计彼此独立的官能团簇数量)。相互不兼容的官能团组合与保护基压力均未实现 — 与上述两项不同,这两者在 chematic 中都没有可引用、已验证的 primitive 可供依赖,手工整理其中任何一项都恰好是 AGENTS.md 所警示的"过度泛化的、化学上薄弱的规则"。化学选择性负担、多官能对称性破坏,以及难以处理的氧化态组合也均未实现 — chematic 未提供任何氧化态相关 API,因此最后一项无法实现。Brenk 的规则集最初是作为药物化学筛选库的"可取性"过滤器验证的,而非合成难度信号,因此其中一些警示会对常见、廉价且有先例的官能团产生反应 — 例如阿司匹林会触发 4 条 Brenk 警示,并被判定为 `ModeratelyAccessible`,尽管它是极易合成的分子之一。这是一个与上述可旋转键问题形状相同的已知缺口,预计将通过同样的方式(实现 fragment rarity)得到纠正。dense functionalization 自身也有已知缺口:它统计的是拓扑上"互不相连"的官能团簇数量,因此一个紧密互联的多官能体系(例如葡萄糖成环的多个羟基,或稠环的 β-内酰胺)会收敛为单一簇 — 与只有一个普通官能团的分子计数相同。
 * 目前还没有 fragment-rarity 语料库,因此无法检测新颖/稀有的子结构。
 * 简化建议目前仅覆盖 `SuggestionCode` 6 种代码中的 3 种(桥环、macrocycle、立体中心密度)。其余 3 种缺少可用信号:季碳邻位关系尚未在任何地方计算;`brenk_matches_detailed` 按模式而非按出现次数合并原子,因此"移除多个相似反应性基团中的一个"无法定位具体是哪一次出现;"增加片段先例"则需要 fragment rarity,而该组件已被推迟实现。所有建议的置信度都是一个统一的固定常数(0.5),而非按建议代码区分 — 因为目前没有针对真实合成结果的校准数据。
@@ -218,4 +248,4 @@ yomitoki analyze "CCO"
 
 ## 路线图
 
-剩余计划:fragment rarity、针对 SAscore/RAscore/路线搜索结果的校准,以及未来的 Python 绑定。
+剩余计划:fragment rarity、针对 SAscore/RAscore/路线搜索结果的*校准*(与 SAscore 的最小化*比较*并非校准,已在上文实现),以及未来的 Python 绑定。

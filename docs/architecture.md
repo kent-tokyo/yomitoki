@@ -102,6 +102,7 @@ change across yomitoki's own test suite before and after the bump.)
 | Rotatable bond count | `chematic::chem::rotatable_bond_count(&Molecule) -> usize` |
 | Reactive/unstable functional groups | `chematic::chem::brenk_matches_detailed(&Molecule) -> Vec<(&'static str, Vec<AtomIdx>)>` (Brenk et al. 2008 structural alerts; an entry with an empty atom list means that alert's search was budget-cut, not a zero-atom match) |
 | Functional-group clustering | `chematic::chem::identify_functional_groups(&Molecule) -> Vec<FunctionalGroup>` (Ertl 2017; one entry per topologically connected heteroatom-containing environment) |
+| SAscore (comparison only, not used by any component) | `chematic::chem::sa_score(&Molecule) -> f64` (Ertl & Schuffenhauer 2009; `examples/sa_score_comparison.rs` only) |
 | SDF batch reading | `chematic::mol::SdfReader::new(&str) -> impl Iterator<Item = Result<(Molecule, MolMetadata), MolParseError>>` — CLI-only, gated on the `mol` feature |
 | SMILES-table batch reading | `chematic::mol::SmilesRecordReader::new(impl BufRead, SmilesReaderOptions) -> impl Iterator<Item = Result<MoleculeRecord, SmilesTableError>>` — CLI-only, gated on the `mol` feature |
 
@@ -385,17 +386,82 @@ strictness. See `analyze::tests` for the regression tests covering this.
 hasher is randomized per-process on recent Rust versions and would silently
 break both determinism and cross-run provenance comparability.
 
+## Comparison with SAscore
+
+AGENTS.md §27's v0.1 completion criterion ("SAscoreとの最低限の比較結果があ
+る") is satisfied by `examples/sa_score_comparison.rs`, an in-process
+comparison against `chematic::chem::sa_score` (Ertl & Schuffenhauer 2009).
+In-process because `sa_score` is a Rust function in a dependency yomitoki
+already has — AGENTS.md §13's `benchmarks/`-external-script requirement is
+about *competing Python implementations* (SYBA, SCScore, RAscore), which
+this isn't.
+
+Explicitly not a calibration or accuracy claim (that's separate, deferred,
+future work — see Non-goals below): the two scores aren't fit against each
+other, measure different things (SAscore: fragment frequency + complexity
+penalty; yomitoki: structural burden by component), and run on opposite
+scales (SAscore `1`..`10`, easy..hard; yomitoki `difficulty` `0.0`..`1.0`,
+easy..hard) that the example deliberately does not rescale onto a shared
+axis. The value of the comparison is in where the two diverge, not where
+they agree — e.g. acyl halide (SAscore `6.62`, yomitoki `0.09`
+`LikelyAccessible`) and aspirin (SAscore `4.67`, yomitoki `0.27`
+`ModeratelyAccessible`, the same Brenk-validity gap documented in "Scoring
+direction" above). Reused the 14-fixture corpus already in
+`tests/property_based.rs`'s fixed-molecule arm rather than inventing a
+second one.
+
 ## Non-goals / deferred
 
 Not implemented in v0.1 so far (tracked, not stubbed with fake data):
 
 * `fragment_rarity` component.
-* E/Z double-bond stereo, atropisomerism, contiguous stereocenter runs,
-  quaternary-carbon adjacency, meso detection — all candidate
-  `stereochemical_burden` indicators, none implemented in this slice (see
-  `components/stereochemical_burden.rs` for why: chematic's E/Z assignment
-  needs 2D coordinates the SMILES-only pipeline doesn't have; the rest are
-  additive future work, not blocked on anything).
+* Candidate `stereochemical_burden` indicators, each investigated and
+  rejected/deferred for a distinct, evidenced reason (round 12 — corrects
+  an earlier, inaccurate blanket "E/Z needs 2D coordinates" note):
+  * **E/Z double-bond stereo** — `chematic::chem::cip::assign_cip` (already
+    used elsewhere in this crate) assigns E/Z directly from SMILES `/`/`\`
+    bond-direction markers, no 2D coordinates required. But it only covers
+    bonds the input SMILES explicitly marked — there is no chematic
+    function analogous to `stereo_completeness` that detects a
+    stereogenic-but-*unspecified* double bond. A specified-only count would
+    violate `STEREO_WEIGHT_PER_CENTER`'s own stated policy (tetrahedral
+    centers burden "specified or unspecified... equally," since whether the
+    SMILES wrote it out is a confidence concern, not a difficulty one) —
+    `C/C=C/C` and `CC=CC` are the same compound and must not get different
+    difficulty. Deferred, not implemented as specified-only.
+  * **Atropisomerism** — `chematic::chem::detect_atropisomers` exists and
+    runs on a plain `Molecule` (no coordinates), but was empirically
+    disqualified before use: probed directly against `c1ccccc1-c2ccccc2`
+    (flagged as an atropisomer) vs. the same molecule written
+    `c1ccccc1c2ccccc2` (not flagged) — a real representation-dependence bug
+    that would violate `tests/determinism.rs`'s canonical-SMILES-invariance
+    guarantee if wrapped as-is. Also confirmed it rates *para*-substituted
+    biphenyl (not sterically hindered) identically to genuinely hindered
+    *ortho*-substituted biphenyl — the heuristic (`ipso-carbon degree >= 3`
+    on both sides) doesn't actually check substitution position. Not a
+    citable/validated primitive; not wrapped.
+  * **Contiguous stereocenter runs, quaternary-carbon adjacency** — both
+    need an atom-level list of stereocenter candidates (specified and
+    unspecified), which chematic only exposes as aggregate counts
+    (`stereo_completeness`). The underlying algorithm
+    (`simple_morgan_ranks` + 4-distinct-neighbor check, in
+    `chematic-perception::stereo_validation`) is `pub(crate)`-only —
+    reading and reimplementing it inside yomitoki was considered and
+    rejected: every implemented component to date *wraps* a public,
+    validated chematic function rather than reimplementing chematic-owned
+    perception logic; doing so here for two comparatively low-value
+    findings would make yomitoki the second, independent owner of
+    stereocenter-candidate detection, with its own correctness burden and
+    no chematic test suite backing it. Deferred until chematic exposes the
+    atom-level candidates itself.
+  * **Meso compound detection** — needs graph automorphism / topological
+    symmetry-class computation. chematic has this
+    (`chematic-smiles::canonical_automorphism`, `canonical_partition`) but
+    both modules are crate-internal (no `pub` items) — nothing to build on
+    from outside the crate, and implementing automorphism detection from
+    scratch in yomitoki carries the same "second independent owner of
+    perception logic" risk as the item above, at higher algorithmic
+    complexity.
 * Within `functional_group_liability`: dense functionalization is now
   implemented (`identify_functional_groups` cluster count — see the third
   known caveat above for its own gap). Still not implemented: mutually

@@ -131,6 +131,18 @@ Simplification suggestions (heuristic, not a guarantee):
 1. SimplifyMacrocyclicClosure: Macrocyclic ring closure is a direct driver of the ring_topology contribution to difficulty (large-ring closures often need high-dilution or specialized macrocyclization methods). A smaller ring or acyclic analog, if chemically acceptable, would remove this burden — this is a structural heuristic, not a guarantee.
 ```
 
+ペンタエリスリトールテトラアセテート(`CC(=O)OCC(COC(C)=O)(COC(C)=O)COC(C)=O`)は互いに隣接しない4つのエステル環境を持ち、`functional_group_liability`の「dense functionalization」シグナル(`chematic::chem::identify_functional_groups`、Ertl 2017クラスタリング)をBrenkアラートに加えて動かします:
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.81
+Confidence: 1.00
+Dominant penalties:
+1. 4 distinct functional-group environments (Ertl 2017 clustering), above the 3 threshold — multiple independent reactive/functional regions can compete for reagent selectivity and complicate protecting-group strategy.
+2. Reactive/unstable functional group detected: ketone alpha (Brenk et al. 2008 structural alert).
+3. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
+```
+
 fragment rarityが未実装のため、全体的なスコアは完全なv0.1が出す値より低めになります。
 
 各レポートには`Provenance`ブロック(schema version、yomitoki version、chematic version、ruleset version、config hash)も含まれており、バージョン間で結果を比較できるようになっています — `docs/architecture.md`を参照してください。
@@ -143,7 +155,7 @@ fragment rarityが未実装のため、全体的なスコアは完全なv0.1が�
 | `ring_topology` | 実装済み |
 | `size_topology` | 実装済み |
 | `stereochemical_burden` | 実装済み(四面体型立体中心のみ — 「制限事項」参照) |
-| `functional_group_liability` | 実装済み(反応性/不安定な官能基のみ — 「制限事項」参照) |
+| `functional_group_liability` | 実装済み(反応性/不安定な官能基 + dense functionalization — 「制限事項」参照) |
 | `fragment_rarity` | 未実装 |
 
 未実装のコンポーネントは`ComponentScores`内で`None`として表現され、捏造されたゼロスコアとしては表現されません。
@@ -163,7 +175,7 @@ fragment rarityが未実装のため、全体的なスコアは完全なv0.1が�
 * v0.1では計画されている6コンポーネントのうち5つを実装しています(上の表を参照)。`overall.difficulty`/`overall.synthesizability`は現状ring topology、size/topology、stereochemical burden、functional-group liabilityのみを反映しています。
 * `size_topology`のrotatable bond(回転可能結合)に関する項は、市販されている単純な非分岐長鎖分子(回転可能結合は多いが合成難易度はほぼゼロ)を過大評価します — これは既知のギャップであり、fragment rarity(未実装)がそうしたフラグメントを一般的/前例のあるものと認識することで補正される予定です。`docs/architecture.md`の "Scoring direction" セクションを参照してください。
 * `stereochemical_burden`は四面体型立体中心の個数と密度のみを対象としています。E/Z二重結合の立体化学、atropisomerism、連続する立体中心、四級炭素への隣接、meso化合物の検出は未実装です — E/Zについては特に、chematicのE/Z判定に2D座標が必要であり、SMILESのみのパイプラインではそれを持っていないためです。
-* `functional_group_liability`は反応性/不安定な官能基のみを対象とし、chematicのBrenk et al.(2008)構造アラートセットを直接ラップしています。相互に非互換な官能基の組み合わせ、密な官能基化、保護基の圧力、化学選択性の負担、多官能性の対称性破れ、難しい酸化状態の組み合わせは未実装です — 最後の項目はchematicに酸化状態関連のAPIが一切存在しないためです。Brenkのセットは医薬品化学のスクリーニングライブラリにおける「望ましさ」フィルターとして検証されたものであり、合成難易度のシグナルではありません。そのため一部のアラートは一般的で安価に前例のある官能基にも反応します — 例えばアスピリンは4つのBrenkアラートに引っかかり、合成が非常に容易であるにもかかわらず`ModeratelyAccessible`と判定されます。これは上記のrotatable bondの問題と同じ形の既知のギャップであり、同じ解決策(fragment rarityの実装)が見込まれています。
+* `functional_group_liability`は反応性/不安定な官能基(chematicのBrenk et al. 2008構造アラートセットを直接ラップ)と、dense functionalization(chematicのErtl 2017 `identify_functional_groups`による、互いに独立した官能基クラスターの個数)をカバーしています。相互に非互換な官能基の組み合わせと保護基の圧力は未実装です — 上記2つと異なり、どちらも根拠となる検証済みのprimitiveがchematicに存在せず、どちらかを手作業でキュレーションすることはAGENTS.mdが警告する「化学的に弱いルールを過剰に一般化する」ことそのものになってしまうためです。化学選択性の負担、多官能性の対称性破れ、難しい酸化状態の組み合わせも未実装です — 最後の項目はchematicに酸化状態関連のAPIが一切存在しないためです。Brenkのセットは医薬品化学のスクリーニングライブラリにおける「望ましさ」フィルターとして検証されたものであり、合成難易度のシグナルではありません。そのため一部のアラートは一般的で安価に前例のある官能基にも反応します — 例えばアスピリンは4つのBrenkアラートに引っかかり、合成が非常に容易であるにもかかわらず`ModeratelyAccessible`と判定されます。これは上記のrotatable bondの問題と同じ形の既知のギャップであり、同じ解決策(fragment rarityの実装)が見込まれています。dense functionalizationにも独自の既知のギャップがあります:位相的に「分離している」官能基クラスターの個数を数えるため、密に相互接続した多官能性システム(グルコースの水酸基が連なる環や、縮環したβ-ラクタムなど)は1つのクラスターに収束してしまい、官能基が1つしかない分子と同じカウントになります。
 * fragment-rarityのコーパスがまだ存在しないため、新規/希少な部分構造は検出されません。
 * 簡略化提案は`SuggestionCode`の6種類のうち3種類(架橋環、macrocycle、立体中心密度)のみをカバーしています。残る3種類には、まだ存在しない信号が必要です:四級炭素の隣接はどこでも計算されておらず、`brenk_matches_detailed`はパターンごとに原子をまとめて返す(occurrence単位ではない)ため「複数ある類似の反応性基のうち1つを除去する」提案がどの出現を指すべきか特定できず、「fragment precedentを増やす」にはfragment rarityが必要ですが後回しにされています。すべての提案のconfidenceは提案コードごとではなく一律の固定値(0.5)です — 実際の合成結果によるキャリブレーションが存在しないためです。
 * `ApplicabilityReport.domain_distance`は、キャリブレーション用コーパスが存在するまで(Phase 2以降)常に`None`です。

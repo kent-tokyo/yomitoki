@@ -6,7 +6,7 @@
 //! any constant below changes — it's recorded in every report's
 //! `Provenance`.
 
-pub const RULESET_VERSION: &str = "0.5.0";
+pub const RULESET_VERSION: &str = "0.6.0";
 
 // ---------------------------------------------------------------------------
 // Applicability
@@ -190,6 +190,43 @@ pub(crate) const FG_BURDEN_SCALE: f64 = 1.5;
 /// than the `1.0` used for a fully-resolved match, never dropped silently
 /// (AGENTS.md §4.4: abstain/flag uncertainty, don't hide it).
 pub(crate) const FG_CONFIDENCE_BUDGET_EXHAUSTED: f64 = 0.5;
+
+/// Burden per distinct functional-group cluster (`chematic::chem::
+/// identify_functional_groups`, Ertl 2017) *beyond the first*. AGENTS.md
+/// §5.5's "dense functionalization" example — a separate signal from Brenk
+/// alerts above: this counts ordinary, non-reactive functional groups too,
+/// on the theory that more independent reactive/functional regions in one
+/// molecule means more competing sites to sequence and protect, regardless
+/// of whether any single one is individually unstable.
+///
+/// The first cluster is free (weight applies to `count.saturating_sub(1)`):
+/// a single connected region of functionality is the ordinary case for any
+/// non-trivial organic molecule (confirmed empirically — ethanol, a bare
+/// C-O environment, is `count == 1`) and isn't itself evidence of anything
+/// unusual; burden only starts once a *second*, topologically disconnected
+/// region exists.
+///
+/// Known weak spot (documented, not hidden — same treatment as
+/// [`SIZE_WEIGHT_PER_ROTATABLE_BOND`]/[`FG_WEIGHT_PER_REACTIVE_GROUP`]'s
+/// caveats): `identify_functional_groups` merges adjacent/fused heteroatom
+/// environments into one cluster, so a single densely interconnected
+/// polyfunctional system undercounts here — confirmed empirically:
+/// glucose (6 hydroxyls in one ring) and penicillin V (β-lactam +
+/// thioether + amide + carboxylic acid + aryl ether, all ring-fused) both
+/// come back as `count == 1`, identical to ethanol. This term only catches
+/// *disconnected* multi-site burden (e.g. several separate esters on one
+/// scaffold), not fused polyfunctional density.
+pub(crate) const FG_WEIGHT_PER_DISTINCT_GROUP: f64 = 0.08;
+
+/// Distinct functional-group cluster count above which a
+/// `FunctionalGroupDense` finding is emitted. Chosen empirically: real
+/// drug-like molecules with ordinary functionality (aspirin, paracetamol)
+/// both come back at `count == 2`; a threshold of 3 (finding fires at 4+)
+/// sits comfortably above that baseline while still catching genuinely
+/// multi-site molecules (a tetraester on a branched core comes back at
+/// `count == 4`; five scattered, non-adjacent amines come back at
+/// `count == 5`).
+pub(crate) const FG_DENSE_GROUP_COUNT_THRESHOLD: usize = 3;
 
 // ---------------------------------------------------------------------------
 // Aggregation / verdict

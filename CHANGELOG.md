@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   density).
 - `functional_group_liability` component (reactive/unstable functional
   groups, via chematic's Brenk et al. 2008 structural-alert set).
+- `functional_group_liability` gained "dense functionalization": distinct
+  functional-group cluster count via chematic's `identify_functional_groups`
+  (Ertl 2017), new `FindingCode::FunctionalGroupDense`. The first cluster is
+  free; burden starts at a second, topologically disconnected functional
+  region (known gap: fused/interconnected polyfunctional systems, e.g.
+  glucose or penicillin V, collapse to a single cluster and don't register).
+  `ruleset_version` bumped to 0.6.0.
 - `analyze` / `analyze_smiles` entry points.
 - CI workflow (`.github/workflows/ci.yml`): fmt/clippy/doc, `cargo test`
   on Linux and macOS, MSRV (1.88) check, `cargo-deny` license/advisory

@@ -101,6 +101,7 @@ change across yomitoki's own test suite before and after the bump.)
 | Molecular weight | `chematic::chem::molecular_weight(&Molecule) -> f64` |
 | Rotatable bond count | `chematic::chem::rotatable_bond_count(&Molecule) -> usize` |
 | Reactive/unstable functional groups | `chematic::chem::brenk_matches_detailed(&Molecule) -> Vec<(&'static str, Vec<AtomIdx>)>` (Brenk et al. 2008 structural alerts; an entry with an empty atom list means that alert's search was budget-cut, not a zero-atom match) |
+| Functional-group clustering | `chematic::chem::identify_functional_groups(&Molecule) -> Vec<FunctionalGroup>` (Ertl 2017; one entry per topologically connected heteroatom-containing environment) |
 | SDF batch reading | `chematic::mol::SdfReader::new(&str) -> impl Iterator<Item = Result<(Molecule, MolMetadata), MolParseError>>` — CLI-only, gated on the `mol` feature |
 | SMILES-table batch reading | `chematic::mol::SmilesRecordReader::new(impl BufRead, SmilesReaderOptions) -> impl Iterator<Item = Result<MoleculeRecord, SmilesTableError>>` — CLI-only, gated on the `mol` feature |
 
@@ -186,12 +187,14 @@ falls below a strictness-dependent threshold without an outright hard fail.
 the five implemented components actually emit: `RingBridgedComplexity`,
 `RingSpiro`, `RingFusedDense`, `RingMacrocycle`, `SizeLargeMolecularWeight`,
 `SizeHighRotatableBondCount`, `StereoCenterCount`, `StereoDensityHigh`,
-`FunctionalGroupReactive`, `InputUnsupportedElement`, `InputDisconnected`,
-`InputUnusualValence`, `InputTooLarge`. `FunctionalGroupReactive` is
-deliberately one generic code covering every triggered Brenk alert rather
-than one code per alert (~105 patterns) — the specific alert name is
-carried in the finding's `explanation` text and the matched atoms in
-`atoms`, not in a proliferation of finding codes. Codes for
+`FunctionalGroupReactive`, `FunctionalGroupDense`, `InputUnsupportedElement`,
+`InputDisconnected`, `InputUnusualValence`, `InputTooLarge`.
+`FunctionalGroupReactive` is deliberately one generic code covering every
+triggered Brenk alert rather than one code per alert (~105 patterns) — the
+specific alert name is carried in the finding's `explanation` text and the
+matched atoms in `atoms`, not in a proliferation of finding codes.
+`FunctionalGroupDense` is a molecule-level finding (empty `atoms`, like
+`StereoDensityHigh`) rather than tied to one specific region. Codes for
 not-yet-implemented components (e.g. `FRAGMENT_RARE`) are added when those
 components are.
 
@@ -302,6 +305,20 @@ one of the most trivially synthesizable molecules there is; paracetamol
 similarly trips `phenol`/`aniline`/`secondary_amine`. Fragment rarity is
 expected to correct for this the same way, once it exists.
 
+**Third known caveat, different shape:** `functional_group_liability`'s
+"dense functionalization" term (`identify_functional_groups`) counts
+topologically *disconnected* functional-group clusters, since Ertl's
+algorithm merges any heteroatom-adjacent atoms into one connected
+component. Confirmed empirically: glucose (6 hydroxyls on one ring) and
+penicillin V (β-lactam + thioether + amide + carboxylic acid + aryl ether,
+all ring-fused) both come back as a single cluster — identical in count to
+ethanol's lone C-O group. This term only catches *disconnected* multi-site
+burden (e.g. several separate esters on one branched core); it has no
+substitute-fix planned (unlike the two caveats above, this isn't a
+fragment-rarity gap — it's an inherent property of connected-component
+clustering as an operationalization of "how many independent reactive
+regions require separate synthetic handling").
+
 ## Confidence contract
 
 `confidence` comes entirely from the `input_quality`/applicability
@@ -379,16 +396,22 @@ Not implemented in v0.1 so far (tracked, not stubbed with fake data):
   `components/stereochemical_burden.rs` for why: chematic's E/Z assignment
   needs 2D coordinates the SMILES-only pipeline doesn't have; the rest are
   additive future work, not blocked on anything).
-* Within `functional_group_liability`: mutually incompatible functional-
-  group combinations, dense functionalization, protecting-group pressure,
-  chemoselectivity burden, polyfunctional symmetry breaking, multiple-
-  similar-reactive-site counting, and difficult oxidation-state
-  combinations — none implemented in this slice. The oxidation-state one
-  specifically is blocked on chematic exposing no oxidation-state API at
-  all (confirmed absent, not a scope choice); the rest are additive future
-  work on top of the primitives chematic already provides
-  (`identify_functional_groups` for FG clustering/density,
-  `chematic::smarts` for anything custom).
+* Within `functional_group_liability`: dense functionalization is now
+  implemented (`identify_functional_groups` cluster count — see the third
+  known caveat above for its own gap). Still not implemented: mutually
+  incompatible functional-group combinations and protecting-group
+  pressure — unlike Brenk (2008) and Ertl (2017), which the two
+  implemented liabilities wrap directly, neither has a citable, validated
+  primitive to build on (chematic exposes none), and hand-curating either
+  would be exactly the "chemically weak rules, over-generalized" AGENTS.md
+  §5.5 warns against. Also not implemented: chemoselectivity burden,
+  polyfunctional symmetry breaking, multiple-similar-reactive-site
+  counting, and difficult oxidation-state combinations. The oxidation-state
+  one specifically is blocked on chematic exposing no oxidation-state API
+  at all (confirmed absent, not a scope choice); multiple-similar-
+  reactive-site counting is blocked on `brenk_matches_detailed` unioning
+  atoms per pattern rather than per occurrence; the rest are additive
+  future work, contingent on a citable source turning up.
 * Simplification suggestions — 3 of `SuggestionCode`'s 6 variants
   (`ReduceAdjacentQuaternaryCenters`, `RemoveSimilarReactiveGroup`,
   `IncreaseFragmentPrecedent`) are not reachable yet; see "Simplification

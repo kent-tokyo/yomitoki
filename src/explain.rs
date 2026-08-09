@@ -70,6 +70,13 @@ pub(crate) fn render(
                 )
             }
         }
+        FindingCode::FunctionalGroupDense => format!(
+            "{} distinct functional-group environments (Ertl 2017 clustering), above the \
+             {} threshold — multiple independent reactive/functional regions can compete \
+             for reagent selectivity and complicate protecting-group strategy.",
+            evidence.value.unwrap_or(0.0) as usize,
+            evidence.threshold.unwrap_or(0.0) as usize
+        ),
         FindingCode::InputUnsupportedElement => format!(
             "Molecule contains {atom_count} atom(s) outside yomitoki's supported \
              element set."

@@ -9,22 +9,36 @@
 //! `strained_ring_three`/`strained_ring_four`, covering §5.5's "strained
 //! motifs" example incidentally, at no extra implementation cost.
 //!
+//! Also covers "dense functionalization" (AGENTS.md §5.5): distinct
+//! functional-group cluster count via `chematic::chem::
+//! identify_functional_groups` (Ertl 2017 FG clustering) — see
+//! `rules::FG_WEIGHT_PER_DISTINCT_GROUP` for the scoring rationale and its
+//! documented weak spot.
+//!
 //! Not covered in v0.1 (documented, not silently missing): mutually
-//! incompatible functional-group combinations, dense functionalization,
-//! protecting-group pressure, chemoselectivity burden, polyfunctional
-//! symmetry breaking, multiple-similar-reactive-site counting, and
-//! difficult oxidation-state combinations — chematic has no oxidation-state
-//! API (confirmed absent from `chematic-chem`/`chematic-perception`) and no
-//! functional-group-density metric wired in here yet.
+//! incompatible functional-group combinations and protecting-group
+//! pressure — chematic has no reactivity/incompatibility-matrix or
+//! protecting-group API to build on (confirmed absent), and AGENTS.md §5.5
+//! explicitly warns against over-generalizing chemically weak, hand-curated
+//! rules ("化学的に弱いルールを過剰に一般化しない"), which is what either would
+//! require without a citable, validated source the way Brenk (2008) and
+//! Ertl (2017) exist for the two liabilities this component does cover.
+//! Also not covered: chemoselectivity burden, polyfunctional symmetry
+//! breaking, multiple-similar-reactive-site counting, and difficult
+//! oxidation-state combinations — chematic has no oxidation-state API
+//! (confirmed absent from `chematic-chem`/`chematic-perception`).
 
-use chematic::chem::brenk_matches_detailed;
+use chematic::chem::{brenk_matches_detailed, identify_functional_groups};
 use chematic::core::Molecule;
 
 use crate::report::{
     AtomIndex, ComponentScore, Contribution, Finding, FindingCode, FindingEvidence, FindingRef,
     ProbabilityLikeScore, Severity, finite_or_zero,
 };
-use crate::rules::{FG_BURDEN_SCALE, FG_CONFIDENCE_BUDGET_EXHAUSTED, FG_WEIGHT_PER_REACTIVE_GROUP};
+use crate::rules::{
+    FG_BURDEN_SCALE, FG_CONFIDENCE_BUDGET_EXHAUSTED, FG_DENSE_GROUP_COUNT_THRESHOLD,
+    FG_WEIGHT_PER_DISTINCT_GROUP, FG_WEIGHT_PER_REACTIVE_GROUP,
+};
 
 pub(crate) struct FunctionalGroupLiabilityOutcome {
     pub(crate) score: ComponentScore,
@@ -79,7 +93,34 @@ pub(crate) fn compute(mol: &Molecule) -> FunctionalGroupLiabilityOutcome {
         });
     }
 
-    let raw = finite_or_zero(FG_WEIGHT_PER_REACTIVE_GROUP * alerts.len() as f64);
+    let groups = identify_functional_groups(mol);
+    // The first cluster is free — see FG_WEIGHT_PER_DISTINCT_GROUP's doc for
+    // why burden only starts at a second, disconnected functional region.
+    let dense_excess = groups.len().saturating_sub(1);
+    let dense_weight = finite_or_zero(FG_WEIGHT_PER_DISTINCT_GROUP * dense_excess as f64);
+    if groups.len() > FG_DENSE_GROUP_COUNT_THRESHOLD {
+        let evidence = FindingEvidence {
+            value: Some(groups.len() as f64),
+            threshold: Some(FG_DENSE_GROUP_COUNT_THRESHOLD as f64),
+        };
+        let explanation =
+            crate::explain::render(FindingCode::FunctionalGroupDense, evidence, 0, None);
+        findings.push(Finding {
+            code: FindingCode::FunctionalGroupDense,
+            severity: Severity::Low,
+            confidence: ProbabilityLikeScore::new(1.0),
+            atoms: Vec::new(),
+            evidence,
+            explanation: explanation.clone(),
+        });
+        contributions.push(Contribution {
+            code: FindingCode::FunctionalGroupDense,
+            name: explanation,
+            contribution: ProbabilityLikeScore::new(dense_weight),
+        });
+    }
+
+    let raw = finite_or_zero(FG_WEIGHT_PER_REACTIVE_GROUP * alerts.len() as f64 + dense_weight);
     // Non-linear burden (AGENTS.md §5.1), same saturating transform as the
     // other components.
     let normalized = ProbabilityLikeScore::new(1.0 - (-raw / FG_BURDEN_SCALE).exp());

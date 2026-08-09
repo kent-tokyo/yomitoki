@@ -131,6 +131,18 @@ Simplification suggestions (heuristic, not a guarantee):
 1. SimplifyMacrocyclicClosure: Macrocyclic ring closure is a direct driver of the ring_topology contribution to difficulty (large-ring closures often need high-dilution or specialized macrocyclization methods). A smaller ring or acyclic analog, if chemically acceptable, would remove this burden — this is a structural heuristic, not a guarantee.
 ```
 
+季戊四醇四乙酸酯(`CC(=O)OCC(COC(C)=O)(COC(C)=O)COC(C)=O`)拥有 4 个互不相邻的酯基环境,在 Brenk 警示之外,还会触发 `functional_group_liability` 的 "dense functionalization" 信号(`chematic::chem::identify_functional_groups`,Ertl 2017 聚类):
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.81
+Confidence: 1.00
+Dominant penalties:
+1. 4 distinct functional-group environments (Ertl 2017 clustering), above the 3 threshold — multiple independent reactive/functional regions can compete for reagent selectivity and complicate protecting-group strategy.
+2. Reactive/unstable functional group detected: ketone alpha (Brenk et al. 2008 structural alert).
+3. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
+```
+
 由于 fragment rarity 仍未实现,总体分数仍会低于完整版 v0.1 给出的结果。
 
 每份报告还包含一个 `Provenance` 区块(schema 版本、yomitoki 版本、chematic 版本、ruleset 版本、config hash),使不同版本之间的结果具有可比性 — 详见 `docs/architecture.md`。
@@ -143,7 +155,7 @@ Simplification suggestions (heuristic, not a guarantee):
 | `ring_topology` | 已实现 |
 | `size_topology` | 已实现 |
 | `stereochemical_burden` | 已实现(仅四面体立体中心 — 见"局限性") |
-| `functional_group_liability` | 已实现(仅反应性/不稳定官能团 — 见"局限性") |
+| `functional_group_liability` | 已实现(反应性/不稳定官能团 + dense functionalization — 见"局限性") |
 | `fragment_rarity` | 尚未实现 |
 
 尚未实现的组件在 `ComponentScores` 中显示为 `None`,而不是伪造的零分。
@@ -163,7 +175,7 @@ Simplification suggestions (heuristic, not a guarantee):
 * v0.1 目前仅实现了计划中六个组件里的五个(见上表);`overall.difficulty`/`overall.synthesizability` 目前仅反映 ring topology、size/topology、stereochemical burden 与 functional-group liability 带来的负担。
 * `size_topology` 中的可旋转键(rotatable bond)项会过度惩罚简单的、可商业购得的无支链长链分子(可旋转键很多,但合成难度几乎为零)— 这是一个已知的缺口,预计在 fragment rarity(尚未实现)将此类片段识别为常见/有先例的片段后得到纠正。详见 `docs/architecture.md` 的 "Scoring direction" 一节。
 * `stereochemical_burden` 仅覆盖四面体立体中心的数量与密度。E/Z 双键立体化学、atropisomerism、连续立体中心、季碳邻位效应,以及 meso 化合物检测均未实现 — 其中 E/Z 未实现的原因是:chematic 的 E/Z 判定需要 2D 坐标,而仅基于 SMILES 的处理流程中并不具备这些坐标。
-* `functional_group_liability` 仅覆盖反应性/不稳定官能团,直接使用 chematic 的 Brenk et al.(2008)结构警示集。相互不兼容的官能团组合、密集官能化、保护基压力、化学选择性负担、多官能对称性破坏,以及难以处理的氧化态组合均未实现 — chematic 未提供任何氧化态相关 API,因此最后一项无法实现。Brenk 的规则集最初是作为药物化学筛选库的"可取性"过滤器验证的,而非合成难度信号,因此其中一些警示会对常见、廉价且有先例的官能团产生反应 — 例如阿司匹林会触发 4 条 Brenk 警示,并被判定为 `ModeratelyAccessible`,尽管它是极易合成的分子之一。这是一个与上述可旋转键问题形状相同的已知缺口,预计将通过同样的方式(实现 fragment rarity)得到纠正。
+* `functional_group_liability` 覆盖反应性/不稳定官能团(直接使用 chematic 的 Brenk et al. 2008 结构警示集)以及 dense functionalization(通过 chematic 的 Ertl 2017 `identify_functional_groups`,统计彼此独立的官能团簇数量)。相互不兼容的官能团组合与保护基压力均未实现 — 与上述两项不同,这两者在 chematic 中都没有可引用、已验证的 primitive 可供依赖,手工整理其中任何一项都恰好是 AGENTS.md 所警示的"过度泛化的、化学上薄弱的规则"。化学选择性负担、多官能对称性破坏,以及难以处理的氧化态组合也均未实现 — chematic 未提供任何氧化态相关 API,因此最后一项无法实现。Brenk 的规则集最初是作为药物化学筛选库的"可取性"过滤器验证的,而非合成难度信号,因此其中一些警示会对常见、廉价且有先例的官能团产生反应 — 例如阿司匹林会触发 4 条 Brenk 警示,并被判定为 `ModeratelyAccessible`,尽管它是极易合成的分子之一。这是一个与上述可旋转键问题形状相同的已知缺口,预计将通过同样的方式(实现 fragment rarity)得到纠正。dense functionalization 自身也有已知缺口:它统计的是拓扑上"互不相连"的官能团簇数量,因此一个紧密互联的多官能体系(例如葡萄糖成环的多个羟基,或稠环的 β-内酰胺)会收敛为单一簇 — 与只有一个普通官能团的分子计数相同。
 * 目前还没有 fragment-rarity 语料库,因此无法检测新颖/稀有的子结构。
 * 简化建议目前仅覆盖 `SuggestionCode` 6 种代码中的 3 种(桥环、macrocycle、立体中心密度)。其余 3 种缺少可用信号:季碳邻位关系尚未在任何地方计算;`brenk_matches_detailed` 按模式而非按出现次数合并原子,因此"移除多个相似反应性基团中的一个"无法定位具体是哪一次出现;"增加片段先例"则需要 fragment rarity,而该组件已被推迟实现。所有建议的置信度都是一个统一的固定常数(0.5),而非按建议代码区分 — 因为目前没有针对真实合成结果的校准数据。
 * 在校准语料库出现之前(Phase 2 及以后),`ApplicabilityReport.domain_distance` 始终为 `None`。

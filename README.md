@@ -179,6 +179,22 @@ Simplification suggestions (heuristic, not a guarantee):
 1. SimplifyMacrocyclicClosure: Macrocyclic ring closure is a direct driver of the ring_topology contribution to difficulty (large-ring closures often need high-dilution or specialized macrocyclization methods). A smaller ring or acyclic analog, if chemically acceptable, would remove this burden — this is a structural heuristic, not a guarantee.
 ```
 
+Pentaerythritol tetraacetate (`CC(=O)OCC(COC(C)=O)(COC(C)=O)COC(C)=O`) has 4
+distinct, non-adjacent ester environments and exercises
+`functional_group_liability`'s "dense functionalization" signal
+(`chematic::chem::identify_functional_groups`, Ertl 2017 clustering) on top
+of its Brenk alerts:
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.81
+Confidence: 1.00
+Dominant penalties:
+1. 4 distinct functional-group environments (Ertl 2017 clustering), above the 3 threshold — multiple independent reactive/functional regions can compete for reagent selectivity and complicate protecting-group strategy.
+2. Reactive/unstable functional group detected: ketone alpha (Brenk et al. 2008 structural alert).
+3. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
+```
+
 With fragment rarity still missing, scores overall remain lower than a
 full v0.1 would produce.
 
@@ -194,7 +210,7 @@ comparable across versions — see `docs/architecture.md`.
 | `ring_topology` | implemented |
 | `size_topology` | implemented |
 | `stereochemical_burden` | implemented (tetrahedral centers only — see Limitations) |
-| `functional_group_liability` | implemented (reactive/unstable groups only — see Limitations) |
+| `functional_group_liability` | implemented (reactive/unstable groups + dense functionalization — see Limitations) |
 | `fragment_rarity` | not yet implemented |
 
 Unimplemented components appear as `None` in `ComponentScores`, not as
@@ -238,19 +254,28 @@ claims certainty (`expected_effect` is always `MayReduceDifficulty`, never
   runs, quaternary-carbon adjacency, and meso detection are not implemented
   — E/Z specifically because chematic's E/Z assignment needs 2D coordinates
   the SMILES-only pipeline doesn't have.
-* `functional_group_liability` only covers reactive/unstable functional
-  groups, via chematic's Brenk et al. (2008) structural-alert set directly.
-  Mutually incompatible functional-group combinations, dense
-  functionalization, protecting-group pressure, chemoselectivity burden,
-  polyfunctional symmetry breaking, and difficult oxidation-state
-  combinations are not implemented — chematic exposes no oxidation-state
-  API to build the last one on. Brenk's set was validated as a med-chem
-  screening-library desirability filter, not a synthetic-difficulty
-  signal, so several of its alerts fire on common, cheaply-precedented
-  groups — aspirin, for example, trips four Brenk alerts and lands at
-  `ModeratelyAccessible` despite being trivially synthesizable. This is
-  a known gap with the same shape and expected fix as the rotatable-bond
-  one above (fragment rarity, once implemented).
+* `functional_group_liability` covers reactive/unstable functional groups
+  (chematic's Brenk et al. 2008 structural-alert set directly) and dense
+  functionalization (distinct functional-group cluster count, via
+  chematic's Ertl 2017 `identify_functional_groups`). Mutually incompatible
+  functional-group combinations and protecting-group pressure are not
+  implemented — unlike the two liabilities above, neither has a citable,
+  validated primitive to build on (chematic exposes none), and hand-curating
+  either would be exactly the "chemically weak rules, over-generalized"
+  AGENTS.md warns against. Chemoselectivity burden, polyfunctional symmetry
+  breaking, and difficult oxidation-state combinations are also not
+  implemented — chematic exposes no oxidation-state API to build the last
+  one on. Brenk's set was validated as a med-chem screening-library
+  desirability filter, not a synthetic-difficulty signal, so several of its
+  alerts fire on common, cheaply-precedented groups — aspirin, for example,
+  trips four Brenk alerts and lands at `ModeratelyAccessible` despite being
+  trivially synthesizable. This is a known gap with the same shape and
+  expected fix as the rotatable-bond one above (fragment rarity, once
+  implemented). Dense functionalization has its own known gap: it counts
+  topologically *disconnected* functional-group clusters, so a single
+  densely interconnected polyfunctional system (e.g. glucose's ring of
+  hydroxyls, or a fused β-lactam) collapses to one cluster — identical in
+  count to a molecule with a single, ordinary functional group.
 * No fragment-rarity corpus exists yet, so novel/rare substructures are not
   detected.
 * Simplification suggestions only cover 3 of `SuggestionCode`'s 6 variants

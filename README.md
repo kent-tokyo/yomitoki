@@ -198,6 +198,23 @@ Dominant penalties:
 3. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
 ```
 
+Alaninate (`C[C@@H](N)C(=O)[O-]`, deprotonated alanine) has a specified
+stereocenter *and* a negatively charged atom — the latter is a known
+chematic bug ([#267](https://github.com/kent-tokyo/chematic/issues/267)):
+stereo analysis is safely skipped rather than crashing or guessing, and
+confidence drops accordingly, distinctly from the ordinary "unspecified
+stereocenter" case:
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.92
+Confidence: 0.60
+Dominant penalties:
+1. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
+2. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
+3. Stereo analysis could not be run for this molecule: it contains a negatively charged atom, which triggers an arithmetic-overflow bug in chematic's stereo perception (panics in debug builds, produces an unverified result in release builds — see chematic issue #267). Stereocenter count/density and stereo completeness are unavailable, not verified to be zero/complete.
+```
+
 With fragment rarity still missing, scores overall remain lower than a
 full v0.1 would produce.
 
@@ -286,6 +303,14 @@ has been validated against real synthesis outcomes yet.
   above); `overall.difficulty`/`overall.synthesizability` currently reflect
   ring topology, size/topology, stereochemical burden, and functional-group
   liability only.
+* Stereo analysis (both `stereo_complete` and all of `stereochemical_burden`)
+  cannot run at all for a molecule containing a negatively charged atom
+  (any carboxylate, sulfonate, phosphate, or other anion) — a real
+  chematic bug ([#267](https://github.com/kent-tokyo/chematic/issues/267)),
+  not a design choice. YOMITOKI never crashes or guesses on this (see
+  `ApplicabilityReport.stereo_uncheckable` and the
+  `StereoAnalysisSkipped` finding), but genuinely has no stereo signal for
+  such molecules until it's fixed upstream.
 * `size_topology`'s rotatable-bond term over-penalizes simple, commercially
   available long unbranched chains (many rotatable bonds, essentially no
   synthetic difficulty) — this is a known gap that fragment rarity (not yet

@@ -83,6 +83,31 @@ fn high_density_molecule_triggers_density_finding() {
 }
 
 #[test]
+fn negatively_charged_atom_does_not_panic_and_reports_zero_with_a_finding() {
+    // Regression test for a real bug: chematic's stereo_completeness
+    // overflows (panics in debug builds) on any negatively charged atom
+    // (chematic issue #267). This must not panic, must not silently claim
+    // zero stereocenters, and must carry a finding saying why.
+    let config = AnalysisConfig::default();
+    let report = analyze_smiles("CC(=O)[O-]", &config).expect("acetate");
+    assert_eq!(
+        report
+            .components
+            .stereochemical_burden
+            .expect("stereochemical_burden always runs")
+            .normalized
+            .value(),
+        0.0
+    );
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|f| f.code == FindingCode::StereoAnalysisSkipped)
+    );
+}
+
+#[test]
 fn molecule_without_stereocenters_triggers_no_stereo_findings() {
     let config = AnalysisConfig::default();
     let report = analyze_smiles("C1CC2CCC1C2", &config).expect("norbornane"); // bridged, achiral

@@ -144,6 +144,18 @@ Dominant penalties:
 3. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
 ```
 
+丙氨酸阴离子(`C[C@@H](N)C(=O)[O-]`,去质子化丙氨酸)同时具有一个已指定的立体中心*和*一个带负电荷的原子 — 后者是 chematic 的一个已知 bug([#267](https://github.com/kent-tokyo/chematic/issues/267))。程序会安全地跳过立体分析,而不是崩溃或瞎猜,并相应地降低置信度,与"未指定立体中心"的情形明确区分开:
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.92
+Confidence: 0.60
+Dominant penalties:
+1. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
+2. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
+3. Stereo analysis could not be run for this molecule: it contains a negatively charged atom, which triggers an arithmetic-overflow bug in chematic's stereo perception (panics in debug builds, produces an unverified result in release builds — see chematic issue #267). Stereocenter count/density and stereo completeness are unavailable, not verified to be zero/complete.
+```
+
 由于 fragment rarity 仍未实现,总体分数仍会低于完整版 v0.1 给出的结果。
 
 每份报告还包含一个 `Provenance` 区块(schema 版本、yomitoki 版本、chematic 版本、ruleset 版本、config hash),使不同版本之间的结果具有可比性 — 详见 `docs/architecture.md`。
@@ -200,6 +212,7 @@ spiro ring system                           5.52               0.20  LikelyAcces
 ## 局限性
 
 * v0.1 目前仅实现了计划中六个组件里的五个(见上表);`overall.difficulty`/`overall.synthesizability` 目前仅反映 ring topology、size/topology、stereochemical burden 与 functional-group liability 带来的负担。
+* 对于含有带负电荷原子(羧酸根、磺酸根、磷酸根等阴离子)的分子,立体分析(`stereo_complete` 以及整个 `stereochemical_burden`)完全无法运行 — 这是 chematic 的真实 bug([#267](https://github.com/kent-tokyo/chematic/issues/267)),不是设计选择。YOMITOKI 对此绝不会崩溃或瞎猜(参见 `ApplicabilityReport.stereo_uncheckable` 与 `StereoAnalysisSkipped` finding),但在上游修复之前,对这类分子确实完全没有立体化学信号。
 * `size_topology` 中的可旋转键(rotatable bond)项会过度惩罚简单的、可商业购得的无支链长链分子(可旋转键很多,但合成难度几乎为零)— 这是一个已知的缺口,预计在 fragment rarity(尚未实现)将此类片段识别为常见/有先例的片段后得到纠正。详见 `docs/architecture.md` 的 "Scoring direction" 一节。
 * `stereochemical_burden` 仅覆盖四面体立体中心的数量与密度。以下各项经过调查后仍未实现,原因各不相同(完整依据见 `docs/architecture.md`):
   * E/Z 双键立体化学 — chematic 其实可以直接从 SMILES 的 `/`/`\` 键方向标记指定 E/Z(不需要 2D 坐标 — 此前这里的说法有误),但仅限于输入 SMILES 中实际标注过的键。目前没有类似四面体中心 `stereo_completeness` 那样的检测器,能识别"具有立体化学意义但未标注"的双键,因此仅统计已标注的双键,衡量的其实是 SMILES 书写得有多仔细,而非真实存在多少个 E/Z 中心 —— 这与下面 atropisomerism 被否决的原因属于同一类问题,只是以另一种方式出现。

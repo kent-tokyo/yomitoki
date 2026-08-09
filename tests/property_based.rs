@@ -18,7 +18,10 @@
 //! (linear chains, simple monocyclic rings) with a fixed corpus of
 //! structurally distinct fixtures already used elsewhere in this test
 //! suite (stereocenters, bridged/fused/spiro/macrocyclic rings, Brenk
-//! alerts). The `Err(_) => return Ok(())` fallback below only guards
+//! alerts, an organic salt with a negatively charged atom — AGENTS.md
+//! §14.5's "salts" corpus category, and a regression fixture for the
+//! `has_negatively_charged_atom` overflow guard, see `components/mod.rs`).
+//! The `Err(_) => return Ok(())` fallback below only guards
 //! against a generator bug producing unparseable output; every branch is
 //! expected to always parse.
 
@@ -54,6 +57,7 @@ fn molecule_smiles_strategy() -> impl Strategy<Value = String> {
                 "C[C@H](N)C(=O)O",                  // specified stereocenter
                 "OC1CC2(C(N)C(O)C(Cl)C(N)C)CCC1C2", // bridged + several stereocenters
                 "C1CCC2(CC1)CCCC2",                 // spiro
+                "CC(=O)[O-].C[NH3+]",               // organic salt (negatively charged atom)
             ]
             .as_slice()
         )

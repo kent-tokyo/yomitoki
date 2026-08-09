@@ -50,6 +50,14 @@ pub(crate) fn render(
             evidence.value.unwrap_or(0.0),
             evidence.threshold.unwrap_or(0.0)
         ),
+        FindingCode::StereoAnalysisSkipped => {
+            "Stereo analysis could not be run for this molecule: it contains a negatively \
+             charged atom, which triggers an arithmetic-overflow bug in chematic's stereo \
+             perception (panics in debug builds, produces an unverified result in release \
+             builds — see chematic issue #267). Stereocenter count/density and stereo \
+             completeness are unavailable, not verified to be zero/complete."
+                .to_string()
+        }
         FindingCode::FunctionalGroupReactive => {
             let name = label.unwrap_or("unknown").replace('_', " ");
             if atom_count == 0 {

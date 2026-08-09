@@ -59,6 +59,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MayReduceDifficulty`, confidence a flat named constant); the remaining 3
   codes have no underlying signal yet. `ruleset_version` bumped to 0.5.0.
 
+### Fixed
+
+- A negatively charged atom (any carboxylate, sulfonate, phosphate, or
+  other anion) previously panicked `analyze`/`analyze_smiles`/
+  `analyze_batch` in debug builds, and silently risked a corrupted result
+  in release builds — an arithmetic-overflow bug in chematic's stereo
+  perception (`Atom.charge: i8` cast to `u64` before multiplying, which
+  overflows for any negative value), filed upstream as
+  [chematic#267](https://github.com/kent-tokyo/chematic/issues/267).
+  `components::has_negatively_charged_atom` now guards both call sites
+  (`applicability`, `stereochemical_burden`); stereo analysis is skipped
+  with a new `FindingCode::StereoAnalysisSkipped` finding and a new
+  `ApplicabilityReport.stereo_uncheckable` field, never a crash and never
+  a fabricated "zero stereocenters" claim. New
+  `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE` constant; `ruleset_version`
+  bumped to 0.7.0.
+
 ### Changed
 
 - **Renamed the project from RENSEI to YOMITOKI.** Renamed the Rust crate,

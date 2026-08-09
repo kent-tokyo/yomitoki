@@ -350,12 +350,14 @@ conflated — a structurally complex molecule is not automatically
 low-confidence; only actual input-quality/applicability problems lower
 confidence.
 
-`ring_topology`'s, `size_topology`'s, and `stereochemical_burden`'s own
-`ComponentScore.confidence` are all fixed at `1.0`: all three are plain
-deterministic descriptor computations (`find_ring_families`,
-`molecular_weight`, `rotatable_bond_count`, `stereo_completeness`) for any
+`ring_topology`'s and `size_topology`'s own `ComponentScore.confidence` are
+fixed at `1.0`: both are plain deterministic descriptor computations
+(`find_ring_families`, `molecular_weight`, `rotatable_bond_count`) for any
 molecule that parsed and passed valence validation, so there's no additional
-uncertainty to express there yet.
+uncertainty to express there yet. `stereochemical_burden`'s is *usually*
+`1.0` for the same reason, but drops to `CONFIDENCE_PENALTY_STEREO_
+UNCHECKABLE` (0.6) for a molecule with a negatively charged atom — see
+"Negatively charged atoms" below.
 
 `functional_group_liability`'s `ComponentScore.confidence` is the minimum
 confidence across its own findings, and is usually `1.0` (Brenk pattern
@@ -372,6 +374,62 @@ selection.
 Confidence will stop being effectively-constant once a component with
 genuinely variable rule coverage (e.g. fragment rarity, which depends on
 corpus coverage) is added.
+
+## Negatively charged atoms (a chematic bug, worked around)
+
+Found while adding "salts" corpus coverage (AGENTS.md §14.5) to
+`tests/property_based.rs`: `chematic::perception::stereo_validation::
+stereo_completeness` (called by both `applicability` and
+`stereochemical_burden`) computes each atom's initial Morgan-rank
+invariant as `atomic_number as u64 * 1_000_000 + charge as u64 * 1000 +
+degree`. `Atom.charge` is `i8`; casting any *negative* charge to `u64`
+sign-extends before reinterpreting, so the multiplication overflows
+unconditionally — panics in debug builds (`attempt to multiply with
+overflow`), silently produces a corrupted-but-not-obviously-wrong result
+in release builds (confirmed empirically: the one case checked directly,
+a charged stereocenter-bearing molecule, still counted correctly, but
+that's incidental to wrapping arithmetic, not something the algorithm's
+design guarantees). Filed upstream:
+[chematic#267](https://github.com/kent-tokyo/chematic/issues/267).
+
+This meant `analyze`/`analyze_smiles`/`analyze_batch` panicked in debug
+builds on *any* molecule containing a negatively charged atom — any
+carboxylate, sulfonate, phosphate, or other anion, extremely common in
+real chemistry — a direct violation of AGENTS.md §27's "panicしない"
+completion criterion, undetected for 12 rounds because no test fixture
+anywhere in this crate's corpus (fixed lists or `proptest` generators)
+had ever included a charged atom.
+
+`components::has_negatively_charged_atom(&Molecule) -> bool` guards both
+call sites. When it's true:
+
+* `applicability` never calls `stereo_completeness`. `stereo_complete` is
+  `false` (honest — it wasn't checked, not confirmed complete) and a new
+  `ApplicabilityReport.stereo_uncheckable` field is `true`, distinguishing
+  this from the ordinary "checked, found unspecified centers" case —
+  `stereo_complete=false` alone would conflate two findings that call for
+  different reader actions. Confidence gets `CONFIDENCE_PENALTY_STEREO_
+  UNCHECKABLE` (0.6) instead of `CONFIDENCE_PENALTY_STEREO_INCOMPLETE`
+  (0.85) — deliberately a *stronger* penalty, since "zero stereo
+  information" is a bigger gap than "checked, some centers unspecified".
+  The two are mutually exclusive per molecule.
+* `stereochemical_burden` never calls `stereo_completeness` either.
+  `total_centers`/density fall back to `0`, but `ComponentScore` stays
+  `Some` with a `FindingCode::StereoAnalysisSkipped` finding explaining why
+  — a bare zero here would be exactly the "fabricated zero" this project's
+  own `ComponentScores` doc explicitly refuses (`None` means "not
+  evaluated," a real zero means "evaluated, found none" — this is neither,
+  so it needs the finding to stay honest). `ComponentScore.confidence`
+  also drops to `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE`, not the usual
+  `1.0`.
+
+Not a hard `OutOfDomain` trigger: ring/size/functional-group-liability
+scoring all work fine on a charged molecule (none call
+`stereo_completeness`), and anionic species are mainstream, legitimate
+chemistry — treating every salt as fully out of scope would be far more
+punitive than the actual, narrow gap (stereo assessment specifically).
+`RULESET_VERSION` bumped to 0.7.0 for the new confidence-penalty constant
+and its effect on `overall.confidence` via applicability.
 
 ## Abstention contract
 

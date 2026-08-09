@@ -57,6 +57,7 @@ fn sample_report() -> SynthesizabilityReport {
             supported_elements: true,
             sanitized: true,
             stereo_complete: true,
+            stereo_uncheckable: false,
             disconnected: false,
             unusual_valence: false,
             domain_distance: None,

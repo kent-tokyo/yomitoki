@@ -11,6 +11,7 @@ fn main() {
         "C1CO1",
         "C1CCCCCCCC1",
         "CC(=O)OCC(COC(C)=O)(COC(C)=O)COC(C)=O",
+        "C[C@@H](N)C(=O)[O-]",
     ] {
         let report = analyze_smiles(smiles, &config).expect("valid SMILES");
 

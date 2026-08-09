@@ -87,6 +87,7 @@ pub enum FindingCode {
     SizeHighRotatableBondCount,
     StereoCenterCount,
     StereoDensityHigh,
+    StereoAnalysisSkipped,
     FunctionalGroupReactive,
     FunctionalGroupDense,
     InputUnsupportedElement,
@@ -197,6 +198,17 @@ pub struct ApplicabilityReport {
     pub supported_elements: bool,
     pub sanitized: bool,
     pub stereo_complete: bool,
+    /// `true` when stereo analysis (`stereo_complete`, and
+    /// `stereochemical_burden`'s own score) could not be run at all, rather
+    /// than genuinely finding zero/incomplete stereocenters — currently
+    /// only for molecules containing a negatively charged atom, which
+    /// triggers an arithmetic-overflow bug in chematic's Morgan-rank
+    /// computation (panics in debug builds, silently corrupts results in
+    /// release builds; filed upstream as chematic issue #267). Distinct
+    /// from `stereo_complete` on purpose: "we checked and some centers are
+    /// unspecified" and "we could not check at all" are different findings
+    /// that call for different actions from a report reader.
+    pub stereo_uncheckable: bool,
     pub disconnected: bool,
     pub unusual_valence: bool,
     /// Distance from the calibration corpus. Always `None` until a

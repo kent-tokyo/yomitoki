@@ -3,13 +3,15 @@
 use chematic::core::{Molecule, validate_valence};
 use chematic::perception::stereo_validation::stereo_completeness;
 
+use crate::components::has_negatively_charged_atom;
 use crate::config::AnalysisConfig;
 use crate::report::{
     ApplicabilityReport, AtomIndex, ComponentScore, Finding, FindingCode, FindingEvidence,
     FindingRef, ProbabilityLikeScore, Severity, finite_or_zero,
 };
 use crate::rules::{
-    CONFIDENCE_PENALTY_STEREO_INCOMPLETE, CONFIDENCE_PENALTY_UNUSUAL_VALENCE, SUPPORTED_ELEMENTS,
+    CONFIDENCE_PENALTY_STEREO_INCOMPLETE, CONFIDENCE_PENALTY_STEREO_UNCHECKABLE,
+    CONFIDENCE_PENALTY_UNUSUAL_VALENCE, SUPPORTED_ELEMENTS,
 };
 
 /// Result of the applicability component: the report-facing summary, the
@@ -86,8 +88,25 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
         });
     }
 
-    let stereo = stereo_completeness(mol);
-    let stereo_complete = stereo.unspecified == 0;
+    let stereo_uncheckable = has_negatively_charged_atom(mol);
+    let stereo_complete = if stereo_uncheckable {
+        findings.push(Finding {
+            code: FindingCode::StereoAnalysisSkipped,
+            severity: Severity::Medium,
+            confidence: ProbabilityLikeScore::new(1.0),
+            atoms: Vec::new(),
+            evidence: FindingEvidence::default(),
+            explanation: crate::explain::render(
+                FindingCode::StereoAnalysisSkipped,
+                FindingEvidence::default(),
+                0,
+                None,
+            ),
+        });
+        false
+    } else {
+        stereo_completeness(mol).unspecified == 0
+    };
 
     let atom_count = mol.atom_count();
     let too_large = atom_count > config.max_heavy_atoms;
@@ -125,7 +144,9 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
     if unusual_valence {
         confidence *= CONFIDENCE_PENALTY_UNUSUAL_VALENCE;
     }
-    if !stereo_complete {
+    if stereo_uncheckable {
+        confidence *= CONFIDENCE_PENALTY_STEREO_UNCHECKABLE;
+    } else if !stereo_complete {
         confidence *= CONFIDENCE_PENALTY_STEREO_INCOMPLETE;
     }
     let confidence = ProbabilityLikeScore::new(finite_or_zero(confidence));
@@ -134,6 +155,7 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
         supported_elements,
         sanitized: !unusual_valence,
         stereo_complete,
+        stereo_uncheckable,
         disconnected,
         unusual_valence,
         domain_distance: None,
@@ -242,6 +264,42 @@ mod tests {
                 .findings
                 .iter()
                 .any(|f| f.code == FindingCode::InputTooLarge)
+        );
+    }
+
+    #[test]
+    fn negatively_charged_atom_skips_stereo_check_but_stays_in_domain() {
+        // Acetate: a negatively charged atom triggers a real overflow
+        // panic in chematic's stereo_completeness (chematic issue #267) —
+        // this must never reach that call, and must never claim
+        // stereo_complete=true (a lie: we didn't check).
+        let outcome = compute(&mol("CC(=O)[O-]"), &AnalysisConfig::default());
+        assert!(outcome.report.stereo_uncheckable);
+        assert!(!outcome.report.stereo_complete);
+        assert!(!outcome.out_of_domain);
+        assert!(
+            outcome
+                .findings
+                .iter()
+                .any(|f| f.code == FindingCode::StereoAnalysisSkipped)
+        );
+        assert!(
+            (outcome.score.confidence.value() - CONFIDENCE_PENALTY_STEREO_UNCHECKABLE).abs() < 1e-9
+        );
+    }
+
+    #[test]
+    fn positively_charged_atom_does_not_trigger_the_stereo_uncheckable_guard() {
+        // Only negative charges overflow the u64 cast in chematic's
+        // simple_morgan_ranks -- a positively charged atom (e.g. an
+        // ammonium cation) is safe and should run the real check.
+        let outcome = compute(&mol("C[NH3+]"), &AnalysisConfig::default());
+        assert!(!outcome.report.stereo_uncheckable);
+        assert!(
+            !outcome
+                .findings
+                .iter()
+                .any(|f| f.code == FindingCode::StereoAnalysisSkipped)
         );
     }
 

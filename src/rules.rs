@@ -6,7 +6,7 @@
 //! any constant below changes — it's recorded in every report's
 //! `Provenance`.
 
-pub const RULESET_VERSION: &str = "0.6.0";
+pub const RULESET_VERSION: &str = "0.7.0";
 
 // ---------------------------------------------------------------------------
 // Applicability
@@ -39,6 +39,19 @@ pub(crate) const CONFIDENCE_PENALTY_UNUSUAL_VALENCE: f64 = 0.5;
 /// unspecified. Soft penalty — incomplete stereo is common in real input
 /// and not itself evidence the molecule is out of domain.
 pub(crate) const CONFIDENCE_PENALTY_STEREO_INCOMPLETE: f64 = 0.85;
+
+/// Confidence multiplier applied when stereo analysis could not be run at
+/// all (currently: any negatively charged atom — see
+/// `components::has_negatively_charged_atom`'s doc for why). Mutually
+/// exclusive with [`CONFIDENCE_PENALTY_STEREO_INCOMPLETE`] per molecule
+/// (either the real check ran, or it didn't), and deliberately a stronger
+/// penalty than that one: "zero stereo information because the check
+/// itself couldn't run" is a bigger gap than "checked, and some centers
+/// happen to be unspecified." Not as severe as
+/// [`CONFIDENCE_PENALTY_UNUSUAL_VALENCE`]'s territory either — a charged
+/// atom isn't itself a structural irregularity, it's a tooling limitation
+/// unrelated to whether the input molecule is well-formed.
+pub(crate) const CONFIDENCE_PENALTY_STEREO_UNCHECKABLE: f64 = 0.6;
 
 // ---------------------------------------------------------------------------
 // Ring topology burden
@@ -254,10 +267,17 @@ pub(crate) const AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY: f64 = 0.4;
 /// Below this confidence (and absent a hard applicability failure), the
 /// verdict is `Indeterminate` rather than a difficulty-based bucket.
 /// Strictness-dependent — see [`indeterminate_confidence_threshold`].
-/// `Standard`'s value (0.45) is deliberately above the confidence floor
-/// applicability's two soft penalties combined can reach (0.5 * 0.85 =
-/// 0.425, see `components/applicability.rs`) — a threshold below that
-/// floor would make `Indeterminate` unreachable at that strictness level.
+/// `Standard`'s value (0.45) is deliberately above the lowest confidence
+/// floor applicability's soft penalties can combine to reach at Standard
+/// strictness — a threshold below that floor would make `Indeterminate`
+/// unreachable at that strictness level. Applicability currently has three
+/// soft-penalty sources (`components/applicability.rs`); two are mutually
+/// exclusive per molecule (`CONFIDENCE_PENALTY_STEREO_INCOMPLETE` and
+/// `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE` can't both apply — either the
+/// stereo check ran or it didn't), so the actual floor is
+/// `CONFIDENCE_PENALTY_UNUSUAL_VALENCE * CONFIDENCE_PENALTY_STEREO_
+/// UNCHECKABLE = 0.5 * 0.6 = 0.3` (lower than the pre-`STEREO_UNCHECKABLE`
+/// floor of 0.5 * 0.85 = 0.425), well below 0.45.
 const INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT: f64 = 0.3;
 const INDETERMINATE_CONFIDENCE_THRESHOLD_STANDARD: f64 = 0.45;
 const INDETERMINATE_CONFIDENCE_THRESHOLD_STRICT: f64 = 0.6;

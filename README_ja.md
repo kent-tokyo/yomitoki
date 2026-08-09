@@ -144,6 +144,18 @@ Dominant penalties:
 3. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
 ```
 
+アラニナート(`C[C@@H](N)C(=O)[O-]`、脱プロトン化アラニン)は指定済み立体中心*と*負電荷原子の両方を持ちます — 後者はchematicの既知のバグです([#267](https://github.com/kent-tokyo/chematic/issues/267))。クラッシュしたり推測したりすることなく安全に立体解析をスキップし、「未指定立体中心」のケースとは明確に区別してconfidenceを下げます:
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.92
+Confidence: 0.60
+Dominant penalties:
+1. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
+2. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
+3. Stereo analysis could not be run for this molecule: it contains a negatively charged atom, which triggers an arithmetic-overflow bug in chematic's stereo perception (panics in debug builds, produces an unverified result in release builds — see chematic issue #267). Stereocenter count/density and stereo completeness are unavailable, not verified to be zero/complete.
+```
+
 fragment rarityが未実装のため、全体的なスコアは完全なv0.1が出す値より低めになります。
 
 各レポートには`Provenance`ブロック(schema version、yomitoki version、chematic version、ruleset version、config hash)も含まれており、バージョン間で結果を比較できるようになっています — `docs/architecture.md`を参照してください。
@@ -200,6 +212,7 @@ spiro ring system                           5.52               0.20  LikelyAcces
 ## 制限事項
 
 * v0.1では計画されている6コンポーネントのうち5つを実装しています(上の表を参照)。`overall.difficulty`/`overall.synthesizability`は現状ring topology、size/topology、stereochemical burden、functional-group liabilityのみを反映しています。
+* 負電荷原子(カルボン酸イオン、スルホン酸イオン、リン酸イオンなど)を含む分子では、立体解析(`stereo_complete`と`stereochemical_burden`全体)が一切実行できません — これはchematicの実際のバグであり([#267](https://github.com/kent-tokyo/chematic/issues/267))、設計上の選択ではありません。YOMITOKIはこれに対してクラッシュしたり推測したりすることは一切ありません(`ApplicabilityReport.stereo_uncheckable`と`StereoAnalysisSkipped`フィンディングを参照)が、上流で修正されるまではそのような分子について立体化学のシグナルを一切持ちません。
 * `size_topology`のrotatable bond(回転可能結合)に関する項は、市販されている単純な非分岐長鎖分子(回転可能結合は多いが合成難易度はほぼゼロ)を過大評価します — これは既知のギャップであり、fragment rarity(未実装)がそうしたフラグメントを一般的/前例のあるものと認識することで補正される予定です。`docs/architecture.md`の "Scoring direction" セクションを参照してください。
 * `stereochemical_burden`は四面体型立体中心の個数と密度のみを対象としています。以下は調査した上でなお未実装です。理由はそれぞれ異なります(詳しい根拠は`docs/architecture.md`参照):
   * E/Z二重結合の立体化学 — chematicはSMILESの`/`/`\`結合マーカーから直接E/Zを割り当てられます(2D座標は不要 — ここに以前あった記述は誤りでした)。ただし入力SMILESが実際にマークした結合にしか適用されません。四面体型中心にある`stereo_completeness`のような「立体化学的だが未指定」の二重結合を検出する仕組みが存在しないため、指定済みのものだけをカウントすると「SMILESがどれだけ丁寧に書かれたか」を測ることになってしまいます — これは下記のatropisomerismを却下した理由と同じ種類の問題が、別の形で現れたものです。

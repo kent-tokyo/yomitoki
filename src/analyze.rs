@@ -183,13 +183,23 @@ fn select_verdict(
 mod tests {
     use super::*;
 
-    // The confidence floor reachable by applicability's two soft penalties
+    // A confidence floor reachable by two of applicability's soft penalties
     // combined (CONFIDENCE_PENALTY_UNUSUAL_VALENCE * CONFIDENCE_PENALTY_STEREO_INCOMPLETE
     // = 0.5 * 0.85 = 0.425, see components/applicability.rs). Standard
     // strictness's threshold (0.45) must sit above this floor or
     // `Indeterminate` can never fire — this test is what would have caught
     // it before shipping.
     const PENALTY_FLOOR_CONFIDENCE: f64 = 0.425;
+
+    // The *lowest* floor: unusual valence combined with a stereo-uncheckable
+    // molecule (CONFIDENCE_PENALTY_UNUSUAL_VALENCE * CONFIDENCE_PENALTY_STEREO_UNCHECKABLE
+    // = 0.5 * 0.6 = 0.3) — lower than PENALTY_FLOOR_CONFIDENCE above because
+    // CONFIDENCE_PENALTY_STEREO_UNCHECKABLE (0.6) is a stronger penalty than
+    // CONFIDENCE_PENALTY_STEREO_INCOMPLETE (0.85); the two are mutually
+    // exclusive per molecule, so this and PENALTY_FLOOR_CONFIDENCE are never
+    // both live at once, but both must independently stay reachable and
+    // above the Standard threshold.
+    const LOWEST_PENALTY_FLOOR_CONFIDENCE: f64 = 0.3;
 
     #[test]
     fn out_of_domain_wins_regardless_of_confidence_or_difficulty() {
@@ -203,6 +213,19 @@ mod tests {
     fn indeterminate_is_reachable_at_standard_strictness() {
         assert_eq!(
             select_verdict(false, PENALTY_FLOOR_CONFIDENCE, 0.1, Strictness::Standard),
+            Verdict::Indeterminate
+        );
+    }
+
+    #[test]
+    fn indeterminate_is_reachable_at_the_lowest_penalty_floor_too() {
+        assert_eq!(
+            select_verdict(
+                false,
+                LOWEST_PENALTY_FLOOR_CONFIDENCE,
+                0.1,
+                Strictness::Standard
+            ),
             Verdict::Indeterminate
         );
     }

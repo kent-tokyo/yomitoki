@@ -1,0 +1,10 @@
+tasks/*.md
+AGENTS.md
+
+
+# Added by cargo
+
+/target
+
+# Library crate: consumers resolve their own lockfile.
+/Cargo.lock

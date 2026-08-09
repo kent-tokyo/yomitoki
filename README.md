@@ -1,14 +1,16 @@
-# YOMITOKI
+# yomitoki
 
 [![CI](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml)
 
+**English** | [日本語](README_ja.md) | [中文](README_zh.md)
+
 Fast, explainable, route-free molecular synthesizability diagnostics.
 
-YOMITOKI is a fast, explainable, route-free molecular
+yomitoki is a fast, explainable, route-free molecular
 synthesizability diagnostics library built on [chematic](https://github.com/kent-tokyo/chematic).
 
 Instead of returning only a synthetic accessibility score,
-YOMITOKI reads molecular structure and explains why a molecule
+yomitoki reads molecular structure and explains why a molecule
 appears easy or difficult to synthesize. It identifies the
 structural evidence behind the assessment and reports how
 confident that judgment is.
@@ -18,12 +20,8 @@ meaning to carefully examine something and uncover its meaning —
 that is the library's whole job: not to change the molecule, but
 to read it and explain what it finds.
 
-> YOMITOKI does not merely estimate synthesizability; it exposes
+> yomitoki does not merely estimate synthesizability; it exposes
 > the evidence and reasoning behind the estimate.
-
-> **Formerly named RENSEI.** The project was renamed to better match
-> its actual role. It was never published to crates.io under that name,
-> so this was a clean rename, not a deprecated alias.
 
 > **Status: v0.1 in progress.** Five of six planned components are
 > implemented: `input_quality`/`applicability`, `ring_topology`,
@@ -37,12 +35,12 @@ to read it and explain what it finds.
 ```text
 chematic    Molecular representation and cheminformatics
     |
-YOMITOKI    Read and explain molecular synthesizability
+yomitoki    Read and explain molecular synthesizability
     |
 renkin      Plan retrosynthetic routes
 ```
 
-YOMITOKI never runs route search — that boundary is permanent, not a v0.1
+yomitoki never runs route search — that boundary is permanent, not a v0.1
 scoping choice. See "What it does not do" below.
 
 ## What it does
@@ -58,7 +56,7 @@ scoping choice. See "What it does not do" below.
   is not automatically a low-confidence one.
 * Emits machine-readable finding codes with structured evidence, not just
   prose.
-* Never runs retrosynthesis search. YOMITOKI evaluates a molecule on its own;
+* Never runs retrosynthesis search. yomitoki evaluates a molecule on its own;
   it does not plan a route to make it.
 * Ships a `yomitoki` CLI for single-molecule and batch (`.sdf`/SMILES-file)
   analysis — see Command-line interface below.
@@ -71,7 +69,7 @@ scoping choice. See "What it does not do" below.
 * Retrosynthesis planning, reaction template application, precursor
   generation, or route ranking — that's [RENKIN](https://github.com/kent-tokyo/renkin)'s job.
 * Molecule parsing, ring perception, aromaticity, or stereochemistry
-  assignment — that's [chematic](https://github.com/kent-tokyo/chematic)'s job; YOMITOKI only consumes it.
+  assignment — that's [chematic](https://github.com/kent-tokyo/chematic)'s job; yomitoki only consumes it.
 * Toxicity, SDS/hazard classification, yield prediction, or cost prediction.
 * Full periodic-table or organometallic/polymer coverage in v0.1.
 
@@ -246,15 +244,15 @@ claims certainty (`expected_effect` is always `MayReduceDifficulty`, never
 ## How this differs from existing tools
 
 * **SAscore** returns fragment-frequency and complexity penalties as a
-  single number. YOMITOKI returns component-wise diagnostics, confidence,
+  single number. yomitoki returns component-wise diagnostics, confidence,
   applicability, evidence, and simplification suggestions.
-* **SYBA** is an easy/hard classifier. YOMITOKI is a diagnostic and
+* **SYBA** is an easy/hard classifier. yomitoki is a diagnostic and
   explanation tool.
-* **SCScore** is a learned synthetic-complexity score. YOMITOKI decomposes
+* **SCScore** is a learned synthetic-complexity score. yomitoki decomposes
   transparent, chemically-named factors instead.
-* **RAscore** approximates retrosynthesis success. YOMITOKI is route-free and
+* **RAscore** approximates retrosynthesis success. yomitoki is route-free and
   explains the structural reasons behind its assessment.
-* **AiZynthFinder, ASKCOS, RENKIN** are route planners. YOMITOKI never
+* **AiZynthFinder, ASKCOS, RENKIN** are route planners. yomitoki never
   generates a route.
 
 ## Comparison with SAscore
@@ -263,9 +261,9 @@ A minimum in-process comparison against `chematic::chem::sa_score` (Ertl &
 Schuffenhauer 2009) — the completion criterion in AGENTS.md §27. Not a
 calibration or accuracy claim: the two scores aren't fit against each other
 and measure different things (SAscore: fragment frequency + complexity
-penalty; YOMITOKI: structural burden, decomposed by component). Scales run
+penalty; yomitoki: structural burden, decomposed by component). Scales run
 in opposite directions and aren't rescaled onto a shared axis here — SAscore
-is `1` (easy) to `10` (hard); YOMITOKI's `difficulty` is `0.0` to `1.0`.
+is `1` (easy) to `10` (hard); yomitoki's `difficulty` is `0.0` to `1.0`.
 
 Real output of `cargo run --example sa_score_comparison`:
 
@@ -288,10 +286,10 @@ spiro ring system                           5.52               0.20  LikelyAcces
 ```
 
 The interesting rows are where the two diverge, not where they agree — a
-divergence isn't automatically a YOMITOKI bug. Acyl halide is the sharpest
-case: SAscore rates it `6.62` (fragment-uncommon), YOMITOKI rates it `0.09`
+divergence isn't automatically a yomitoki bug. Acyl halide is the sharpest
+case: SAscore rates it `6.62` (fragment-uncommon), yomitoki rates it `0.09`
 (`LikelyAccessible`) — a small, cheap, extremely common acylating reagent
-with essentially no structural burden by YOMITOKI's own model. Aspirin
+with essentially no structural burden by yomitoki's own model. Aspirin
 (`4.67` vs. `0.27`) is the same shape as the Brenk-validity gap already
 described in Limitations. Where they broadly agree (caffeine, spiro,
 bridged-plus-stereo), that's not evidence either one is "correct" — neither
@@ -307,7 +305,7 @@ has been validated against real synthesis outcomes yet.
   cannot run at all for a molecule containing a negatively charged atom
   (any carboxylate, sulfonate, phosphate, or other anion) — a real
   chematic bug ([#267](https://github.com/kent-tokyo/chematic/issues/267)),
-  not a design choice. YOMITOKI never crashes or guesses on this (see
+  not a design choice. yomitoki never crashes or guesses on this (see
   `ApplicabilityReport.stereo_uncheckable` and the
   `StereoAnalysisSkipped` finding), but genuinely has no stereo signal for
   such molecules until it's fixed upstream.
@@ -333,12 +331,12 @@ has been validated against real synthesis outcomes yet.
     when written `c1ccccc1-c2ccccc2` but not when written
     `c1ccccc1c2ccccc2` (same molecule), and rates *para*-substituted
     biphenyl identically to genuinely hindered *ortho*-substituted biphenyl.
-    Wrapping it would violate YOMITOKI's own atom-order/representation
+    Wrapping it would violate yomitoki's own atom-order/representation
     invariance guarantee.
   * Contiguous stereocenter runs, quaternary-carbon adjacency — both need
     an atom-level list of stereocenter candidates (specified *and*
     unspecified), which chematic doesn't expose (only aggregate counts).
-    Building that inside YOMITOKI would make this crate the owner of
+    Building that inside yomitoki would make this crate the owner of
     stereocenter perception instead of a consumer of a validated chematic
     primitive — a line every implemented component has stayed on the other
     side of so far.

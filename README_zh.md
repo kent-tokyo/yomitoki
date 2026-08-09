@@ -1,18 +1,18 @@
-# YOMITOKI
+# yomitoki
 
 [![CI](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml)
 
+[English](README.md) | [日本語](README_ja.md) | **中文**
+
 快速、可解释、无需路线搜索的分子可合成性诊断库。
 
-YOMITOKI 是一个基于 [chematic](https://github.com/kent-tokyo/chematic) 构建的、快速、可解释、route-free(无需逆合成路线搜索)的分子可合成性诊断库。
+yomitoki 是一个基于 [chematic](https://github.com/kent-tokyo/chematic) 构建的、快速、可解释、route-free(无需逆合成路线搜索)的分子可合成性诊断库。
 
-YOMITOKI 不仅仅返回一个单一的合成可及性分数,而是读取分子结构,解释一个分子为何看起来易于合成或难以合成。它会指出支撑该评估的结构性证据,并报告这一判断的可信程度。
+yomitoki 不仅仅返回一个单一的合成可及性分数,而是读取分子结构,解释一个分子为何看起来易于合成或难以合成。它会指出支撑该评估的结构性证据,并报告这一判断的可信程度。
 
 名称来自日文词汇「読み解き」(yomitoki),意为仔细审视某事物并揭示其含义 — 这正是本库的核心职责:不是改造分子,而是读懂并解释它。
 
-> YOMITOKI 不仅仅是估算可合成性,它还揭示了该估算背后的证据与推理过程。
-
-> **曾用名 RENSEI。** 项目已更名,以更准确地反映其实际职责。该名称从未在 crates.io 上发布过,因此这是一次干净的重命名,而不是一个废弃别名。
+> yomitoki 不仅仅是估算可合成性,它还揭示了该估算背后的证据与推理过程。
 
 > **状态:v0.1 开发中。** 计划中的六个组件已实现五个: `input_quality`/`applicability`、`ring_topology`、`size_topology`、`stereochemical_burden`、`functional_group_liability`。仅剩 `fragment_rarity`。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
 
@@ -21,27 +21,27 @@ YOMITOKI 不仅仅返回一个单一的合成可及性分数,而是读取分子�
 ```text
 chematic    分子表示与化学信息学
     |
-YOMITOKI    读取并解释分子的可合成性
+yomitoki    读取并解释分子的可合成性
     |
 renkin      规划逆合成路线
 ```
 
-YOMITOKI 从不执行路线搜索 — 这不是 v0.1 阶段的范围限制,而是永久性的职责边界。详见下方“YOMITOKI 不做什么”。
+yomitoki 从不执行路线搜索 — 这不是 v0.1 阶段的范围限制,而是永久性的职责边界。详见下方“yomitoki 不做什么”。
 
-## YOMITOKI 做什么
+## yomitoki 做什么
 
 * 解析分子(通过 `chematic`),返回结构化的 `SynthesizabilityReport`,而不是单一数值。
 * 将评估分解为独立的组件(目前有 ring topology、size/topology、stereochemical burden、functional-group liability、input quality/applicability;fragment rarity 计划中)。
 * 将 **score**(可合成性/难度)、**confidence**(判断的可信度)与 **applicability**(该分子是否在模型的适用范围内)分为不同字段 — 难以合成的分子不会因此自动被判定为低置信度。
 * 输出机器可读的 finding code 与结构化 evidence,而非仅有文字说明。
-* 从不运行逆合成搜索。YOMITOKI 仅对分子本身进行评估,不会为其规划合成路线。
+* 从不运行逆合成搜索。yomitoki 仅对分子本身进行评估,不会为其规划合成路线。
 * 提供 `yomitoki` 命令行工具,支持单分子及批量(`.sdf`/SMILES 文件)分析 — 详见下方“命令行界面”。
 * `analyze_batch(&[Molecule], &AnalysisConfig) -> Vec<Result<...>>` — 无需经过 CLI 或文件格式,为库调用方提供同样保证输入顺序的批处理入口。
 
-## YOMITOKI 不做什么
+## yomitoki 不做什么
 
 * 逆合成规划、反应模板应用、前体生成、路线排序 — 这些是 [RENKIN](https://github.com/kent-tokyo/renkin) 的职责。
-* 分子解析、环感知(ring perception)、芳香性判定、立体化学指认 — 这些是 [chematic](https://github.com/kent-tokyo/chematic) 的职责,YOMITOKI 仅调用它。
+* 分子解析、环感知(ring perception)、芳香性判定、立体化学指认 — 这些是 [chematic](https://github.com/kent-tokyo/chematic) 的职责,yomitoki 仅调用它。
 * 毒性预测、SDS/危险品分类、产率预测、成本预测。
 * v0.1 不追求完整元素周期表覆盖或有机金属化合物的完整支持。
 
@@ -177,15 +177,15 @@ Dominant penalties:
 
 ## 与现有工具的区别
 
-* **SAscore** 将片段频率与复杂度惩罚合并为单一数值返回。YOMITOKI 返回按组件划分的诊断结果、置信度、适用性、证据,以及简化建议。
-* **SYBA** 是一个易/难二分类器。YOMITOKI 则以诊断与解释为核心。
-* **SCScore** 是一个学习得到的合成复杂度分数。YOMITOKI 则分解为透明的、具有化学意义命名的因素。
-* **RAscore** 近似逆合成成功率。YOMITOKI 是 route-free 的,并解释其评估背后的结构性原因。
-* **AiZynthFinder、ASKCOS、RENKIN** 都是路线规划器。YOMITOKI 从不生成合成路线。
+* **SAscore** 将片段频率与复杂度惩罚合并为单一数值返回。yomitoki 返回按组件划分的诊断结果、置信度、适用性、证据,以及简化建议。
+* **SYBA** 是一个易/难二分类器。yomitoki 则以诊断与解释为核心。
+* **SCScore** 是一个学习得到的合成复杂度分数。yomitoki 则分解为透明的、具有化学意义命名的因素。
+* **RAscore** 近似逆合成成功率。yomitoki 是 route-free 的,并解释其评估背后的结构性原因。
+* **AiZynthFinder、ASKCOS、RENKIN** 都是路线规划器。yomitoki 从不生成合成路线。
 
 ## 与 SAscore 的比较
 
-针对 `chematic::chem::sa_score`(Ertl & Schuffenhauer 2009)的最小化进程内比较 — 这是 AGENTS.md §27 的一项完成标准。这不是校准或准确性声明:两个分数彼此并未做过拟合,衡量的也是不同的东西(SAscore:片段频率 + 复杂度惩罚;YOMITOKI:按组件分解的结构性负担)。两者的量表方向也相反 — SAscore 为 `1`(容易)到 `10`(困难),YOMITOKI 的 `difficulty` 为 `0.0` 到 `1.0`,这里没有将两者重新缩放到同一轴上。
+针对 `chematic::chem::sa_score`(Ertl & Schuffenhauer 2009)的最小化进程内比较 — 这是 AGENTS.md §27 的一项完成标准。这不是校准或准确性声明:两个分数彼此并未做过拟合,衡量的也是不同的东西(SAscore:片段频率 + 复杂度惩罚;yomitoki:按组件分解的结构性负担)。两者的量表方向也相反 — SAscore 为 `1`(容易)到 `10`(困难),yomitoki 的 `difficulty` 为 `0.0` 到 `1.0`,这里没有将两者重新缩放到同一轴上。
 
 `cargo run --example sa_score_comparison` 的真实输出:
 
@@ -207,17 +207,17 @@ bridged ring + several stereocenters       10.00               0.69  Challenging
 spiro ring system                           5.52               0.20  LikelyAccessible
 ```
 
-真正有意思的是两者出现分歧的行,而不是一致的行 — 分歧并不自动意味着 YOMITOKI 有 bug。最明显的例子是酰氯:SAscore 给出 `6.62`(片段少见),YOMITOKI 给出 `0.09`(`LikelyAccessible`)— 一种廉价、极为常见的酰化试剂,在 YOMITOKI 自身模型中几乎没有结构性负担。阿司匹林(`4.67` 对 `0.27`)与"局限性"中已经描述过的 Brenk 有效性缺口是同一种形状。两者大体一致的情况(咖啡因、螺环、桥环 + 多个立体中心)也不能证明其中任何一个是"正确的"— 二者都尚未针对真实合成结果进行过验证。
+真正有意思的是两者出现分歧的行,而不是一致的行 — 分歧并不自动意味着 yomitoki 有 bug。最明显的例子是酰氯:SAscore 给出 `6.62`(片段少见),yomitoki 给出 `0.09`(`LikelyAccessible`)— 一种廉价、极为常见的酰化试剂,在 yomitoki 自身模型中几乎没有结构性负担。阿司匹林(`4.67` 对 `0.27`)与"局限性"中已经描述过的 Brenk 有效性缺口是同一种形状。两者大体一致的情况(咖啡因、螺环、桥环 + 多个立体中心)也不能证明其中任何一个是"正确的"— 二者都尚未针对真实合成结果进行过验证。
 
 ## 局限性
 
 * v0.1 目前仅实现了计划中六个组件里的五个(见上表);`overall.difficulty`/`overall.synthesizability` 目前仅反映 ring topology、size/topology、stereochemical burden 与 functional-group liability 带来的负担。
-* 对于含有带负电荷原子(羧酸根、磺酸根、磷酸根等阴离子)的分子,立体分析(`stereo_complete` 以及整个 `stereochemical_burden`)完全无法运行 — 这是 chematic 的真实 bug([#267](https://github.com/kent-tokyo/chematic/issues/267)),不是设计选择。YOMITOKI 对此绝不会崩溃或瞎猜(参见 `ApplicabilityReport.stereo_uncheckable` 与 `StereoAnalysisSkipped` finding),但在上游修复之前,对这类分子确实完全没有立体化学信号。
+* 对于含有带负电荷原子(羧酸根、磺酸根、磷酸根等阴离子)的分子,立体分析(`stereo_complete` 以及整个 `stereochemical_burden`)完全无法运行 — 这是 chematic 的真实 bug([#267](https://github.com/kent-tokyo/chematic/issues/267)),不是设计选择。yomitoki 对此绝不会崩溃或瞎猜(参见 `ApplicabilityReport.stereo_uncheckable` 与 `StereoAnalysisSkipped` finding),但在上游修复之前,对这类分子确实完全没有立体化学信号。
 * `size_topology` 中的可旋转键(rotatable bond)项会过度惩罚简单的、可商业购得的无支链长链分子(可旋转键很多,但合成难度几乎为零)— 这是一个已知的缺口,预计在 fragment rarity(尚未实现)将此类片段识别为常见/有先例的片段后得到纠正。详见 `docs/architecture.md` 的 "Scoring direction" 一节。
 * `stereochemical_burden` 仅覆盖四面体立体中心的数量与密度。以下各项经过调查后仍未实现,原因各不相同(完整依据见 `docs/architecture.md`):
   * E/Z 双键立体化学 — chematic 其实可以直接从 SMILES 的 `/`/`\` 键方向标记指定 E/Z(不需要 2D 坐标 — 此前这里的说法有误),但仅限于输入 SMILES 中实际标注过的键。目前没有类似四面体中心 `stereo_completeness` 那样的检测器,能识别"具有立体化学意义但未标注"的双键,因此仅统计已标注的双键,衡量的其实是 SMILES 书写得有多仔细,而非真实存在多少个 E/Z 中心 —— 这与下面 atropisomerism 被否决的原因属于同一类问题,只是以另一种方式出现。
-  * Atropisomerism — 直接测试了 chematic 的 `detect_atropisomers` 后予以否决:同一个分子写作 `c1ccccc1-c2ccccc2` 会被判定为 atropisomer,写作 `c1ccccc1c2ccccc2` 则不会,并且它把 *para* 位取代的联苯与真正受阻的 *ortho* 位取代联苯判定为相同结果。若直接包装使用,将违反 YOMITOKI 自身关于原子顺序/表示形式不变性的保证。
-  * 连续立体中心、季碳邻位效应 — 二者都需要一份原子级别的立体中心候选列表(包括已指定和未指定的),而 chematic 只公开了汇总计数。若在 YOMITOKI 内部自行实现,将使本 crate 从"使用已验证的 chematic primitive 的消费者"变为"立体中心感知本身的所有者"—— 这是迄今为止每一个已实现组件都未曾跨越的界线。
+  * Atropisomerism — 直接测试了 chematic 的 `detect_atropisomers` 后予以否决:同一个分子写作 `c1ccccc1-c2ccccc2` 会被判定为 atropisomer,写作 `c1ccccc1c2ccccc2` 则不会,并且它把 *para* 位取代的联苯与真正受阻的 *ortho* 位取代联苯判定为相同结果。若直接包装使用,将违反 yomitoki 自身关于原子顺序/表示形式不变性的保证。
+  * 连续立体中心、季碳邻位效应 — 二者都需要一份原子级别的立体中心候选列表(包括已指定和未指定的),而 chematic 只公开了汇总计数。若在 yomitoki 内部自行实现,将使本 crate 从"使用已验证的 chematic primitive 的消费者"变为"立体中心感知本身的所有者"—— 这是迄今为止每一个已实现组件都未曾跨越的界线。
   * meso 化合物检测 — 需要图自同构 / 拓扑对称类。chematic 内部拥有此能力(`chematic-smiles::canonical_automorphism`),但并未对外公开。
 * `functional_group_liability` 覆盖反应性/不稳定官能团(直接使用 chematic 的 Brenk et al. 2008 结构警示集)以及 dense functionalization(通过 chematic 的 Ertl 2017 `identify_functional_groups`,统计彼此独立的官能团簇数量)。相互不兼容的官能团组合与保护基压力均未实现 — 与上述两项不同,这两者在 chematic 中都没有可引用、已验证的 primitive 可供依赖,手工整理其中任何一项都恰好是 AGENTS.md 所警示的"过度泛化的、化学上薄弱的规则"。化学选择性负担、多官能对称性破坏,以及难以处理的氧化态组合也均未实现 — chematic 未提供任何氧化态相关 API,因此最后一项无法实现。Brenk 的规则集最初是作为药物化学筛选库的"可取性"过滤器验证的,而非合成难度信号,因此其中一些警示会对常见、廉价且有先例的官能团产生反应 — 例如阿司匹林会触发 4 条 Brenk 警示,并被判定为 `ModeratelyAccessible`,尽管它是极易合成的分子之一。这是一个与上述可旋转键问题形状相同的已知缺口,预计将通过同样的方式(实现 fragment rarity)得到纠正。dense functionalization 自身也有已知缺口:它统计的是拓扑上"互不相连"的官能团簇数量,因此一个紧密互联的多官能体系(例如葡萄糖成环的多个羟基,或稠环的 β-内酰胺)会收敛为单一簇 — 与只有一个普通官能团的分子计数相同。
 * 目前还没有 fragment-rarity 语料库,因此无法检测新颖/稀有的子结构。

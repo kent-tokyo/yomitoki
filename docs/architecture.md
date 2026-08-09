@@ -1,16 +1,16 @@
-# YOMITOKI architecture (v0.1)
+# yomitoki architecture (v0.1)
 
 This document defines the crate boundary, public API, report schema, component
 interface, scoring direction, confidence/abstention contract, versioning
-scheme, and non-goals for YOMITOKI v0.1. It reflects what is actually
+scheme, and non-goals for yomitoki v0.1. It reflects what is actually
 implemented today, not the eventual full scope — see "Non-goals / deferred"
 at the end for what's intentionally missing.
 
-YOMITOKI was previously developed under the name RENSEI (renamed:
+yomitoki was previously developed under the name RENSEI (renamed:
 crate/binary name, `RenseiError` → `YomitokiError`,
 `Provenance.rensei_version` → `yomitoki_version`; see `CHANGELOG.md` for
 the full rename entry). The rename also reflects the project's actual role:
-YOMITOKI reads and explains molecular structure — it does not modify,
+yomitoki reads and explains molecular structure — it does not modify,
 optimize, or regenerate molecules. That functionality, if it's ever built,
 belongs to a different, unrelated project.
 
@@ -21,13 +21,13 @@ model yet that would justify separate `yomitoki-core`/`yomitoki-models`/
 `yomitoki-cli` crates. That split is revisited when fragment-rarity model files
 exist.
 
-YOMITOKI depends on `chematic` (registry dependency, not a path dependency) for
+yomitoki depends on `chematic` (registry dependency, not a path dependency) for
 all molecule representation, SMILES parsing, ring perception, and
-stereochemistry. YOMITOKI does not reimplement any of that. See "chematic API
+stereochemistry. yomitoki does not reimplement any of that. See "chematic API
 surface used" below for exactly what's called.
 
-YOMITOKI does not depend on RENKIN, and RENKIN must never depend on YOMITOKI.
-YOMITOKI never runs retrosynthesis search or template application.
+yomitoki does not depend on RENKIN, and RENKIN must never depend on yomitoki.
+yomitoki never runs retrosynthesis search or template application.
 
 ## Public API
 
@@ -131,7 +131,7 @@ Dependency declaration: `chematic = { version = "0.12", features = ["smiles",
 `default = []` — without explicit features it exposes nothing. `mol` is used
 only by the CLI binary (`src/bin/yomitoki.rs`), not by the library.
 
-Known gaps in chematic's public API (relevant to YOMITOKI, not filed upstream
+Known gaps in chematic's public API (relevant to yomitoki, not filed upstream
 yet): no macrocycle predicate in `chematic-perception` (only
 `chematic-3d::detect_macrocycle_status`, gated behind the unrelated `threed`
 feature); no single unified `sanitize()`/`validate()` entry point (valence,

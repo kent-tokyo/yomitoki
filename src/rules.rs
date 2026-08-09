@@ -15,7 +15,7 @@ pub const RULESET_VERSION: &str = "0.7.0";
 /// Curated organic-chemistry element subset. AGENTS.md §28 explicitly rules
 /// out full periodic-table coverage as a v0.1 goal; anything outside this
 /// set is treated as out-of-domain rather than silently scored.
-pub(crate) const SUPPORTED_ELEMENTS: &[chematic::core::Element] = &[
+pub const SUPPORTED_ELEMENTS: &[chematic::core::Element] = &[
     chematic::core::Element::H,
     chematic::core::Element::B,
     chematic::core::Element::C,

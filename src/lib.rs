@@ -1,4 +1,4 @@
-//! YOMITOKI: fast, explainable, route-free molecular synthesizability
+//! yomitoki: fast, explainable, route-free molecular synthesizability
 //! diagnostics, built on [chematic](https://docs.rs/chematic).
 //!
 //! See `docs/architecture.md` for the full design contract and current
@@ -24,3 +24,10 @@ pub use report::{
     ProbabilityLikeScore, Provenance, Severity, SimplificationSuggestion, SuggestionCode,
     SynthesizabilityReport, Verdict,
 };
+
+/// Re-exported only so `tools/build-fragment-corpus` can filter its input
+/// corpus with the exact same element set the library uses (AGENTS.md §11:
+/// never let a second tool silently drift from the library's own domain
+/// definition). Not part of the supported public API.
+#[doc(hidden)]
+pub use rules::SUPPORTED_ELEMENTS;

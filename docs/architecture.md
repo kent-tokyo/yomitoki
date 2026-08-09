@@ -208,16 +208,16 @@ falls below a strictness-dependent threshold without an outright hard fail.
 the five implemented components actually emit: `RingBridgedComplexity`,
 `RingSpiro`, `RingFusedDense`, `RingMacrocycle`, `SizeLargeMolecularWeight`,
 `SizeHighRotatableBondCount`, `StereoCenterCount`, `StereoDensityHigh`,
-`FunctionalGroupReactive`, `FunctionalGroupDense`, `InputUnsupportedElement`,
-`InputDisconnected`, `InputUnusualValence`, `InputTooLarge`.
-`FunctionalGroupReactive` is deliberately one generic code covering every
-triggered Brenk alert rather than one code per alert (~105 patterns) — the
-specific alert name is carried in the finding's `explanation` text and the
-matched atoms in `atoms`, not in a proliferation of finding codes.
-`FunctionalGroupDense` is a molecule-level finding (empty `atoms`, like
-`StereoDensityHigh`) rather than tied to one specific region. Codes for
-not-yet-implemented components (e.g. `FRAGMENT_RARE`) are added when those
-components are.
+`StereoAnalysisSkipped`, `FunctionalGroupReactive`, `FunctionalGroupDense`,
+`InputUnsupportedElement`, `InputDisconnected`, `InputUnusualValence`,
+`InputTooLarge`. `FunctionalGroupReactive` is deliberately one generic code
+covering every triggered Brenk alert rather than one code per alert (~105
+patterns) — the specific alert name is carried in the finding's
+`explanation` text and the matched atoms in `atoms`, not in a proliferation
+of finding codes. `FunctionalGroupDense` and `StereoAnalysisSkipped` are
+both molecule-level findings (empty `atoms`, like `StereoDensityHigh`)
+rather than tied to one specific region. Codes for not-yet-implemented
+components (e.g. `FRAGMENT_RARE`) are added when those components are.
 
 Every finding's `explanation: String` is generated from its structured code +
 parameters (`explain.rs`), never authored by hand per instance — this keeps

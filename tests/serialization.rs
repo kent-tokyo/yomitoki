@@ -3,8 +3,9 @@
 
 use rensei::{
     ApplicabilityReport, AtomIndex, ComponentScore, ComponentScores, ConfidenceScore, Contribution,
-    Finding, FindingCode, FindingEvidence, FindingRef, OverallAssessment, ProbabilityLikeScore,
-    Provenance, Severity, SynthesizabilityReport, Verdict,
+    ExpectedEffect, Finding, FindingCode, FindingEvidence, FindingRef, OverallAssessment,
+    ProbabilityLikeScore, Provenance, Severity, SimplificationSuggestion, SuggestionCode,
+    SynthesizabilityReport, Verdict,
 };
 
 fn sample_report() -> SynthesizabilityReport {
@@ -45,7 +46,13 @@ fn sample_report() -> SynthesizabilityReport {
             contribution: ProbabilityLikeScore::new(0.33),
         }],
         dominant_supports: Vec::new(),
-        suggestions: Vec::new(),
+        suggestions: vec![SimplificationSuggestion {
+            code: SuggestionCode::ReplaceBridgedRingWithMonocyclicAnalog,
+            target_atoms: vec![AtomIndex(0), AtomIndex(1)],
+            rationale: "Bridgehead connectivity drives this ring's contribution.".to_string(),
+            expected_effect: ExpectedEffect::MayReduceDifficulty,
+            confidence: ProbabilityLikeScore::new(0.5),
+        }],
         applicability: ApplicabilityReport {
             supported_elements: true,
             sanitized: true,
@@ -85,6 +92,14 @@ fn enums_serialize_as_screaming_snake_case_strings() {
         "finding code:\n{json}"
     );
     assert!(json.contains("\"HIGH\""), "severity:\n{json}");
+    assert!(
+        json.contains("\"REPLACE_BRIDGED_RING_WITH_MONOCYCLIC_ANALOG\""),
+        "suggestion code:\n{json}"
+    );
+    assert!(
+        json.contains("\"MAY_REDUCE_DIFFICULTY\""),
+        "expected effect:\n{json}"
+    );
 }
 
 #[test]

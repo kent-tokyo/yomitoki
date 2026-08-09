@@ -8,13 +8,21 @@
 //! counts/codes (and atom-set sizes, not values) is the correct invariance
 //! check; comparing raw indices would be testing the wrong thing.
 
-use rensei::{AnalysisConfig, FindingCode, SynthesizabilityReport};
+use rensei::{AnalysisConfig, FindingCode, SuggestionCode, SynthesizabilityReport};
 use std::collections::BTreeMap;
 
 fn finding_code_multiset(report: &SynthesizabilityReport) -> BTreeMap<FindingCode, usize> {
     let mut counts = BTreeMap::new();
     for finding in &report.findings {
         *counts.entry(finding.code).or_insert(0) += 1;
+    }
+    counts
+}
+
+fn suggestion_code_multiset(report: &SynthesizabilityReport) -> BTreeMap<SuggestionCode, usize> {
+    let mut counts = BTreeMap::new();
+    for suggestion in &report.suggestions {
+        *counts.entry(suggestion.code).or_insert(0) += 1;
     }
     counts
 }
@@ -67,6 +75,11 @@ fn assert_equivalent_reports(a: &SynthesizabilityReport, b: &SynthesizabilityRep
         a.findings.len(),
         b.findings.len(),
         "{label}: finding count differs"
+    );
+    assert_eq!(
+        suggestion_code_multiset(a),
+        suggestion_code_multiset(b),
+        "{label}: suggestion codes differ"
     );
 }
 

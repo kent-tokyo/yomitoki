@@ -325,6 +325,17 @@ fn render_human(report: &SynthesizabilityReport) -> String {
             out.push_str(&format!("\n{}. {}", i + 1, penalty.name));
         }
     }
+    if !report.suggestions.is_empty() {
+        out.push_str("\n\nSimplification suggestions (heuristic, not a guarantee):");
+        for (i, suggestion) in report.suggestions.iter().enumerate() {
+            out.push_str(&format!(
+                "\n{}. {:?}: {}",
+                i + 1,
+                suggestion.code,
+                suggestion.rationale
+            ));
+        }
+    }
     out
 }
 
@@ -400,13 +411,16 @@ mod tests {
         assert!(text.contains("Synthesizability: "));
         assert!(text.contains("Confidence: "));
         assert!(text.contains("Dominant penalties:"));
+        assert!(text.contains("Simplification suggestions"));
     }
 
     #[test]
-    fn render_human_omits_dominant_penalties_when_empty() {
+    fn render_human_omits_dominant_penalties_and_suggestions_when_empty() {
         let config = AnalysisConfig::default();
         let report = analyze_smiles("CCO", &config).expect("ethanol");
-        assert!(!render_human(&report).contains("Dominant penalties"));
+        let text = render_human(&report);
+        assert!(!text.contains("Dominant penalties"));
+        assert!(!text.contains("Simplification suggestions"));
     }
 
     #[test]

@@ -152,8 +152,8 @@ pub struct ComponentScore {
 
 /// Per-component scores. Each field is `Option` — `None` means "not
 /// evaluated in this version," not "evaluated, found nothing" (a fabricated
-/// zero would be dishonest). Only `ring_topology` and `input_quality` are
-/// `Some` in v0.1; see `docs/architecture.md`.
+/// zero would be dishonest). Only `fragment_rarity` is `None` in v0.1; every
+/// other field is always `Some`; see `docs/architecture.md`.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ComponentScores {
     pub size_topology: Option<ComponentScore>,
@@ -205,7 +205,7 @@ pub struct ApplicabilityReport {
 
 /// AGENTS.md §9. Heuristic, never a guarantee that a change will help.
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SuggestionCode {
     ReduceStereocenterDensity,
@@ -224,8 +224,11 @@ pub enum ExpectedEffect {
     Uncertain,
 }
 
-/// AGENTS.md §9. No component in v0.1 produces these yet; the schema field
-/// exists so `suggestions` is additive-safe once one does.
+/// AGENTS.md §9. Heuristic and diagnostic-only — derived from findings that
+/// already exist, not from actually rewriting the structure. `confidence`
+/// is deliberately flat across every v0.1 suggestion (see
+/// `rules::SUGGESTION_CONFIDENCE_HEURISTIC`), since none of them are
+/// calibrated against real synthesis outcomes.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SimplificationSuggestion {
     pub code: SuggestionCode,
@@ -253,7 +256,11 @@ pub struct SynthesizabilityReport {
     pub findings: Vec<Finding>,
     pub dominant_penalties: Vec<Contribution>,
     pub dominant_supports: Vec<Contribution>,
-    /// Always empty in v0.1 — no component produces suggestions yet.
+    /// Derived from `findings` regardless of `overall.verdict` — a finding
+    /// is real whether or not the molecule is also `OutOfDomain`/
+    /// `Indeterminate` for an unrelated reason, so a suggestion can appear
+    /// alongside either verdict. Only 3 of `SuggestionCode`'s 6 variants
+    /// are reachable in v0.1; see `suggestions.rs`/`docs/architecture.md`.
     pub suggestions: Vec<SimplificationSuggestion>,
     pub applicability: ApplicabilityReport,
     pub provenance: Provenance,

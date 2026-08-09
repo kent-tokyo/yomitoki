@@ -12,6 +12,7 @@ mod explain;
 mod provenance;
 mod report;
 mod rules;
+mod suggestions;
 
 pub use analyze::{analyze, analyze_smiles};
 pub use config::{AnalysisConfig, ScoringProfile, Strictness};

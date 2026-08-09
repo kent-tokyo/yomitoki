@@ -65,7 +65,7 @@ rensei analyze --input molecules.sdf --format jsonl --output reports.jsonl
 
 ## レポートの形式
 
-`cargo run --example basic`の実際の出力(このコンポーネント構成時点のもの)。ノルボルナン(`C1CC2CCC1C2`)はring topologyのみを動かします:
+`cargo run --example basic`の実際の出力(このコンポーネント構成時点のもの)。ノルボルナン(`C1CC2CCC1C2`)はring topologyを動かし、その架橋環は簡略化提案も生成します:
 
 ```text
 Verdict: ModeratelyAccessible
@@ -73,6 +73,8 @@ Synthesizability: 0.66
 Confidence: 1.00
 Dominant penalties:
 1. Bridged ring system spanning 7 atoms — bridgehead connectivity typically increases synthetic difficulty.
+Simplification suggestions (heuristic, not a guarantee):
+1. ReplaceBridgedRingWithMonocyclicAnalog: Bridgehead connectivity in this ring system is a direct driver of the ring_topology contribution to difficulty. A monocyclic (or less-fused) analog, if the target application allows one, would remove this specific burden — this is a structural heuristic, not a guarantee the replacement is chemically equivalent or that synthesis actually becomes easier.
 ```
 
 立体中心が密集したフラグメント(`CC(O)C(N)C(C)C(O)C(N)C`)は`stereochemical_burden`と`functional_group_liability`(difficulty)、そして未指定の立体化学に対するapplicabilityの独立したconfidenceペナルティを動かします — difficultyとconfidenceが別々に動く点に注目してください:
@@ -85,6 +87,8 @@ Dominant penalties:
 1. 4 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
 2. Stereocenter density 0.33 is above the 0.25 threshold — stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal control.
 3. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
+Simplification suggestions (heuristic, not a guarantee):
+1. ReduceStereocenterDensity: Stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal stereocontrol. Reducing the number of stereocenters, or spreading them further apart in the structure, would lower this contribution to difficulty — this is a structural heuristic, not a guarantee.
 ```
 
 エポキシド(`C1CO1`)は`functional_group_liability`単体を動かします — chematicのBrenk et al.(2008)構造アラートセットを直接ラップしています:
@@ -95,6 +99,18 @@ Synthesizability: 0.87
 Confidence: 1.00
 Dominant penalties:
 1. Reactive/unstable functional group detected: epoxide (Brenk et al. 2008 structural alert).
+```
+
+9員環(`C1CCCCCCCC1`)は`ring_topology`のmacrocycle分岐を動かし、独自の簡略化提案を生成します:
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.75
+Confidence: 1.00
+Dominant penalties:
+1. Macrocyclic ring of 9 atoms (at or above the 9-atom macrocycle threshold).
+Simplification suggestions (heuristic, not a guarantee):
+1. SimplifyMacrocyclicClosure: Macrocyclic ring closure is a direct driver of the ring_topology contribution to difficulty (large-ring closures often need high-dilution or specialized macrocyclization methods). A smaller ring or acyclic analog, if chemically acceptable, would remove this burden — this is a structural heuristic, not a guarantee.
 ```
 
 fragment rarityが未実装のため、全体的なスコアは完全なv0.1が出す値より低めになります。
@@ -114,9 +130,11 @@ fragment rarityが未実装のため、全体的なスコアは完全なv0.1が�
 
 未実装のコンポーネントは`ComponentScores`内で`None`として表現され、捏造されたゼロスコアとしては表現されません。
 
+`suggestions: Vec<SimplificationSuggestion>`は6種類のコードのうち3種類(`ReplaceBridgedRingWithMonocyclicAnalog`、`SimplifyMacrocyclicClosure`、`ReduceStereocenterDensity`)について生成されます — 詳細は「制限事項」を参照。すべての提案は診断的・heuristicなものであり、確実性を主張することはありません(`expected_effect`は常に`MayReduceDifficulty`であり、`LikelyReducesDifficulty`にはなりません)。
+
 ## 既存ツールとの違い
 
-* **SAscore**はフラグメント頻度と複雑性ペナルティを単一の数値として返します。RENSEIはコンポーネントごとの診断、confidence、applicability、evidence、(将来的には)改善提案を返します。
+* **SAscore**はフラグメント頻度と複雑性ペナルティを単一の数値として返します。RENSEIはコンポーネントごとの診断、confidence、applicability、evidence、簡略化提案を返します。
 * **SYBA**はeasy/hardの二値分類器です。RENSEIは診断と説明を主眼としたツールです。
 * **SCScore**は学習済みの合成複雑性スコアです。RENSEIは代わりに透明で化学的に名前の付いた要因へ分解します。
 * **RAscore**はretrosynthesisの成功確率を近似します。RENSEIはroute-freeであり、その評価の構造的理由を説明します。
@@ -129,6 +147,7 @@ fragment rarityが未実装のため、全体的なスコアは完全なv0.1が�
 * `stereochemical_burden`は四面体型立体中心の個数と密度のみを対象としています。E/Z二重結合の立体化学、atropisomerism、連続する立体中心、四級炭素への隣接、meso化合物の検出は未実装です — E/Zについては特に、chematicのE/Z判定に2D座標が必要であり、SMILESのみのパイプラインではそれを持っていないためです。
 * `functional_group_liability`は反応性/不安定な官能基のみを対象とし、chematicのBrenk et al.(2008)構造アラートセットを直接ラップしています。相互に非互換な官能基の組み合わせ、密な官能基化、保護基の圧力、化学選択性の負担、多官能性の対称性破れ、難しい酸化状態の組み合わせは未実装です — 最後の項目はchematicに酸化状態関連のAPIが一切存在しないためです。Brenkのセットは医薬品化学のスクリーニングライブラリにおける「望ましさ」フィルターとして検証されたものであり、合成難易度のシグナルではありません。そのため一部のアラートは一般的で安価に前例のある官能基にも反応します — 例えばアスピリンは4つのBrenkアラートに引っかかり、合成が非常に容易であるにもかかわらず`ModeratelyAccessible`と判定されます。これは上記のrotatable bondの問題と同じ形の既知のギャップであり、同じ解決策(fragment rarityの実装)が見込まれています。
 * fragment-rarityのコーパスがまだ存在しないため、新規/希少な部分構造は検出されません。
+* 簡略化提案は`SuggestionCode`の6種類のうち3種類(架橋環、macrocycle、立体中心密度)のみをカバーしています。残る3種類には、まだ存在しない信号が必要です:四級炭素の隣接はどこでも計算されておらず、`brenk_matches_detailed`はパターンごとに原子をまとめて返す(occurrence単位ではない)ため「複数ある類似の反応性基のうち1つを除去する」提案がどの出現を指すべきか特定できず、「fragment precedentを増やす」にはfragment rarityが必要ですが後回しにされています。すべての提案のconfidenceは提案コードごとではなく一律の固定値(0.5)です — 実際の合成結果によるキャリブレーションが存在しないためです。
 * `ApplicabilityReport.domain_distance`は、キャリブレーション用コーパスが存在するまで(Phase 2以降)常に`None`です。
 * 対応範囲は厳選されたorganic元素のサブセットに限定されており、全元素対応やorganometallicへの対応は試みていません。
 * スコアと閾値はルールベースであり、これまで外部ベンチマークに対する検証は行われていません。キャリブレーションや比較結果はまだ存在しません。

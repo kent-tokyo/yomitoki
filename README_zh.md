@@ -65,7 +65,7 @@ rensei analyze --input molecules.sdf --format jsonl --output reports.jsonl
 
 ## 报告结构示例
 
-以下是 `cargo run --example basic` 的真实输出(截至当前组件配置)。降冰片烷(`C1CC2CCC1C2`)仅涉及 ring topology:
+以下是 `cargo run --example basic` 的真实输出(截至当前组件配置)。降冰片烷(`C1CC2CCC1C2`)涉及 ring topology,其桥环还会生成一条简化建议:
 
 ```text
 Verdict: ModeratelyAccessible
@@ -73,6 +73,8 @@ Synthesizability: 0.66
 Confidence: 1.00
 Dominant penalties:
 1. Bridged ring system spanning 7 atoms — bridgehead connectivity typically increases synthetic difficulty.
+Simplification suggestions (heuristic, not a guarantee):
+1. ReplaceBridgedRingWithMonocyclicAnalog: Bridgehead connectivity in this ring system is a direct driver of the ring_topology contribution to difficulty. A monocyclic (or less-fused) analog, if the target application allows one, would remove this specific burden — this is a structural heuristic, not a guarantee the replacement is chemically equivalent or that synthesis actually becomes easier.
 ```
 
 一个立体中心密集的片段(`CC(O)C(N)C(C)C(O)C(N)C`)同时涉及 `stereochemical_burden` 与 `functional_group_liability`(difficulty),以及 applicability 针对未指定立体化学的独立 confidence 惩罚 — 注意 difficulty 与 confidence 是独立变化的:
@@ -85,6 +87,8 @@ Dominant penalties:
 1. 4 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
 2. Stereocenter density 0.33 is above the 0.25 threshold — stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal control.
 3. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
+Simplification suggestions (heuristic, not a guarantee):
+1. ReduceStereocenterDensity: Stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal stereocontrol. Reducing the number of stereocenters, or spreading them further apart in the structure, would lower this contribution to difficulty — this is a structural heuristic, not a guarantee.
 ```
 
 一个环氧化物(`C1CO1`)单独涉及 `functional_group_liability` — 它直接封装了 chematic 的 Brenk et al.(2008)结构警示集:
@@ -95,6 +99,18 @@ Synthesizability: 0.87
 Confidence: 1.00
 Dominant penalties:
 1. Reactive/unstable functional group detected: epoxide (Brenk et al. 2008 structural alert).
+```
+
+一个 9 元环(`C1CCCCCCCC1`)涉及 `ring_topology` 的 macrocycle 分支,并生成属于它自己的简化建议:
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.75
+Confidence: 1.00
+Dominant penalties:
+1. Macrocyclic ring of 9 atoms (at or above the 9-atom macrocycle threshold).
+Simplification suggestions (heuristic, not a guarantee):
+1. SimplifyMacrocyclicClosure: Macrocyclic ring closure is a direct driver of the ring_topology contribution to difficulty (large-ring closures often need high-dilution or specialized macrocyclization methods). A smaller ring or acyclic analog, if chemically acceptable, would remove this burden — this is a structural heuristic, not a guarantee.
 ```
 
 由于 fragment rarity 仍未实现,总体分数仍会低于完整版 v0.1 给出的结果。
@@ -114,9 +130,11 @@ Dominant penalties:
 
 尚未实现的组件在 `ComponentScores` 中显示为 `None`,而不是伪造的零分。
 
+`suggestions: Vec<SimplificationSuggestion>` 目前覆盖 6 种代码中的 3 种(`ReplaceBridgedRingWithMonocyclicAnalog`、`SimplifyMacrocyclicClosure`、`ReduceStereocenterDensity`)— 详见"局限性"。所有建议都仅是诊断性的、启发式的,从不宣称确定性(`expected_effect` 始终为 `MayReduceDifficulty`,从不是 `LikelyReducesDifficulty`)。
+
 ## 与现有工具的区别
 
-* **SAscore** 将片段频率与复杂度惩罚合并为单一数值返回。RENSEI 返回按组件划分的诊断结果、置信度、适用性、证据,以及(未来)改进建议。
+* **SAscore** 将片段频率与复杂度惩罚合并为单一数值返回。RENSEI 返回按组件划分的诊断结果、置信度、适用性、证据,以及简化建议。
 * **SYBA** 是一个易/难二分类器。RENSEI 则以诊断与解释为核心。
 * **SCScore** 是一个学习得到的合成复杂度分数。RENSEI 则分解为透明的、具有化学意义命名的因素。
 * **RAscore** 近似逆合成成功率。RENSEI 是 route-free 的,并解释其评估背后的结构性原因。
@@ -129,6 +147,7 @@ Dominant penalties:
 * `stereochemical_burden` 仅覆盖四面体立体中心的数量与密度。E/Z 双键立体化学、atropisomerism、连续立体中心、季碳邻位效应,以及 meso 化合物检测均未实现 — 其中 E/Z 未实现的原因是:chematic 的 E/Z 判定需要 2D 坐标,而仅基于 SMILES 的处理流程中并不具备这些坐标。
 * `functional_group_liability` 仅覆盖反应性/不稳定官能团,直接使用 chematic 的 Brenk et al.(2008)结构警示集。相互不兼容的官能团组合、密集官能化、保护基压力、化学选择性负担、多官能对称性破坏,以及难以处理的氧化态组合均未实现 — chematic 未提供任何氧化态相关 API,因此最后一项无法实现。Brenk 的规则集最初是作为药物化学筛选库的"可取性"过滤器验证的,而非合成难度信号,因此其中一些警示会对常见、廉价且有先例的官能团产生反应 — 例如阿司匹林会触发 4 条 Brenk 警示,并被判定为 `ModeratelyAccessible`,尽管它是极易合成的分子之一。这是一个与上述可旋转键问题形状相同的已知缺口,预计将通过同样的方式(实现 fragment rarity)得到纠正。
 * 目前还没有 fragment-rarity 语料库,因此无法检测新颖/稀有的子结构。
+* 简化建议目前仅覆盖 `SuggestionCode` 6 种代码中的 3 种(桥环、macrocycle、立体中心密度)。其余 3 种缺少可用信号:季碳邻位关系尚未在任何地方计算;`brenk_matches_detailed` 按模式而非按出现次数合并原子,因此"移除多个相似反应性基团中的一个"无法定位具体是哪一次出现;"增加片段先例"则需要 fragment rarity,而该组件已被推迟实现。所有建议的置信度都是一个统一的固定常数(0.5),而非按建议代码区分 — 因为目前没有针对真实合成结果的校准数据。
 * 在校准语料库出现之前(Phase 2 及以后),`ApplicabilityReport.domain_distance` 始终为 `None`。
 * 覆盖范围仅限于精选的有机元素子集,不尝试支持完整元素周期表或有机金属化合物。
 * 目前评分与阈值均为基于规则的设定,尚未针对外部基准进行验证;目前还没有校准或对比结果。

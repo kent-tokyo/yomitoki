@@ -122,7 +122,7 @@ SynthesizabilityReport
 ├── findings: Vec<Finding>
 ├── dominant_penalties: Vec<Contribution>
 ├── dominant_supports: Vec<Contribution>
-├── suggestions: Vec<SimplificationSuggestion>   // always empty in v0.1
+├── suggestions: Vec<SimplificationSuggestion>   // populated for 3 of 6 SuggestionCode variants
 ├── applicability: ApplicabilityReport
 └── provenance: Provenance
 ```
@@ -199,6 +199,51 @@ taking `&Molecule` (and `&AnalysisConfig` where config affects the
 component, e.g. `max_heavy_atoms`) and returning a `ComponentScore` plus any
 component-specific report data. Components do not depend on each other's
 output — aggregation happens once, centrally, in `analyze.rs`.
+
+## Simplification suggestions
+
+`suggestions.rs` is a pure function, `derive(findings:
+&[Finding]) -> Vec<SimplificationSuggestion>`, run once in `analyze.rs`
+after all component findings are collected — not a component itself (it
+doesn't contribute to `difficulty`/`confidence`), and it depends only on the
+already-finalized `findings` list, not on raw component internals. Suggestions
+are derived regardless of `overall.verdict`: a finding is real whether or
+not the same molecule is also `OutOfDomain` or `Indeterminate` for an
+unrelated reason (e.g. a disconnected fragment), so a suggestion can appear
+alongside either verdict — this is a deliberate choice, matching how
+`dominant_penalties` already includes every difficulty-contributing finding
+regardless of verdict.
+
+Only 3 of `SuggestionCode`'s 6 variants are reachable in v0.1, one per
+finding code this module knows how to translate:
+`RingBridgedComplexity` → `ReplaceBridgedRingWithMonocyclicAnalog`,
+`RingMacrocycle` → `SimplifyMacrocyclicClosure`,
+`StereoDensityHigh` → `ReduceStereocenterDensity`. The other 3 have no
+underlying signal to derive from yet: quaternary-carbon adjacency isn't
+computed anywhere; `brenk_matches_detailed` unions atoms per pattern rather
+than reporting per-occurrence matches, so `RemoveSimilarReactiveGroup` can't
+identify which specific occurrence to point at; `IncreaseFragmentPrecedent`
+needs `fragment_rarity`, which is deferred entirely.
+
+`target_atoms` is copied directly from the source finding's own `atoms`
+field — for `ReduceStereocenterDensity` this is always empty, because
+`stereochemical_burden`'s findings never carry atom indices in the first
+place. This is a confirmed chematic API gap, not an oversight: chematic's
+`stereo_completeness` (used by `stereochemical_burden::compute`) reports
+only aggregate counts (`specified`/`unspecified`/`total_centers`), not which
+atoms are centers, and `chematic-chem`'s `assign_cip`/
+`tetrahedral_stereo_neighbors` only cover atoms with an explicit `@`/`@@`
+chirality annotation — they'd under-count relative to the density this
+finding is actually about (specified *and* unspecified centers together).
+
+`ExpectedEffect` is always `MayReduceDifficulty`, never
+`LikelyReducesDifficulty` — nothing in v0.1 is calibrated against real
+synthesis outcomes, so claiming the higher-certainty variant would overstate
+what this crate knows. `confidence` is a single flat named constant,
+`rules::SUGGESTION_CONFIDENCE_HEURISTIC` (`0.5`), applied to every
+suggestion regardless of which finding it came from, for the same reason:
+differentiating confidence between suggestion codes without calibration
+data would imply a precision this crate doesn't have.
 
 ## Scoring direction
 
@@ -336,7 +381,10 @@ Not implemented in v0.1 so far (tracked, not stubbed with fake data):
   work on top of the primitives chematic already provides
   (`identify_functional_groups` for FG clustering/density,
   `chematic::smarts` for anything custom).
-* Simplification suggestions — `suggestions` is always an empty `Vec`.
+* Simplification suggestions — 3 of `SuggestionCode`'s 6 variants
+  (`ReduceAdjacentQuaternaryCenters`, `RemoveSimilarReactiveGroup`,
+  `IncreaseFragmentPrecedent`) are not reachable yet; see "Simplification
+  suggestions" above for exactly why each is blocked.
 * Fragment corpus, model files, calibration, ML.
 * `ApplicabilityReport.domain_distance` — needs a calibration corpus that
   doesn't exist yet; always `None`.

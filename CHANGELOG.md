@@ -33,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   preserves input order and never stops on one record's failure. `jsonl`
   output uses the same `{"input", "report"|"error"}` wrapper shape in both
   single-molecule and batch mode.
+- Simplification suggestions (`suggestions.rs`): `SynthesizabilityReport
+  .suggestions` is now populated for 3 of `SuggestionCode`'s 6 variants
+  (`ReplaceBridgedRingWithMonocyclicAnalog`, `SimplifyMacrocyclicClosure`,
+  `ReduceStereocenterDensity`), derived from existing findings. Every
+  suggestion is diagnostic-only and heuristic (`expected_effect` is always
+  `MayReduceDifficulty`, confidence a flat named constant); the remaining 3
+  codes have no underlying signal yet. `ruleset_version` bumped to 0.5.0.
 
 ### Changed
 

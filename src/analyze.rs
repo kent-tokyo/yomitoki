@@ -116,13 +116,15 @@ pub fn analyze(
         input_quality: Some(applicability_outcome.score),
     };
 
+    let suggestions = crate::suggestions::derive(&findings);
+
     Ok(SynthesizabilityReport {
         overall,
         components,
         findings,
         dominant_penalties,
         dominant_supports: Vec::new(),
-        suggestions: Vec::new(),
+        suggestions,
         applicability: applicability_outcome.report,
         provenance: crate::provenance::build(config),
     })

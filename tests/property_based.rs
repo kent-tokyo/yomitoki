@@ -1,8 +1,9 @@
 //! Property-based invariants (AGENTS.md §14.4): across many
 //! (molecule, config) combinations, `analyze` must never panic, never
 //! produce NaN/Infinity, never leave a score outside `0.0..=1.0`, every
-//! `Contribution` must stay within that same probability range, and every
-//! finding's atom indices must be within the source molecule's atom count.
+//! `Contribution` must stay within that same probability range, every
+//! finding's atom indices must be within the source molecule's atom count,
+//! and the same holds for every suggestion's confidence and target atoms.
 //!
 //! §14.4's own wording asks that "the contribution sum satisfies the
 //! contract" — read here as "every individual contribution stays in
@@ -128,6 +129,18 @@ proptest! {
                     atom.0 < atom_count,
                     "finding {:?} references atom {} but molecule only has {atom_count} atoms",
                     finding.code,
+                    atom.0
+                );
+            }
+        }
+
+        for suggestion in &report.suggestions {
+            assert_probability_like(suggestion.confidence.value(), "suggestion confidence");
+            for atom in &suggestion.target_atoms {
+                prop_assert!(
+                    atom.0 < atom_count,
+                    "suggestion {:?} references atom {} but molecule only has {atom_count} atoms",
+                    suggestion.code,
                     atom.0
                 );
             }

@@ -98,7 +98,8 @@ rensei analyze --input molecules.sdf --format jsonl --output reports.jsonl
 ## Report shape
 
 Actual output of `cargo run --example basic`, current as of this component
-set. Norbornane (`C1CC2CCC1C2`) exercises ring topology only:
+set. Norbornane (`C1CC2CCC1C2`) exercises ring topology, and its bridged
+ring produces a simplification suggestion:
 
 ```text
 Verdict: ModeratelyAccessible
@@ -106,6 +107,8 @@ Synthesizability: 0.66
 Confidence: 1.00
 Dominant penalties:
 1. Bridged ring system spanning 7 atoms — bridgehead connectivity typically increases synthetic difficulty.
+Simplification suggestions (heuristic, not a guarantee):
+1. ReplaceBridgedRingWithMonocyclicAnalog: Bridgehead connectivity in this ring system is a direct driver of the ring_topology contribution to difficulty. A monocyclic (or less-fused) analog, if the target application allows one, would remove this specific burden — this is a structural heuristic, not a guarantee the replacement is chemically equivalent or that synthesis actually becomes easier.
 ```
 
 A stereocenter-dense fragment (`CC(O)C(N)C(C)C(O)C(N)C`) exercises
@@ -122,6 +125,8 @@ Dominant penalties:
 1. 4 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
 2. Stereocenter density 0.33 is above the 0.25 threshold — stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal control.
 3. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
+Simplification suggestions (heuristic, not a guarantee):
+1. ReduceStereocenterDensity: Stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal stereocontrol. Reducing the number of stereocenters, or spreading them further apart in the structure, would lower this contribution to difficulty — this is a structural heuristic, not a guarantee.
 ```
 
 An epoxide (`C1CO1`) exercises `functional_group_liability` on its own —
@@ -133,6 +138,19 @@ Synthesizability: 0.87
 Confidence: 1.00
 Dominant penalties:
 1. Reactive/unstable functional group detected: epoxide (Brenk et al. 2008 structural alert).
+```
+
+A 9-membered ring (`C1CCCCCCCC1`) exercises the macrocycle branch of
+`ring_topology`, and its own simplification suggestion:
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.75
+Confidence: 1.00
+Dominant penalties:
+1. Macrocyclic ring of 9 atoms (at or above the 9-atom macrocycle threshold).
+Simplification suggestions (heuristic, not a guarantee):
+1. SimplifyMacrocyclicClosure: Macrocyclic ring closure is a direct driver of the ring_topology contribution to difficulty (large-ring closures often need high-dilution or specialized macrocyclization methods). A smaller ring or acyclic analog, if chemically acceptable, would remove this burden — this is a structural heuristic, not a guarantee.
 ```
 
 With fragment rarity still missing, scores overall remain lower than a
@@ -156,11 +174,18 @@ comparable across versions — see `docs/architecture.md`.
 Unimplemented components appear as `None` in `ComponentScores`, not as
 fabricated zero scores.
 
+`suggestions: Vec<SimplificationSuggestion>` is populated for 3 of its 6
+possible codes (`ReplaceBridgedRingWithMonocyclicAnalog`,
+`SimplifyMacrocyclicClosure`, `ReduceStereocenterDensity`) — see
+Limitations. Every suggestion is diagnostic-only, heuristic, and never
+claims certainty (`expected_effect` is always `MayReduceDifficulty`, never
+`LikelyReducesDifficulty`).
+
 ## How this differs from existing tools
 
 * **SAscore** returns fragment-frequency and complexity penalties as a
   single number. RENSEI returns component-wise diagnostics, confidence,
-  applicability, evidence, and (eventually) suggestions.
+  applicability, evidence, and simplification suggestions.
 * **SYBA** is an easy/hard classifier. RENSEI is a diagnostic and
   explanation tool.
 * **SCScore** is a learned synthetic-complexity score. RENSEI decomposes
@@ -202,6 +227,15 @@ fabricated zero scores.
   one above (fragment rarity, once implemented).
 * No fragment-rarity corpus exists yet, so novel/rare substructures are not
   detected.
+* Simplification suggestions only cover 3 of `SuggestionCode`'s 6 variants
+  (bridged ring, macrocycle, stereocenter density) — the other 3 need
+  signals that don't exist yet: quaternary-carbon adjacency isn't computed
+  anywhere, `brenk_matches_detailed` unions atoms per pattern rather than
+  per occurrence (so "remove one of several similar reactive groups" can't
+  identify which occurrence to point at), and "increase fragment precedent"
+  needs fragment rarity, which is deferred. Every suggestion's confidence
+  is a flat, named constant (0.5), not per-suggestion-code, since none are
+  calibrated against real synthesis outcomes.
 * `ApplicabilityReport.domain_distance` is always `None` until a calibration
   corpus exists (Phase 2+).
 * Coverage is limited to a curated organic-element subset — no attempt at

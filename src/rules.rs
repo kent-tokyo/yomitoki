@@ -6,7 +6,7 @@
 //! any constant below changes — it's recorded in every report's
 //! `Provenance`.
 
-pub const RULESET_VERSION: &str = "0.4.0";
+pub const RULESET_VERSION: &str = "0.5.0";
 
 // ---------------------------------------------------------------------------
 // Applicability
@@ -242,3 +242,18 @@ pub(crate) fn indeterminate_confidence_threshold(strictness: crate::config::Stri
 pub(crate) const DIFFICULTY_LIKELY_ACCESSIBLE_MAX: f64 = 0.25;
 pub(crate) const DIFFICULTY_MODERATE_MAX: f64 = 0.5;
 pub(crate) const DIFFICULTY_CHALLENGING_MAX: f64 = 0.75;
+
+// ---------------------------------------------------------------------------
+// Simplification suggestions
+// ---------------------------------------------------------------------------
+
+/// Confidence assigned to every v0.1 simplification suggestion (AGENTS.md
+/// §9), regardless of which finding it was derived from. Deliberately flat
+/// rather than per-suggestion-code: nothing in v0.1 has been calibrated
+/// against real synthesis outcomes (no corpus exists — same gap as
+/// `fragment_rarity`), so differentiating confidence between, say, a
+/// bridged-ring suggestion and a stereocenter-density one would imply a
+/// precision this crate doesn't have. `0.5` reads as "this follows from our
+/// own scoring model's causality, not from validated outcomes" — high
+/// enough to be worth surfacing, not so high it reads as calibrated.
+pub(crate) const SUGGESTION_CONFIDENCE_HEURISTIC: f64 = 0.5;

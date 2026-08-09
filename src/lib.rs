@@ -14,7 +14,7 @@ mod report;
 mod rules;
 mod suggestions;
 
-pub use analyze::{analyze, analyze_smiles};
+pub use analyze::{analyze, analyze_batch, analyze_smiles};
 pub use config::{AnalysisConfig, ScoringProfile, Strictness};
 pub use error::YomitokiError;
 pub use report::{

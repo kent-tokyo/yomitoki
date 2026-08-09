@@ -138,6 +138,21 @@ pub fn analyze_smiles(
     analyze(&molecule, config)
 }
 
+/// Analyze many molecules with one shared config (AGENTS.md §18). `result[i]`
+/// corresponds to `molecules[i]` — input order is preserved regardless of
+/// any other molecule's outcome, and one molecule's result never depends on
+/// another's (each is an independent `analyze` call), so this is safe to
+/// parallelize (e.g. via `rayon`'s `par_iter`) without changing output.
+/// Sequential here since nothing in this crate's own benchmarks has shown a
+/// need for it yet — AGENTS.md §18 itself only asks that parallelism be
+/// *possible* ("Rayon利用はfeature flagでもよい"), not that v0.1 ship it.
+pub fn analyze_batch(
+    molecules: &[Molecule],
+    config: &AnalysisConfig,
+) -> Vec<Result<SynthesizabilityReport, YomitokiError>> {
+    molecules.iter().map(|m| analyze(m, config)).collect()
+}
+
 /// Pure verdict-selection logic, factored out of `analyze` so it's testable
 /// without constructing a molecule (AGENTS.md §7: `OutOfDomain` and
 /// `Indeterminate` must be genuinely distinct and independently reachable).

@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   AGENTS.md §27 v0.1 completion criterion. Not a calibration/accuracy
   claim — see `docs/architecture.md`'s "Comparison with SAscore" section.
   No `ruleset_version` bump: no scoring thresholds or weights changed.
+- `analyze_batch(&[Molecule], &AnalysisConfig) -> Vec<Result<...>>`
+  (AGENTS.md §18): a library-level batch entry point, input-order
+  preserving, independent of the CLI's own batch mode. Sequential in v0.1
+  (parallelism is optional per spec, not required); each molecule's result
+  is independent of every other's, so it's safe to parallelize later
+  without changing output.
 - `analyze` / `analyze_smiles` entry points.
 - CI workflow (`.github/workflows/ci.yml`): fmt/clippy/doc, `cargo test`
   on Linux and macOS, MSRV (1.88) check, `cargo-deny` license/advisory

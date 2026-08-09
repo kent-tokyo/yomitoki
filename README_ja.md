@@ -36,6 +36,7 @@ YOMITOKIはroute searchを一切実行しません — これはv0.1のスコー
 * 単なる文章ではなく、機械可読なfinding codeと構造化されたevidenceを出力する。
 * retrosynthesis探索を一切実行しない。YOMITOKIは分子単体を評価するのみで、それを作るための経路を計画することはしない。
 * 単一分子およびバッチ(`.sdf`/SMILESファイル)解析用の`yomitoki` CLIを同梱する — 詳細は下記「コマンドラインインターフェース」を参照。
+* `analyze_batch(&[Molecule], &AnalysisConfig) -> Vec<Result<...>>` — CLIやファイル形式を経由せず、ライブラリ呼び出し側にも同じ入力順序保証付きのバッチ処理エントリポイントを提供する。
 
 ## YOMITOKIがしないこと
 

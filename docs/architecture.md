@@ -41,6 +41,11 @@ pub fn analyze_smiles(
     smiles: &str,
     config: &AnalysisConfig,
 ) -> Result<SynthesizabilityReport, YomitokiError>;
+
+pub fn analyze_batch(
+    molecules: &[chematic::core::Molecule],
+    config: &AnalysisConfig,
+) -> Vec<Result<SynthesizabilityReport, YomitokiError>>;
 ```
 
 `analyze_smiles` is `chematic::smiles::parse` followed by `analyze`. Parsing
@@ -48,6 +53,21 @@ is the only fallible step in the whole pipeline — a molecule that parses
 successfully always returns `Ok(report)`, never `Err`, no matter how
 difficult or out-of-domain it is. A hard-to-synthesize molecule is not an
 error.
+
+`analyze_batch` (AGENTS.md §18) is `molecules.iter().map(|m| analyze(m,
+config)).collect()` — `result[i]` corresponds to `molecules[i]`, and one
+molecule's result never depends on another's, so it's safe to parallelize
+(e.g. with `rayon`'s `par_iter`) without changing output. Sequential in
+v0.1: §18 only asks that parallelism be *possible* behind a feature flag
+("Rayon利用はfeature flagでもよい"), not that it ship now, and nothing in
+this crate's own use so far has shown a need for it. The CLI's own batch
+mode (`run_batch` in `src/bin/yomitoki.rs`) does not call `analyze_batch` —
+it reads records lazily from `SdfReader`/`SmilesRecordReader` and needs to
+interleave per-record *parse* failures with analysis results in one pass,
+a shape `analyze_batch`'s `&[Molecule]` signature (already-parsed input)
+doesn't fit without an extra clone-and-reindex step for no behavioral
+benefit; kept as two separate, both-correct code paths rather than forcing
+one into the other's shape.
 
 ### CLI (`src/bin/yomitoki.rs`)
 

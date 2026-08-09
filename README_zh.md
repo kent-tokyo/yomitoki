@@ -36,6 +36,7 @@ YOMITOKI 从不执行路线搜索 — 这不是 v0.1 阶段的范围限制,而�
 * 输出机器可读的 finding code 与结构化 evidence,而非仅有文字说明。
 * 从不运行逆合成搜索。YOMITOKI 仅对分子本身进行评估,不会为其规划合成路线。
 * 提供 `yomitoki` 命令行工具,支持单分子及批量(`.sdf`/SMILES 文件)分析 — 详见下方“命令行界面”。
+* `analyze_batch(&[Molecule], &AnalysisConfig) -> Vec<Result<...>>` — 无需经过 CLI 或文件格式,为库调用方提供同样保证输入顺序的批处理入口。
 
 ## YOMITOKI 不做什么
 

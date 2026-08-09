@@ -62,6 +62,9 @@ scoping choice. See "What it does not do" below.
   it does not plan a route to make it.
 * Ships a `yomitoki` CLI for single-molecule and batch (`.sdf`/SMILES-file)
   analysis — see Command-line interface below.
+* `analyze_batch(&[Molecule], &AnalysisConfig) -> Vec<Result<...>>` gives
+  library callers the same input-order-preserving batch entry point, without
+  going through the CLI or a file format.
 
 ## What it does not do
 

@@ -22,8 +22,8 @@ to read it and explain what it finds.
 > the evidence and reasoning behind the estimate.
 
 > **Formerly named RENSEI.** The project was renamed to better match
-> its actual role — see "Migration from RENSEI" below if you have
-> existing code or links pointing at the old name.
+> its actual role. It was never published to crates.io under that name,
+> so this was a clean rename, not a deprecated alias.
 
 > **Status: v0.1 in progress.** Five of six planned components are
 > implemented: `input_quality`/`applicability`, `ring_topology`,
@@ -390,34 +390,6 @@ has been validated against real synthesis outcomes yet.
 Given the same input, `AnalysisConfig`, and yomitoki/chematic/ruleset
 versions, `analyze`/`analyze_smiles` always return the same report — no
 randomness is used in the core evaluation path.
-
-## Migration from RENSEI
-
-YOMITOKI was previously developed under the name RENSEI. The project was
-never published to crates.io under that name, so this is a clean rename,
-not a deprecated alias — update any local references:
-
-```rust
-// before
-use rensei::{analyze_smiles, AnalysisConfig};
-
-// after
-use yomitoki::{analyze_smiles, AnalysisConfig};
-```
-
-```bash
-# before
-rensei analyze "CCO"
-
-# after
-yomitoki analyze "CCO"
-```
-
-`RenseiError` is now `YomitokiError`; `Provenance.rensei_version` is now
-`Provenance.yomitoki_version` (`schema_version` bumped to `0.2.0` to reflect
-the field rename). Every other public type name was already generic
-(`SynthesizabilityReport`, `AnalysisConfig`, `Finding`, ...) and is
-unchanged.
 
 ## License
 

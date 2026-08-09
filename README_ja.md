@@ -12,7 +12,7 @@ YOMITOKIは、[chematic](https://github.com/kent-tokyo/chematic)上に構築さ�
 
 > YOMITOKIは合成容易性を推定するだけではなく、その推定の根拠と推論過程を明らかにします。
 
-> **旧名称はRENSEIです。** プロジェクトの実際の役割により合致するよう改名しました。既存コードやリンクが旧名称を参照している場合は、下記「RENSEIからの移行」を参照してください。
+> **旧名称はRENSEIです。** プロジェクトの実際の役割により合致するよう改名しました。その名称ではcrates.ioに公開されたことがないため、これは非推奨エイリアスではなく、クリーンな改名です。
 
 > **ステータス: v0.1開発中。** 計画中の6コンポーネントのうち5つが実装済みです: `input_quality`/`applicability`、`ring_topology`、`size_topology`、`stereochemical_burden`、`functional_group_liability`。残るは`fragment_rarity`のみです。現在のスコープと未実装部分については[`docs/architecture.md`](docs/architecture.md)を参照してください。
 
@@ -229,28 +229,6 @@ spiro ring system                           5.52               0.20  LikelyAcces
 ## 再現性
 
 同一の入力、同一の`AnalysisConfig`、同一のyomitoki/chematic/rulesetバージョンであれば、`analyze`/`analyze_smiles`は常に同じレポートを返します — コアの評価処理には乱数を一切使用していません。
-
-## RENSEIからの移行
-
-YOMITOKIは、以前はRENSEIという名称で開発されていました。その名称ではcrates.ioに公開されたことがないため、これは非推奨エイリアスではなく、クリーンな改名です — ローカルの参照箇所を更新してください:
-
-```rust
-// 変更前
-use rensei::{analyze_smiles, AnalysisConfig};
-
-// 変更後
-use yomitoki::{analyze_smiles, AnalysisConfig};
-```
-
-```bash
-# 変更前
-rensei analyze "CCO"
-
-# 変更後
-yomitoki analyze "CCO"
-```
-
-`RenseiError`は`YomitokiError`に、`Provenance.rensei_version`は`Provenance.yomitoki_version`になりました(フィールド名変更を反映して`schema_version`を`0.2.0`にbump)。それ以外の公開型名(`SynthesizabilityReport`、`AnalysisConfig`、`Finding`など)はすでに汎用的な名称だったため変更はありません。
 
 ## ライセンス
 

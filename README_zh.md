@@ -12,7 +12,7 @@ YOMITOKI 不仅仅返回一个单一的合成可及性分数,而是读取分子�
 
 > YOMITOKI 不仅仅是估算可合成性,它还揭示了该估算背后的证据与推理过程。
 
-> **曾用名 RENSEI。** 项目已更名,以更准确地反映其实际职责。如果你的代码或链接仍指向旧名称,请参见下方“从 RENSEI 迁移”。
+> **曾用名 RENSEI。** 项目已更名,以更准确地反映其实际职责。该名称从未在 crates.io 上发布过,因此这是一次干净的重命名,而不是一个废弃别名。
 
 > **状态:v0.1 开发中。** 计划中的六个组件已实现五个: `input_quality`/`applicability`、`ring_topology`、`size_topology`、`stereochemical_burden`、`functional_group_liability`。仅剩 `fragment_rarity`。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
 
@@ -229,28 +229,6 @@ spiro ring system                           5.52               0.20  LikelyAcces
 ## 可复现性
 
 给定相同的输入、相同的 `AnalysisConfig`,以及相同的 yomitoki/chematic/ruleset 版本,`analyze`/`analyze_smiles` 总是返回相同的报告 — 核心评估流程中不使用任何随机性。
-
-## 从 RENSEI 迁移
-
-YOMITOKI 此前以 RENSEI 之名开发。该名称从未在 crates.io 上发布过,因此这是一次干净的重命名,而不是一个废弃别名 — 请更新本地引用:
-
-```rust
-// 之前
-use rensei::{analyze_smiles, AnalysisConfig};
-
-// 之后
-use yomitoki::{analyze_smiles, AnalysisConfig};
-```
-
-```bash
-# 之前
-rensei analyze "CCO"
-
-# 之后
-yomitoki analyze "CCO"
-```
-
-`RenseiError` 现更名为 `YomitokiError`;`Provenance.rensei_version` 现更名为 `Provenance.yomitoki_version`(为反映字段重命名,`schema_version` 已提升至 `0.2.0`)。其余公开类型名称(`SynthesizabilityReport`、`AnalysisConfig`、`Finding` 等)原本就是通用名称,未作更改。
 
 ## 许可协议
 

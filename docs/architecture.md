@@ -6,10 +6,10 @@ scheme, and non-goals for YOMITOKI v0.1. It reflects what is actually
 implemented today, not the eventual full scope — see "Non-goals / deferred"
 at the end for what's intentionally missing.
 
-YOMITOKI was previously developed under the name RENSEI; see the README's
-"Migration from RENSEI" section for the concrete rename (crate/binary name,
-`RenseiError` → `YomitokiError`, `Provenance.rensei_version` →
-`yomitoki_version`). The rename also reflects the project's actual role:
+YOMITOKI was previously developed under the name RENSEI (renamed:
+crate/binary name, `RenseiError` → `YomitokiError`,
+`Provenance.rensei_version` → `yomitoki_version`; see `CHANGELOG.md` for
+the full rename entry). The rename also reflects the project's actual role:
 YOMITOKI reads and explains molecular structure — it does not modify,
 optimize, or regenerate molecules. That functionality, if it's ever built,
 belongs to a different, unrelated project.

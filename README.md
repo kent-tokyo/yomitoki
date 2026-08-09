@@ -10,18 +10,20 @@ RENSEI reports why a molecule appears accessible or difficult,
 how confident that assessment is, and which structural factors
 dominate the result.
 
-> **Status: v0.1 in progress.** Only the `input_quality`/`applicability`,
-> `ring_topology`, `size_topology`, and `stereochemical_burden` components
-> are implemented so far. See [`docs/architecture.md`](docs/architecture.md)
-> for the current scope and what's still missing.
+> **Status: v0.1 in progress.** Five of six planned components are
+> implemented: `input_quality`/`applicability`, `ring_topology`,
+> `size_topology`, `stereochemical_burden`, and
+> `functional_group_liability`. Only `fragment_rarity` remains. See
+> [`docs/architecture.md`](docs/architecture.md) for the current scope and
+> what's still missing.
 
 ## What it does
 
 * Parses a molecule (via `chematic`) and returns a structured
   `SynthesizabilityReport`, not a single number.
 * Breaks the assessment down into independent components (ring topology,
-  size/topology, stereochemical burden, input quality/applicability today;
-  fragment rarity and functional-group liabilities are planned).
+  size/topology, stereochemical burden, functional-group liabilities, input
+  quality/applicability today; fragment rarity is planned).
 * Separates **score** (synthesizability/difficulty), **confidence** (how
   reliable the judgment is), and **applicability** (whether the molecule is
   even in the model's domain) into distinct fields — a hard-to-make molecule
@@ -76,27 +78,39 @@ Dominant penalties:
 1. Bridged ring system spanning 7 atoms — bridgehead connectivity typically increases synthetic difficulty.
 ```
 
-A stereocenter-dense fragment (`CC(O)C(N)C(C)C(O)C(N)C`) exercises both
-`stereochemical_burden` (difficulty) and applicability's independent
-confidence penalty for unspecified stereochemistry — note that difficulty
-and confidence move separately, not together:
+A stereocenter-dense fragment (`CC(O)C(N)C(C)C(O)C(N)C`) exercises
+`stereochemical_burden` and `functional_group_liability` (difficulty) plus
+applicability's independent confidence penalty for unspecified
+stereochemistry — note that difficulty and confidence move separately, not
+together:
 
 ```text
-Verdict: LikelyAccessible
-Synthesizability: 0.78
+Verdict: ModeratelyAccessible
+Synthesizability: 0.74
 Confidence: 0.85
 Dominant penalties:
 1. 4 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
 2. Stereocenter density 0.33 is above the 0.25 threshold — stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal control.
+3. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
 ```
 
-With fragment rarity and functional-group liabilities still missing,
-scores overall remain lower than a full v0.1 would produce.
+An epoxide (`C1CO1`) exercises `functional_group_liability` on its own —
+it wraps chematic's Brenk et al. (2008) structural-alert set directly:
+
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.87
+Confidence: 1.00
+Dominant penalties:
+1. Reactive/unstable functional group detected: epoxide (Brenk et al. 2008 structural alert).
+```
+
+With fragment rarity still missing, scores overall remain lower than a
+full v0.1 would produce.
 
 Every report also carries a `Provenance` block (schema version, rensei
 version, chematic version, ruleset version, config hash) so results are
-comparable across versions — see §16 of the design spec (`AGENTS.md`) and
-`docs/architecture.md`.
+comparable across versions — see `docs/architecture.md`.
 
 ## Component status (v0.1)
 
@@ -106,8 +120,8 @@ comparable across versions — see §16 of the design spec (`AGENTS.md`) and
 | `ring_topology` | implemented |
 | `size_topology` | implemented |
 | `stereochemical_burden` | implemented (tetrahedral centers only — see Limitations) |
+| `functional_group_liability` | implemented (reactive/unstable groups only — see Limitations) |
 | `fragment_rarity` | not yet implemented |
-| `functional_group_liability` | not yet implemented |
 
 Unimplemented components appear as `None` in `ComponentScores`, not as
 fabricated zero scores.
@@ -128,9 +142,10 @@ fabricated zero scores.
 
 ## Limitations
 
-* v0.1 only implements four of the six planned components (see table
+* v0.1 only implements five of the six planned components (see table
   above); `overall.difficulty`/`overall.synthesizability` currently reflect
-  ring topology, size/topology, and stereochemical burden only.
+  ring topology, size/topology, stereochemical burden, and functional-group
+  liability only.
 * `size_topology`'s rotatable-bond term over-penalizes simple, commercially
   available long unbranched chains (many rotatable bonds, essentially no
   synthetic difficulty) — this is a known gap that fragment rarity (not yet
@@ -142,6 +157,19 @@ fabricated zero scores.
   runs, quaternary-carbon adjacency, and meso detection are not implemented
   — E/Z specifically because chematic's E/Z assignment needs 2D coordinates
   the SMILES-only pipeline doesn't have.
+* `functional_group_liability` only covers reactive/unstable functional
+  groups, via chematic's Brenk et al. (2008) structural-alert set directly.
+  Mutually incompatible functional-group combinations, dense
+  functionalization, protecting-group pressure, chemoselectivity burden,
+  polyfunctional symmetry breaking, and difficult oxidation-state
+  combinations are not implemented — chematic exposes no oxidation-state
+  API to build the last one on. Brenk's set was validated as a med-chem
+  screening-library desirability filter, not a synthetic-difficulty
+  signal, so several of its alerts fire on common, cheaply-precedented
+  groups — aspirin, for example, trips four Brenk alerts and lands at
+  `ModeratelyAccessible` despite being trivially synthesizable. This is
+  a known gap with the same shape and expected fix as the rotatable-bond
+  one above (fragment rarity, once implemented).
 * No fragment-rarity corpus exists yet, so novel/rare substructures are not
   detected.
 * `ApplicabilityReport.domain_distance` is always `None` until a calibration
@@ -168,7 +196,6 @@ No paper or citable release exists yet.
 
 ## Roadmap
 
-See `AGENTS.md` (development spec) for the full phased roadmap:
-fragment rarity, functional-group-liability component, calibration against
+Remaining planned work: fragment rarity, calibration against
 SAscore/RAscore/route-search outcomes, a CLI, and eventually Python
 bindings.

@@ -108,7 +108,7 @@ fn push(
     evidence: FindingEvidence,
     weight: f64,
 ) {
-    let explanation = crate::explain::render(code, evidence, 0);
+    let explanation = crate::explain::render(code, evidence, 0, None);
     findings.push(Finding {
         code,
         severity,

@@ -42,6 +42,7 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
                 FindingCode::InputUnsupportedElement,
                 FindingEvidence::default(),
                 unsupported_atoms.len(),
+                None,
             ),
         });
     }
@@ -63,6 +64,7 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
                 FindingCode::InputUnusualValence,
                 FindingEvidence::default(),
                 atoms.len(),
+                None,
             ),
         });
     }
@@ -79,6 +81,7 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
                 FindingCode::InputDisconnected,
                 FindingEvidence::default(),
                 0,
+                None,
             ),
         });
     }
@@ -105,6 +108,7 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
                     threshold: Some(config.max_heavy_atoms as f64),
                 },
                 0,
+                None,
             ),
         });
     }

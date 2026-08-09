@@ -6,12 +6,12 @@ RENSEI 是一个基于 [chematic](https://github.com/kent-tokyo/chematic) 构建
 
 RENSEI 不仅仅返回一个单一的合成可及性分数,而是报告一个分子为何看起来易于合成或难以合成、该判断的可信程度如何,以及哪些结构因素主导了这一结果。
 
-> **状态:v0.1 开发中。** 目前仅实现了 `input_quality`/`applicability`、`ring_topology`、`size_topology` 和 `stereochemical_burden` 四个组件。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
+> **状态:v0.1 开发中。** 计划中的六个组件已实现五个: `input_quality`/`applicability`、`ring_topology`、`size_topology`、`stereochemical_burden`、`functional_group_liability`。仅剩 `fragment_rarity`。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
 
 ## RENSEI 做什么
 
 * 解析分子(通过 `chematic`),返回结构化的 `SynthesizabilityReport`,而不是单一数值。
-* 将评估分解为独立的组件(目前有 ring topology、size/topology、stereochemical burden、input quality/applicability;fragment rarity 与 functional-group liabilities 计划中)。
+* 将评估分解为独立的组件(目前有 ring topology、size/topology、stereochemical burden、functional-group liability、input quality/applicability;fragment rarity 计划中)。
 * 将 **score**(可合成性/难度)、**confidence**(判断的可信度)与 **applicability**(该分子是否在模型的适用范围内)分为不同字段 — 难以合成的分子不会因此自动被判定为低置信度。
 * 输出机器可读的 finding code 与结构化 evidence,而非仅有文字说明。
 * 从不运行逆合成搜索。RENSEI 仅对分子本身进行评估,不会为其规划合成路线。
@@ -58,20 +58,31 @@ Dominant penalties:
 1. Bridged ring system spanning 7 atoms — bridgehead connectivity typically increases synthetic difficulty.
 ```
 
-一个立体中心密集的片段(`CC(O)C(N)C(C)C(O)C(N)C`)同时涉及 `stereochemical_burden`(difficulty)与 applicability 针对未指定立体化学的独立 confidence 惩罚 — 注意 difficulty 与 confidence 是独立变化的:
+一个立体中心密集的片段(`CC(O)C(N)C(C)C(O)C(N)C`)同时涉及 `stereochemical_burden` 与 `functional_group_liability`(difficulty),以及 applicability 针对未指定立体化学的独立 confidence 惩罚 — 注意 difficulty 与 confidence 是独立变化的:
 
 ```text
-Verdict: LikelyAccessible
-Synthesizability: 0.78
+Verdict: ModeratelyAccessible
+Synthesizability: 0.74
 Confidence: 0.85
 Dominant penalties:
 1. 4 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
 2. Stereocenter density 0.33 is above the 0.25 threshold — stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal control.
+3. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
 ```
 
-由于 fragment rarity 与 functional-group liability 仍未实现,总体分数仍会低于完整版 v0.1 给出的结果。
+一个环氧化物(`C1CO1`)单独涉及 `functional_group_liability` — 它直接封装了 chematic 的 Brenk et al.(2008)结构警示集:
 
-每份报告还包含一个 `Provenance` 区块(schema 版本、rensei 版本、chematic 版本、ruleset 版本、config hash),使不同版本之间的结果具有可比性 — 详见设计规范(`AGENTS.md`)第 16 节及 `docs/architecture.md`。
+```text
+Verdict: LikelyAccessible
+Synthesizability: 0.87
+Confidence: 1.00
+Dominant penalties:
+1. Reactive/unstable functional group detected: epoxide (Brenk et al. 2008 structural alert).
+```
+
+由于 fragment rarity 仍未实现,总体分数仍会低于完整版 v0.1 给出的结果。
+
+每份报告还包含一个 `Provenance` 区块(schema 版本、rensei 版本、chematic 版本、ruleset 版本、config hash),使不同版本之间的结果具有可比性 — 详见 `docs/architecture.md`。
 
 ## 组件实现状态(v0.1)
 
@@ -81,8 +92,8 @@ Dominant penalties:
 | `ring_topology` | 已实现 |
 | `size_topology` | 已实现 |
 | `stereochemical_burden` | 已实现(仅四面体立体中心 — 见"局限性") |
+| `functional_group_liability` | 已实现(仅反应性/不稳定官能团 — 见"局限性") |
 | `fragment_rarity` | 尚未实现 |
-| `functional_group_liability` | 尚未实现 |
 
 尚未实现的组件在 `ComponentScores` 中显示为 `None`,而不是伪造的零分。
 
@@ -96,9 +107,10 @@ Dominant penalties:
 
 ## 局限性
 
-* v0.1 目前仅实现了计划中六个组件里的四个(见上表);`overall.difficulty`/`overall.synthesizability` 目前仅反映 ring topology、size/topology 与 stereochemical burden 带来的负担。
+* v0.1 目前仅实现了计划中六个组件里的五个(见上表);`overall.difficulty`/`overall.synthesizability` 目前仅反映 ring topology、size/topology、stereochemical burden 与 functional-group liability 带来的负担。
 * `size_topology` 中的可旋转键(rotatable bond)项会过度惩罚简单的、可商业购得的无支链长链分子(可旋转键很多,但合成难度几乎为零)— 这是一个已知的缺口,预计在 fragment rarity(尚未实现)将此类片段识别为常见/有先例的片段后得到纠正。详见 `docs/architecture.md` 的 "Scoring direction" 一节。
 * `stereochemical_burden` 仅覆盖四面体立体中心的数量与密度。E/Z 双键立体化学、atropisomerism、连续立体中心、季碳邻位效应,以及 meso 化合物检测均未实现 — 其中 E/Z 未实现的原因是:chematic 的 E/Z 判定需要 2D 坐标,而仅基于 SMILES 的处理流程中并不具备这些坐标。
+* `functional_group_liability` 仅覆盖反应性/不稳定官能团,直接使用 chematic 的 Brenk et al.(2008)结构警示集。相互不兼容的官能团组合、密集官能化、保护基压力、化学选择性负担、多官能对称性破坏,以及难以处理的氧化态组合均未实现 — chematic 未提供任何氧化态相关 API,因此最后一项无法实现。Brenk 的规则集最初是作为药物化学筛选库的"可取性"过滤器验证的,而非合成难度信号,因此其中一些警示会对常见、廉价且有先例的官能团产生反应 — 例如阿司匹林会触发 4 条 Brenk 警示,并被判定为 `ModeratelyAccessible`,尽管它是极易合成的分子之一。这是一个与上述可旋转键问题形状相同的已知缺口,预计将通过同样的方式(实现 fragment rarity)得到纠正。
 * 目前还没有 fragment-rarity 语料库,因此无法检测新颖/稀有的子结构。
 * 在校准语料库出现之前(Phase 2 及以后),`ApplicabilityReport.domain_distance` 始终为 `None`。
 * 覆盖范围仅限于精选的有机元素子集,不尝试支持完整元素周期表或有机金属化合物。
@@ -118,4 +130,4 @@ Dominant penalties:
 
 ## 路线图
 
-完整的分阶段开发计划请参见 `AGENTS.md`(开发规范文档):fragment rarity、functional-group-liability 组件、针对 SAscore/RAscore/路线搜索结果的校准、CLI,以及未来的 Python 绑定。
+剩余计划:fragment rarity、针对 SAscore/RAscore/路线搜索结果的校准、CLI,以及未来的 Python 绑定。

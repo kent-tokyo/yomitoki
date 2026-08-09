@@ -6,7 +6,7 @@
 //! any constant below changes — it's recorded in every report's
 //! `Provenance`.
 
-pub const RULESET_VERSION: &str = "0.3.0";
+pub const RULESET_VERSION: &str = "0.4.0";
 
 // ---------------------------------------------------------------------------
 // Applicability
@@ -150,6 +150,48 @@ pub(crate) const STEREO_BURDEN_SCALE: f64 = 1.5;
 pub(crate) const STEREO_DENSITY_FINDING_THRESHOLD: f64 = 0.25;
 
 // ---------------------------------------------------------------------------
+// Functional-group liabilities
+// ---------------------------------------------------------------------------
+
+/// Burden per distinct triggered Brenk (2008) structural alert
+/// (`chematic::chem::brenk_matches_detailed`). AGENTS.md §5.5's "reactive/
+/// unstable functional groups" category, deliberately scoped to Brenk's own
+/// set rather than a hand-curated one — reusing an existing, published set
+/// is narrower than writing new SMARTS from scratch. Brenk also already
+/// includes `strained_ring_three`/`strained_ring_four`, covering AGENTS.md
+/// §5.5's "strained motifs" example for free. Dense functionalization,
+/// chemoselectivity burden, and oxidation-state combinations are NOT
+/// covered — chematic has no oxidation-state API (confirmed absent) and no
+/// FG-density metric wired in yet; see `docs/architecture.md`.
+///
+/// Known weak spot (documented, not hidden — same treatment as
+/// [`SIZE_WEIGHT_PER_ROTATABLE_BOND`]'s caveat): Brenk et al. 2008 was
+/// validated as a med-chem screening-library *desirability* filter
+/// (reactivity toward assay components, metabolic liability, promiscuity),
+/// not a synthetic-difficulty signal. Several of its ~105 alerts fire on
+/// common, cheaply-precedented groups — confirmed by probing real drugs:
+/// aspirin (`CC(=O)Oc1ccccc1C(=O)O`) trips `phenol`, `phenolic_aldehyde`,
+/// `active_ester`, and `acetal_ketal`; paracetamol trips `phenol`,
+/// `aniline`, and `secondary_amine`. Neither molecule is remotely
+/// difficult to make. Fragment rarity (§5.4, not yet implemented) is
+/// expected to correct for this the same way it's expected to correct the
+/// rotatable-bond term, by recognizing such fragments as common/
+/// precedented.
+pub(crate) const FG_WEIGHT_PER_REACTIVE_GROUP: f64 = 0.12;
+
+/// Scale in the `normalized = 1 - exp(-raw / scale)` burden transform
+/// (AGENTS.md §5.1: burden should be non-linear).
+pub(crate) const FG_BURDEN_SCALE: f64 = 1.5;
+
+/// Per-finding confidence when `brenk_matches_detailed` reports an alert
+/// whose VF2 enumeration was cut off by the visit budget before completing
+/// (empty `atom_indices` — see that function's doc: still a real flagged
+/// alert, just one whose full match extent couldn't be resolved). Lower
+/// than the `1.0` used for a fully-resolved match, never dropped silently
+/// (AGENTS.md §4.4: abstain/flag uncertainty, don't hide it).
+pub(crate) const FG_CONFIDENCE_BUDGET_EXHAUSTED: f64 = 0.5;
+
+// ---------------------------------------------------------------------------
 // Aggregation / verdict
 // ---------------------------------------------------------------------------
 
@@ -170,6 +212,7 @@ pub(crate) const STEREO_DENSITY_FINDING_THRESHOLD: f64 = 0.25;
 pub(crate) const AGGREGATE_WEIGHT_RING_TOPOLOGY: f64 = 1.0;
 pub(crate) const AGGREGATE_WEIGHT_SIZE_TOPOLOGY: f64 = 0.4;
 pub(crate) const AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN: f64 = 0.5;
+pub(crate) const AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY: f64 = 0.4;
 
 /// Below this confidence (and absent a hard applicability failure), the
 /// verdict is `Indeterminate` rather than a difficulty-based bucket.

@@ -87,6 +87,7 @@ pub enum FindingCode {
     SizeHighRotatableBondCount,
     StereoCenterCount,
     StereoDensityHigh,
+    FunctionalGroupReactive,
     InputUnsupportedElement,
     InputDisconnected,
     InputUnusualValence,

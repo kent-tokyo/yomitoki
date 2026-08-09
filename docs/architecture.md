@@ -2,17 +2,16 @@
 
 This document defines the crate boundary, public API, report schema, component
 interface, scoring direction, confidence/abstention contract, versioning
-scheme, and non-goals for RENSEI v0.1, per `AGENTS.md` §32 Task 2. It reflects
-what is actually implemented today, not the full spec — see "Non-goals /
-deferred" at the end for what's intentionally missing.
+scheme, and non-goals for RENSEI v0.1. It reflects what is actually
+implemented today, not the eventual full scope — see "Non-goals / deferred"
+at the end for what's intentionally missing.
 
 ## Crate boundary
 
-Single crate, `rensei`, no workspace split. `AGENTS.md` §10 explicitly warns
-against over-splitting the workspace in v0.1; there is no large embedded
+Single crate, `rensei`, no workspace split — there is no large embedded
 model yet that would justify separate `rensei-core`/`rensei-models`/
 `rensei-cli` crates. That split is revisited when fragment-rarity model files
-(Phase 2) exist.
+exist.
 
 RENSEI depends on `chematic` (registry dependency, not a path dependency) for
 all molecule representation, SMILES parsing, ring perception, and
@@ -39,8 +38,8 @@ pub fn analyze_smiles(
 `analyze_smiles` is `chematic::smiles::parse` followed by `analyze`. Parsing
 is the only fallible step in the whole pipeline — a molecule that parses
 successfully always returns `Ok(report)`, never `Err`, no matter how
-difficult or out-of-domain it is (`AGENTS.md` §17: a hard-to-synthesize
-molecule is not an error).
+difficult or out-of-domain it is. A hard-to-synthesize molecule is not an
+error.
 
 ## chematic API surface used
 
@@ -61,6 +60,7 @@ change across rensei's own test suite before and after the bump.)
 | Stereo completeness | `chematic::perception::stereo_validation::stereo_completeness(&Molecule) -> StereoCompleteness` |
 | Molecular weight | `chematic::chem::molecular_weight(&Molecule) -> f64` |
 | Rotatable bond count | `chematic::chem::rotatable_bond_count(&Molecule) -> usize` |
+| Reactive/unstable functional groups | `chematic::chem::brenk_matches_detailed(&Molecule) -> Vec<(&'static str, Vec<AtomIdx>)>` (Brenk et al. 2008 structural alerts; an entry with an empty atom list means that alert's search was budget-cut, not a zero-atom match) |
 
 Dependency declaration: `chematic = { version = "0.12", features = ["smiles",
 "perception", "chem"] }`. The `chematic` facade crate has `default = []` —
@@ -71,7 +71,12 @@ yet): no macrocycle predicate in `chematic-perception` (only
 `chematic-3d::detect_macrocycle_status`, gated behind the unrelated `threed`
 feature); no single unified `sanitize()`/`validate()` entry point (valence,
 stereo, and connectivity checks are independent calls); no single top-level
-error type spanning all of chematic's functional areas.
+error type spanning all of chematic's functional areas; no oxidation-state
+API anywhere in `chematic-chem`/`chematic-perception` (confirmed absent by
+grep, not assumed); `chematic::smarts::find_matches` has no non-overlapping
+match mode (every embedding is returned, including overlapping ones) —
+irrelevant to `brenk_matches_detailed`, which already reports one entry per
+triggered alert rather than per embedding.
 
 ## Report schema
 
@@ -88,8 +93,9 @@ SynthesizabilityReport
 ```
 
 `dominant_penalties` is sorted by each finding's actual contribution weight
-(from `ring_topology`/`size_topology`/`stereochemical_burden`), not by
-`Finding.severity` — the two are deliberately independent axes (severity is
+(from `ring_topology`/`size_topology`/`stereochemical_burden`/
+`functional_group_liability`), not by `Finding.severity` — the two are
+deliberately independent axes (severity is
 a per-finding chemistry judgment; contribution is what actually fed
 `difficulty`). A `Severity::Low` finding can legitimately rank above a
 `Severity::High` one if its weight is larger.
@@ -101,39 +107,55 @@ back. It is part of the public schema for forward compatibility (a future
 severity-aware consumer, or a v0.2 that derives it from evidence) but should
 not yet be treated as a calibrated signal.
 
-`ComponentScores` has all six fields from `AGENTS.md` §7
+Cross-component ranking in `dominant_penalties` is real coupling: each
+component's weight scale (`RING_WEIGHT_BRIDGED`,
+`SIZE_WEIGHT_PER_ROTATABLE_BOND`, `STEREO_WEIGHT_PER_CENTER`,
+`FG_WEIGHT_PER_REACTIVE_GROUP`) was chosen independently, so a
+stereocenter-dense or reactive-group-dense molecule can legitimately
+outrank a bridged-ring finding once enough of them pile up — see
+`tests/aggregation.rs`'s
+`dominant_penalties_rank_across_components_by_contribution_not_by_component_identity`
+for a fixture pinning down a specific case of this.
+
+`ComponentScores` has all six report fields
 (`size_topology`, `ring_topology`, `stereochemical_burden`, `fragment_rarity`,
 `functional_group_liability`, `input_quality`), each typed
 `Option<ComponentScore>`. `ring_topology`, `size_topology`,
-`stereochemical_burden`, and `input_quality` are `Some` in v0.1; the rest
-are `None`. This is a deliberate choice over populating unimplemented ones
+`stereochemical_burden`, `functional_group_liability`, and `input_quality`
+are `Some` in v0.1; only `fragment_rarity` is `None`. This is a deliberate
+choice over populating unimplemented ones
 with dummy zero scores — `None` says "not evaluated," a zero score would
 falsely say "evaluated, found no burden." Going from `Option` to always-`Some`
 later is additive; the reverse would be a breaking schema change, so starting
 with `Option` is also the safer long-term default.
 
-`Verdict` (§7) defines all six variants (`LikelyAccessible`,
+`Verdict` defines all six variants (`LikelyAccessible`,
 `ModeratelyAccessible`, `Challenging`, `HighlyChallenging`, `Indeterminate`,
 `OutOfDomain`) for schema stability, marked `#[non_exhaustive]`. All six are
 reachable today (see `analyze::tests` for a unit test per branch): the four
 accessibility levels come from the weighted combination of
-`ring_topology`/`size_topology`/`stereochemical_burden`'s normalized burden,
-`OutOfDomain` from applicability's hard-fail triggers, and `Indeterminate`
-when confidence falls below a strictness-dependent threshold without an
-outright hard fail.
+`ring_topology`/`size_topology`/`stereochemical_burden`/
+`functional_group_liability`'s normalized burden, `OutOfDomain` from
+applicability's hard-fail triggers, and `Indeterminate` when confidence
+falls below a strictness-dependent threshold without an outright hard fail.
 
-`FindingCode` (§8.1) is `#[non_exhaustive]` and currently only defines the
-codes the four implemented components actually emit: `RingBridgedComplexity`,
+`FindingCode` is `#[non_exhaustive]` and currently only defines the codes
+the five implemented components actually emit: `RingBridgedComplexity`,
 `RingSpiro`, `RingFusedDense`, `RingMacrocycle`, `SizeLargeMolecularWeight`,
 `SizeHighRotatableBondCount`, `StereoCenterCount`, `StereoDensityHigh`,
-`InputUnsupportedElement`, `InputDisconnected`, `InputUnusualValence`,
-`InputTooLarge`. Codes for not-yet-implemented components (e.g.
-`FRAGMENT_RARE`) are added when those components are.
+`FunctionalGroupReactive`, `InputUnsupportedElement`, `InputDisconnected`,
+`InputUnusualValence`, `InputTooLarge`. `FunctionalGroupReactive` is
+deliberately one generic code covering every triggered Brenk alert rather
+than one code per alert (~105 patterns) — the specific alert name is
+carried in the finding's `explanation` text and the matched atoms in
+`atoms`, not in a proliferation of finding codes. Codes for
+not-yet-implemented components (e.g. `FRAGMENT_RARE`) are added when those
+components are.
 
 Every finding's `explanation: String` is generated from its structured code +
 parameters (`explain.rs`), never authored by hand per instance — this keeps
 structured data as the source of truth and leaves room for future
-localization (§8.3).
+localization.
 
 ## Component interface
 
@@ -148,59 +170,82 @@ output — aggregation happens once, centrally, in `analyze.rs`.
 * `synthesizability`: 1.0 = easy to make.
 * `difficulty`: 1.0 = hard to make.
 
-`difficulty` is a **weighted sum**, not a weighted average, of the three
-difficulty-contributing components' normalized scores — matching AGENTS.md
-§20's own formula (`difficulty = w_topology*topology + w_rings*ring_topology
-+ ...`), which adds `w * normalized` terms directly rather than dividing by
-the weight total:
+`difficulty` is a **weighted sum**, not a weighted average, of the four
+difficulty-contributing components' normalized scores — an unnormalized sum
+of `weight * normalized` terms, not a divide-by-weight-total average:
 
 ```text
 difficulty = AGGREGATE_WEIGHT_RING_TOPOLOGY * ring_topology.normalized
            + AGGREGATE_WEIGHT_SIZE_TOPOLOGY * size_topology.normalized
            + AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN * stereochemical_burden.normalized
+           + AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY * functional_group_liability.normalized
 ```
 
 clamped to `0.0..=1.0` by `ProbabilityLikeScore::new` (weights don't need to
 sum to 1). Ring topology's weight is `1.0` — full pass-through — so a
-molecule with negligible size/stereo burden scores identically to the
-single-ring-topology-component model this crate started with; size and
-stereo contribute additively on top at smaller weights, so each registers as
-extra burden without diluting a strong ring-topology signal when it itself
-is small. See `rules.rs` for the exact weights and the reasoning against a
-normalized (divide-by-total) average.
+molecule with negligible burden from every other component scores
+identically to the single-ring-topology-component model this crate started
+with; size, stereo, and functional-group liability all contribute
+additively on top at smaller weights, so each registers as extra burden
+without diluting a strong ring-topology signal when it itself is small. See
+`rules.rs` for the exact weights and the reasoning against a normalized
+(divide-by-total) average.
 
 `synthesizability = 1.0 - difficulty`. This complementary relationship is a
-v0.1 implementation detail, not a permanent API guarantee — `AGENTS.md` §6
-explicitly reserves the right to decouple them once calibration is
-introduced.
+v0.1 implementation detail, not a permanent API guarantee — the two fields
+may decouple once calibration is introduced.
 
 **Known caveat, documented rather than hidden:** `size_topology`'s
 rotatable-bond term over-penalizes simple, commercially available long
 unbranched chains (many rotatable bonds, essentially no synthetic
-difficulty) — exactly the "structural complexity vs. actual difficulty"
-conflation AGENTS.md §2 names as a problem with existing SA-scoring tools.
-Fragment rarity (§5.4, not yet implemented) is what's meant to correct for
-this by recognizing such fragments as common/precedented; until it exists,
-this is a known, accepted gap, not an oversight.
+difficulty) — the same "structural complexity vs. actual difficulty"
+conflation that existing SA-scoring tools are prone to. Fragment rarity
+(not yet implemented) is what's meant to correct for this by recognizing
+such fragments as common/precedented; until it exists, this is a known,
+accepted gap, not an oversight.
+
+**Second known caveat, same shape:** `functional_group_liability` wraps
+Brenk et al. (2008) directly, which was validated as a med-chem
+screening-library *desirability* filter, not a synthetic-difficulty
+signal. Several of its alerts fire on common, cheaply-precedented groups —
+aspirin trips `phenol`/`phenolic_aldehyde`/`active_ester`/`acetal_ketal`
+and lands at `ModeratelyAccessible` (synthesizability 0.74) despite being
+one of the most trivially synthesizable molecules there is; paracetamol
+similarly trips `phenol`/`aniline`/`secondary_amine`. Fragment rarity is
+expected to correct for this the same way, once it exists.
 
 ## Confidence contract
 
 `confidence` comes entirely from the `input_quality`/applicability
 component: a product of named per-check penalty factors (element coverage,
 valence validity, connectivity, stereo completeness — see `rules.rs`), not a
-hand-tuned per-molecule number. `AGENTS.md` §5.6 requires confidence and
-difficulty to never be conflated — a structurally complex molecule is not
-automatically low-confidence; only actual input-quality/applicability
-problems lower confidence.
+hand-tuned per-molecule number. Confidence and difficulty are never
+conflated — a structurally complex molecule is not automatically
+low-confidence; only actual input-quality/applicability problems lower
+confidence.
 
 `ring_topology`'s, `size_topology`'s, and `stereochemical_burden`'s own
 `ComponentScore.confidence` are all fixed at `1.0`: all three are plain
 deterministic descriptor computations (`find_ring_families`,
 `molecular_weight`, `rotatable_bond_count`, `stereo_completeness`) for any
 molecule that parsed and passed valence validation, so there's no additional
-uncertainty to express there yet. This will stop being a constant once a
-component with genuinely variable rule coverage (e.g. fragment rarity, which
-depends on corpus coverage) is added.
+uncertainty to express there yet.
+
+`functional_group_liability`'s `ComponentScore.confidence` is the minimum
+confidence across its own findings, and is usually `1.0` (Brenk pattern
+matching is deterministic) — it drops to
+`FG_CONFIDENCE_BUDGET_EXHAUSTED` (0.5) only for a finding whose
+`brenk_matches_detailed` alert had its VF2 enumeration cut off by the visit
+budget before completing (an empty `atom_indices`, still a real flagged
+alert per that function's own doc, just one whose match extent is
+unresolved). None of these four components' confidence values are wired
+into `overall.confidence` yet — only applicability's is — so this is
+informational in the schema today, not yet load-bearing for verdict
+selection.
+
+Confidence will stop being effectively-constant once a component with
+genuinely variable rule coverage (e.g. fragment rarity, which depends on
+corpus coverage) is added.
 
 ## Abstention contract
 
@@ -208,8 +253,7 @@ depends on corpus coverage) is added.
 fires: disconnected fragments, too high a fraction of unsupported elements,
 or heavy-atom count above `AnalysisConfig::max_heavy_atoms`. `analyze` still
 returns `Ok(report)` in this case with whatever partial diagnostics were
-computable (§21: "abstain時も可能な範囲のpartial diagnosticsを返す") — abstention is
-never an `Err`.
+computable — abstention is never an `Err`.
 
 `Verdict::Indeterminate` fires when confidence is below a threshold that
 depends on `AnalysisConfig::strictness`
@@ -234,27 +278,37 @@ strictness. See `analyze::tests` for the regression tests covering this.
 
 `config_hash` deliberately does not use `std::hash::DefaultHasher` — that
 hasher is randomized per-process on recent Rust versions and would silently
-break both determinism (§4.5) and cross-run provenance comparability (§4.6).
+break both determinism and cross-run provenance comparability.
 
 ## Non-goals / deferred
 
 Not implemented in v0.1 so far (tracked, not stubbed with fake data):
 
-* CLI (§15).
-* `fragment_rarity`, `functional_group_liability` components.
+* CLI.
+* `fragment_rarity` component.
 * E/Z double-bond stereo, atropisomerism, contiguous stereocenter runs,
-  quaternary-carbon adjacency, meso detection — all named as candidate
-  `stereochemical_burden` indicators in §5.3, none implemented in this
-  slice (see `components/stereochemical_burden.rs` for why: chematic's
-  E/Z assignment needs 2D coordinates the SMILES-only pipeline doesn't
-  have; the rest are additive future work, not blocked on anything).
-* Simplification suggestions (§9) — `suggestions` is always an empty `Vec`.
-* Fragment corpus, model files, calibration, ML (§19, §28).
+  quaternary-carbon adjacency, meso detection — all candidate
+  `stereochemical_burden` indicators, none implemented in this slice (see
+  `components/stereochemical_burden.rs` for why: chematic's E/Z assignment
+  needs 2D coordinates the SMILES-only pipeline doesn't have; the rest are
+  additive future work, not blocked on anything).
+* Within `functional_group_liability`: mutually incompatible functional-
+  group combinations, dense functionalization, protecting-group pressure,
+  chemoselectivity burden, polyfunctional symmetry breaking, multiple-
+  similar-reactive-site counting, and difficult oxidation-state
+  combinations — none implemented in this slice. The oxidation-state one
+  specifically is blocked on chematic exposing no oxidation-state API at
+  all (confirmed absent, not a scope choice); the rest are additive future
+  work on top of the primitives chematic already provides
+  (`identify_functional_groups` for FG clustering/density,
+  `chematic::smarts` for anything custom).
+* Simplification suggestions — `suggestions` is always an empty `Vec`.
+* Fragment corpus, model files, calibration, ML.
 * `ApplicabilityReport.domain_distance` — needs a calibration corpus that
   doesn't exist yet; always `None`.
-* Python/WASM bindings (§26 Phase 6).
+* Python/WASM bindings.
 
-Permanent non-goals (per `AGENTS.md` §2, §28): retrosynthesis planning,
-reaction template application, precursor generation, route ranking, yield
-prediction, toxicity/hazard (SDS) classification, cost prediction, full
-periodic-table or organometallic/polymer support.
+Permanent non-goals: retrosynthesis planning, reaction template
+application, precursor generation, route ranking, yield prediction,
+toxicity/hazard (SDS) classification, cost prediction, full periodic-table
+or organometallic/polymer support.

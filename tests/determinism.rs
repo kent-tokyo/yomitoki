@@ -19,6 +19,20 @@ fn finding_code_multiset(report: &SynthesizabilityReport) -> BTreeMap<FindingCod
     counts
 }
 
+// `FindingCode::FunctionalGroupReactive` is one generic code shared by every
+// triggered Brenk alert (~105 distinct patterns) — the code multiset alone
+// can't tell "epoxide + nitrile" apart from "two epoxides". Comparing
+// explanation strings too (each alert's name is embedded in its rendered
+// text) restores per-alert discriminating power without needing a code per
+// pattern.
+fn explanation_multiset(report: &SynthesizabilityReport) -> BTreeMap<String, usize> {
+    let mut counts = BTreeMap::new();
+    for finding in &report.findings {
+        *counts.entry(finding.explanation.clone()).or_insert(0) += 1;
+    }
+    counts
+}
+
 fn assert_equivalent_reports(a: &SynthesizabilityReport, b: &SynthesizabilityReport, label: &str) {
     let eps = 1e-9;
     assert!(
@@ -45,6 +59,11 @@ fn assert_equivalent_reports(a: &SynthesizabilityReport, b: &SynthesizabilityRep
         "{label}: finding codes differ"
     );
     assert_eq!(
+        explanation_multiset(a),
+        explanation_multiset(b),
+        "{label}: finding explanations differ"
+    );
+    assert_eq!(
         a.findings.len(),
         b.findings.len(),
         "{label}: finding count differs"
@@ -55,6 +74,30 @@ fn assert_equivalent_reports(a: &SynthesizabilityReport, b: &SynthesizabilityRep
 fn atom_reordering_does_not_change_scores_or_findings() {
     let config = AnalysisConfig::default();
     let mol = chematic::smiles::parse("C1CC2CCC1C2").expect("valid SMILES"); // norbornane
+
+    let baseline = rensei::analyze(&mol, &config).expect("analyze succeeds");
+
+    for seed in [1u64, 2, 3, 42] {
+        let reordered_smiles = chematic::smiles::random_smiles(&mol, seed);
+        let reordered_mol = chematic::smiles::parse(&reordered_smiles).unwrap_or_else(|e| {
+            panic!("random_smiles produced unparseable output {reordered_smiles:?}: {e}")
+        });
+        let reordered_report = rensei::analyze(&reordered_mol, &config).expect("analyze succeeds");
+        assert_equivalent_reports(&baseline, &reordered_report, &format!("seed {seed}"));
+    }
+}
+
+#[test]
+fn atom_reordering_does_not_change_functional_group_findings() {
+    // Same contract as the norbornane test above, but on a fixture with
+    // several *distinct* functional_group_liability alerts (aspirin trips
+    // ketone_alpha/phenol/phenolic_aldehyde/active_ester/acetal_ketal) — this
+    // is what actually exercises explanation_multiset's discriminating
+    // power, since every one of those alerts shares the same
+    // FindingCode::FunctionalGroupReactive and would be indistinguishable
+    // to a code-only comparison.
+    let config = AnalysisConfig::default();
+    let mol = chematic::smiles::parse("CC(=O)Oc1ccccc1C(=O)O").expect("aspirin");
 
     let baseline = rensei::analyze(&mol, &config).expect("analyze succeeds");
 

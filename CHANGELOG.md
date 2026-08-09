@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `size_topology` burden component (molecular weight, rotatable bond count).
 - `stereochemical_burden` component (tetrahedral stereocenter count and
   density).
+- `functional_group_liability` component (reactive/unstable functional
+  groups, via chematic's Brenk et al. 2008 structural-alert set).
 - `analyze` / `analyze_smiles` entry points.
 
 ### Changed

@@ -38,7 +38,7 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
                 evidence: FindingEvidence,
                 weight: f64| {
         let atom_count = atoms.len();
-        let explanation = crate::explain::render(code, evidence, atom_count);
+        let explanation = crate::explain::render(code, evidence, atom_count, None);
         findings.push(Finding {
             code,
             severity,

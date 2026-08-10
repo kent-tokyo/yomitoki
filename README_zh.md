@@ -1,6 +1,7 @@
 # yomitoki
 
 [![CI](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml)
+[![docs.rs](https://docs.rs/yomitoki/badge.svg)](https://docs.rs/yomitoki)
 
 [English](README.md) | [日本語](README_ja.md) | **中文**
 

@@ -590,11 +590,17 @@ CONFIDENCE_PENALTY_STEREO_INCOMPLETE = 0.5 * 0.85`), since the lower
 new floor). `Lenient`'s threshold (0.3) was calibrated against the
 now-removed lower floor and is currently unreachable — `Indeterminate`
 cannot fire at `Lenient` strictness via applicability penalties alone
-anymore. Not silently recalibrated: see
-`rules::INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT`'s doc comment,
-parked as an explicit open design decision (what should `Lenient`'s
-abstention floor mean now?), not decided in the same round that found
-it.
+anymore. Not silently recalibrated: flagged as an explicit open question
+this round, investigated and decided the next round (round 22 part 6,
+NO-GO — kept at 0.3). See
+`rules::INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT`'s doc comment for
+the full reasoning: the ordering contract (`Lenient` <=
+`Standard` <= `Strict`) never actually broke, and with only four
+confidence values reachable (`{1.0, 0.85, 0.5, 0.425}`, the product of
+two independent binary penalties), no threshold value both changes
+`Lenient`'s current behavior *and* keeps it distinct from `Standard` —
+any value that fires at all collapses `Lenient` onto exactly the same
+case `Standard` already catches.
 
 ## Abstention contract
 
@@ -611,7 +617,15 @@ depends on `AnalysisConfig::strictness`
 threshold is deliberately set above the confidence floor applicability's two
 soft penalties can reach together (0.5 × 0.85 = 0.425) — a threshold at or
 below that floor would make `Indeterminate` unreachable at standard
-strictness. See `analyze::tests` for the regression tests covering this.
+strictness, guarded directly by
+`analyze::tests::standard_threshold_stays_above_the_achievable_confidence_floor`.
+`Lenient`'s own threshold (0.3) is currently below that floor and
+therefore unreachable in practice — investigated as a recalibration
+candidate and deliberately kept as-is (round 22 part 6, NO-GO; see the
+"Negatively charged atoms" section above and
+`rules::INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT`'s doc comment for the
+full reasoning). See `analyze::tests` for the regression tests covering
+this.
 
 ## Versioning
 

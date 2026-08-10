@@ -557,15 +557,47 @@ pub(crate) const FRAGMENT_PRECEDENT_FINDING_THRESHOLD: f64 = 0.1;
 /// `CONFIDENCE_PENALTY_UNUSUAL_VALENCE * CONFIDENCE_PENALTY_STEREO_
 /// INCOMPLETE = 0.5 * 0.85 = 0.425`.
 ///
-/// **`Lenient`'s value (0.3) predates this change and was calibrated
-/// against the now-removed `STEREO_UNCHECKABLE` floor (0.5 * 0.6 = 0.3)
-/// — with that floor gone, 0.3 is below the new achievable minimum
-/// (0.425), so `Indeterminate` is currently unreachable at `Lenient`
-/// strictness via applicability penalties alone.** Deliberately left
-/// unchanged rather than silently recalibrated: picking a new number
-/// here is a real design decision (what should "still abstain, but only
-/// reluctantly" mean now?), not a mechanical consequence of the chematic
-/// upgrade — flagged for an explicit decision, not decided here.
+/// `Lenient`'s value (0.3) predates the chematic 0.13.0 upgrade and was
+/// calibrated against the now-removed `STEREO_UNCHECKABLE` floor
+/// (0.5 * 0.6 = 0.3) — specifically to catch one worst-case combination
+/// (unusual valence + a negatively-charged atom making stereo
+/// uncheckable) while tolerating everything milder. Removing the `#267`
+/// workaround eliminated that combination entirely (stereo is now always
+/// checkable), so the case `Lenient`'s threshold existed to catch stopped
+/// existing — 0.3 sits below the new achievable minimum (0.425), making
+/// `Indeterminate` currently unreachable at `Lenient` strictness via
+/// applicability penalties alone.
+///
+/// **Round 22 part 6 (2026-08): investigated as a recalibration
+/// candidate, decided NO-GO — kept at 0.3, not changed.** The test was
+/// deliberately narrow: does `Lenient` still satisfy its own documented
+/// contract (lowest threshold of the three, abstains least readily) —
+/// not "does some new number improve benchmark accuracy" (out of scope;
+/// `Standard`/`Strict` were held fixed and no benchmark was consulted).
+/// Two findings settled it:
+/// 1. The contract is a *relative ordering* (`Lenient` <= `Standard` <=
+///    `Strict`), not a promise that `Lenient` ever fires. That ordering
+///    is intact (0.3 < 0.45 < 0.6, asserted directly by
+///    `analyze::tests::strict_strictness_is_at_least_as_eager_to_abstain_as_standard`)
+///    regardless of which values are reachable, and no existing test or
+///    doc ever promised `Lenient` fires for some achievable input — one
+///    existing test (`lenient_strictness_tolerates_the_penalty_floor`)
+///    asserts the opposite.
+/// 2. There is no number that both changes today's behavior *and*
+///    preserves a distinction from `Standard`. Applicability's
+///    confidence is the product of two independent binary penalties, so
+///    exactly four values are reachable: `{1.0, 0.85, 0.5, 0.425}`. Any
+///    threshold in `(0.3, 0.425]` changes nothing (still catches
+///    nothing). Any threshold in `(0.425, 0.45)` starts catching exactly
+///    `{0.425}` — the same single case `Standard` already catches,
+///    collapsing `Lenient` into a duplicate of `Standard` instead of a
+///    genuinely more tolerant policy. Raising it further just becomes
+///    `Standard` itself. With `Standard` held fixed (this round's
+///    constraint), no value threads that needle.
+///
+/// Reopen only if a new applicability confidence penalty is introduced
+/// (changes the reachable set) — that is a scoring-signal change on its
+/// own merits, not a threshold-tuning question.
 const INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT: f64 = 0.3;
 const INDETERMINATE_CONFIDENCE_THRESHOLD_STANDARD: f64 = 0.45;
 const INDETERMINATE_CONFIDENCE_THRESHOLD_STRICT: f64 = 0.6;

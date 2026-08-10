@@ -59,15 +59,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   yomitoki's actual usage (yomitoki doesn't enable the `3d`/`ff`
   features chematic 0.13's other breaking changes affect).
 
-### Known consequence, parked as an open design decision
+### Known consequence, investigated and decided (not changed)
 
 - Removing `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE` raised the achievable
   floor of `overall.confidence` from 0.3 to 0.425. `Standard`/`Strict`
   strictness's `Indeterminate` thresholds (0.45/0.6) are unaffected;
   `Lenient`'s threshold (0.3) was calibrated against the now-removed
   lower floor and is currently unreachable via applicability penalties
-  alone. Not silently recalibrated — see
-  `rules::INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT`'s doc comment.
+  alone, so `Lenient` strictness never abstains on confidence grounds in
+  practice. **Investigated as a recalibration candidate and decided
+  NO-GO — kept at 0.3.** `Lenient`'s only tested/documented contract is
+  a relative ordering (`Lenient` <= `Standard` <= `Strict`, "most
+  tolerant of the three"), which still holds; no number was ever
+  promised to make it fire. With `Standard` held fixed and only four
+  confidence values reachable (`{1.0, 0.85, 0.5, 0.425}`), no threshold
+  value both changes today's behavior and stays distinct from
+  `Standard` — anything that fires at all collapses onto the same case
+  `Standard` already catches. See
+  `rules::INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT`'s doc comment for
+  the full reasoning.
 
 ## [0.1.0] - 2026-08-10
 

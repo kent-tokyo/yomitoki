@@ -321,6 +321,21 @@ mod tests {
         assert!(standard >= lenient);
     }
 
+    // Guards the property `indeterminate_is_reachable_at_standard_strictness`
+    // depends on: if a future confidence-penalty change raises the
+    // achievable floor above `Standard`'s threshold, `Indeterminate` goes
+    // permanently unreachable at every strictness level, not just
+    // `Lenient`'s (see rules.rs's `INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT`
+    // doc comment, "round 22 part 6" -- this is the exact failure mode that
+    // silently happened to `Lenient` when the `#267` workaround was
+    // removed, caught only by re-reading a doc comment, not by a test).
+    #[test]
+    fn standard_threshold_stays_above_the_achievable_confidence_floor() {
+        assert!(
+            indeterminate_confidence_threshold(Strictness::Standard) > PENALTY_FLOOR_CONFIDENCE
+        );
+    }
+
     #[test]
     fn difficulty_buckets_are_all_reachable() {
         let full_confidence = 1.0;

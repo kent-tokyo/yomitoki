@@ -1,7 +1,9 @@
 # yomitoki
 
 [![CI](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/yomitoki/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/yomitoki.svg)](https://crates.io/crates/yomitoki)
 [![docs.rs](https://docs.rs/yomitoki/badge.svg)](https://docs.rs/yomitoki)
+[![License](https://img.shields.io/crates/l/yomitoki.svg)](#许可协议)
 
 [English](README.md) | [日本語](README_ja.md) | **中文**
 

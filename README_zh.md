@@ -29,6 +29,8 @@ yomitoki    读取并解释分子的可合成性
 renkin      规划逆合成路线
 ```
 
+[chematic](https://github.com/kent-tokyo/chematic) · [renkin](https://github.com/kent-tokyo/renkin)
+
 yomitoki 从不执行路线搜索 — 这不是 v0.1 阶段的范围限制,而是永久性的职责边界。详见下方“yomitoki 不做什么”。
 
 ## yomitoki 做什么

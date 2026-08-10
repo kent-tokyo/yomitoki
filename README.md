@@ -58,6 +58,8 @@ yomitoki    Read and explain molecular synthesizability
 renkin      Plan retrosynthetic routes
 ```
 
+[chematic](https://github.com/kent-tokyo/chematic) · [renkin](https://github.com/kent-tokyo/renkin)
+
 yomitoki never runs route search — that boundary is permanent, not a v0.1
 scoping choice. See "What it does not do" below.
 

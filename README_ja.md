@@ -29,6 +29,8 @@ yomitoki    分子の合成容易性を読み解き、説明する
 renkin      逆合成ルートを計画する
 ```
 
+[chematic](https://github.com/kent-tokyo/chematic) · [renkin](https://github.com/kent-tokyo/renkin)
+
 yomitokiはroute searchを一切実行しません — これはv0.1のスコープ上の制約ではなく、恒久的な境界です。詳細は下記「yomitokiがしないこと」を参照してください。
 
 ## yomitokiがすること

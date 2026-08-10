@@ -77,6 +77,116 @@ substituted, not silently trusted either.**
   not attempted this round; the mirror is used as the pragmatic,
   disclosed-caveats path to a reproducible-enough benchmark.
 
+## MPScore (development set — expert-chemist labels, not a competitor or confirmatory benchmark)
+
+**Status: usable as a development set, with real, disclosed limitations
+on rater coverage and domain — investigated by directly downloading and
+parsing every file below, not by trusting the source repo's README
+prose alone.**
+
+- **Origin**: Bennett, Turcani, Jelfs, "Modelling chemist intuition for
+  the synthetic accessibility of porous organic cages",
+  `stevenkbennett/synthetic_accessibility_project`. Zenodo DOI badge
+  present in the source README, but the README's own paper citation
+  parentheses are empty in the pinned commit — no resolvable published
+  paper DOI was found this round; cited here by repository, not by
+  paper.
+- **Pinned to an actual release tag, not a moving HEAD**: tag `1.0.6`,
+  commit `b8f4d313c41dbdef1f3404b52d83e9a71673c581`. The repo's default
+  branch (`revisions`) has a later commit (`5c43f81c...`, 2023-06-09,
+  "Update dependencies") after this tag — deliberately not used, per
+  this project's own standing rule (established in round 20 for
+  SynRXN) to pin a citable release, not a moving branch tip.
+- **License**: MIT, repo-wide (single `LICENSE` file covers code and
+  data together — no separate data license). Permits redistribution;
+  this project still fetches via script rather than committing the raw
+  files, for consistency with every other dataset here and to keep the
+  repo lean.
+- **What it actually is, verified by parsing every file, not assumed
+  from the README's prose**: three chemists independently rated
+  molecules as easy-to-synthesize (1) or difficult-to-synthesize (0) via
+  a web tool, in the context of screening candidate precursors
+  (diamines, trialdehydes, etc.) for porous-organic-cage synthesis. The
+  `data/chemist_data/` files are the raw, per-chemist votes:
+  `filip.csv` (SMILES-keyed, tab-delimited, 2,008 rows, 1,858 parse to a
+  valid unique-after-canonicalization molecule — the source repo does
+  not explain the ~150-row gap and it was not investigated further),
+  `opinions_becky.json` (InChI-keyed, 10,000 rows, 9,990 parse),
+  `opinions_mebriggs.json` (InChI-keyed, 695 rows, all parse). Naming
+  and format are inconsistent across the three (one `.csv`, two `.json`,
+  one SMILES-keyed, two InChI-keyed) — not normalized upstream, handled
+  in `download_mpscore.py`.
+- **Rater coverage is very uneven — the single most important caveat**:
+  of 10,969 total unique (canonical-SMILES) molecules across the three
+  chemists' union, **9,436 (86.0%) were rated by exactly one chemist**,
+  1,492 (13.6%) by two, and only **41 (0.4%) by all three**. `becky`
+  alone accounts for 9,990 of the 10,969 — the "three expert chemists"
+  framing is accurate for methodology but not for coverage: most labels
+  in this dataset reflect one person's judgment, not a panel's.
+- **`data/training_database.csv` (12,553 rows, the file the source
+  README describes as containing the final `chemist_score`) is NOT a
+  pre-resolved one-row-per-molecule consensus table — verified, not
+  assumed**: 1,544 of its 10,963 unique molecules appear more than once
+  across its rows, and **435 of those 1,544 (28%) have mutually
+  conflicting `chemist_score` values across their duplicate rows** (e.g.
+  one row says 1, another row for the exact same canonical molecule says
+  0). This is consistent with the file being one row per *rating event*
+  rather than one row per molecule. **This project does not use
+  `training_database.csv`'s `chemist_score` column as ground truth.**
+  Consensus is instead computed independently from the three raw
+  per-chemist files (majority vote where ≥2 raters exist; the single
+  rater's vote where only one exists), with `n_raters` and
+  `agreement_fraction` preserved per molecule — see
+  `download_mpscore.py`.
+- **Real disagreement exists among multi-rater molecules, not just
+  noise-sized**: among the 1,492 two-rater molecules, agreement is
+  71.6% (28.4% disagree); among the 41 three-rater molecules, unanimous
+  agreement is 73.2% (11/41 have some disagreement). Per-chemist label
+  balance also differs sharply — `becky`: 89%/11% (difficult/easy),
+  `filip`: 64%/36%, `mebriggs`: 67%/33% — `becky` is visibly the
+  strictest rater, and since she supplies 91% of the raw labels, any
+  metric computed on the full set is close to "agreement with becky
+  specifically," not "agreement with a panel." Metrics in this project's
+  development-set reports are therefore always stratified by `n_raters`.
+- **Label direction is the opposite of BR-SAScore's TS1/2/3**: MPScore's
+  `chemist_score`/`synthesisable` is **1 = easy, 0 = difficult**.
+  BR-SAScore's `labels` is **1 = hard**. Flipped once, explicitly, at
+  load time in `download_mpscore.py` (`hard = 1 - chemist_score`), never
+  left implicit — getting this backwards silently produces a
+  plausible-looking but inverted accuracy number.
+- **Domain: narrower research context than TS1/2/3, but not as narrow as
+  the paper title alone implies — measured, not inferred**: the study's
+  stated purpose is porous-organic-cage precursor screening, but a
+  direct functional-group scan of a 2,000-molecule sample of the rated
+  pool found only **15.8% carry a primary amine and 16.1% an aldehyde**
+  (the classic imine-cage-forming pair) — most rated molecules carry
+  neither. Mean molecular weight ≈275, mean ring count ≈2.0, broadly
+  comparable in scale to TS1/2/3's populations, not exotic. Read as: a
+  broad synthesizability-intuition-rating exercise conducted in the
+  context of, but not strictly limited to, cage-precursor candidates.
+- **Overlap with TS1/TS2/TS3 — checked directly, not assumed
+  negligible**: exact canonical-SMILES overlap is **3 molecules** out of
+  10,969 (excluded from the usable pool). Bemis-Murcko scaffold overlap
+  on a 2,000-vs-2,000 random sample: 55 of 534 unique MPScore-sample
+  scaffolds also appear among the TS-sample's 1,709 scaffolds (~10.3%
+  of the sampled MPScore scaffolds) — reported as a statistic, not acted
+  on (some scaffold recurrence, e.g. plain benzene/pyridine rings, is
+  expected between any two organic-molecule pools and is not evidence of
+  leakage by itself). Morgan-fingerprint (r=2, 2048 bit) Tanimoto
+  similarity from a 300-molecule MPScore sample to a 1,000-molecule TS
+  sample: mean 0.219, median 0.214, **0/300 above 0.7** — no
+  near-duplicate risk found.
+- **Parse coverage of `training_database.csv` itself**: 12,553/12,553
+  rows (100%) RDKit-parseable; the 10,963 figure above is after
+  canonical-SMILES deduplication, not a parse failure.
+- **Reconstructing SHA256s of the exact files this investigation
+  fetched** (pinned commit above; used by `download_mpscore.py` to fail
+  loudly if the upstream repo's raw content ever changes):
+  - `data/training_database.csv`: `1e20bd5c86f63ef2515895cdeb064899ade70b86d48f117caa79025cf4b6527e`
+  - `data/chemist_data/filip.csv`: `4f8d10f95704d9320fab58921370447ded5eaede257bd30454a3fc7e9d2aa1c9`
+  - `data/chemist_data/opinions_becky.json`: `d21a4a551045ad9493b56c247a2bb1ca20fb6dd001ba97ad342a0aa3853a96a1`
+  - `data/chemist_data/opinions_mebriggs.json`: `2ccb881ad2224f9b55faa776cbccdb0d659b997789b6c1e62d1a360a99cde111`
+
 ## SAscore (competitor, not a dataset)
 
 No separate dataset: SAscore is scored directly on the BR-SAScore TS1/TS2/TS3

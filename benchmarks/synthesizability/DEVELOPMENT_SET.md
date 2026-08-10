@@ -202,7 +202,189 @@ signal rather than scaling with degree of bridged complexity — a real,
 separate finding from FM-1's unbounded-with-count behavior on flat
 fusion, not investigated further this round.
 
-## Not done this round (deliberately)
+## Part 4 (round 22, part 3): validation against the MPScore expert-chemist dataset
+
+Follow-on round. Full dataset provenance, license, rater-coverage,
+consensus-construction, and TS1/2/3-overlap investigation is in
+[`../datasets/README.md`](../datasets/README.md)'s "MPScore" section —
+summary: `stevenkbennett/synthetic_accessibility_project` (MIT, pinned
+tag `1.0.6`), three chemists' independent easy/difficult ratings on
+10,966 molecules (after excluding 3 exact TS1/2/3 overlaps), 86% rated
+by exactly one chemist, only 41 by all three. This dataset's ground
+truth is **human chemist intuition**, methodologically independent from
+TS1/TS2/TS3's Retro*-route-existence labels — it was investigated
+specifically to test whether TS2's chance-level result and the FM-1/FM-2
+failure modes are artifacts of one labeling methodology or a more
+general weakness. Frozen v0.1.0 baseline, no weight/threshold/formula
+changed. Reproduce: `python3 scripts/download_mpscore.py
+datasets/downloaded && python3 scripts/run_yomitoki.py
+datasets/downloaded/mpscore/mpscore_dev.smi results/raw/mpscore_yomitoki.jsonl
+&& python3 scripts/evaluate_mpscore.py`.
+
+### Headline: TS2's chance-level result reproduces on an independent, methodologically unrelated dataset
+
+| population | n | ROC-AUC (95% CI) | PR-AUC | Balanced Acc. | MCC |
+|---|---|---|---|---|---|
+| Full (all defined consensus) | 10,543 | 0.513 [0.496, 0.529] | 0.863 | 0.497 | -0.006 |
+| n_raters ≥ 2 (real agreement behind the label) | 1,110 | 0.487 [0.444, 0.532] | 0.816 | 0.473 | -0.049 |
+| n_raters = 3 (all three chemists) | 41 | 0.438 [0.258, 0.624] | 0.445 | 0.458 | -0.092 |
+
+Every 95% CI contains 0.5 — statistically indistinguishable from random
+guessing, not distinguishable-but-inverted (the point estimates run
+slightly below 0.5, but the CIs are wide enough, especially for n=41,
+that "inverted" would overclaim). This is the same qualitative result
+TS2 already showed (ROC-AUC 0.476, also chance-level) on a dataset with
+0.03% exact-molecule overlap, a different labeling methodology (human
+judgment vs. retrosynthesis-planner route search), a different label
+skew (16%/84% easy/hard here vs. TS2's balanced 50/50), and a different
+originating research context (porous-organic-cage precursor screening
+vs. general ChEMBL-derived molecules). **Two independent lines of
+evidence now point the same direction: yomitoki's four structural
+components, as currently weighted and aggregated, do not track
+synthesis difficulty on drug-like/precursor-like populations — this is
+not an artifact of TS2's specific label source.**
+
+PR-AUC (0.863) looks high in isolation but is not evidence of real
+skill here — PR-AUC is inflated by MPScore's 84% "hard" base rate
+(a classifier that always predicts "hard" scores PR-AUC ≈ 0.84 on this
+class balance with zero discriminative power). ROC-AUC and MCC, both
+base-rate-insensitive, are the metrics that matter, and both say
+"no signal."
+
+### The dominant error is false negatives, not the FM-1/FM-2 split alone
+
+Confusion matrix (full set, n=10,543, threshold 0.5): TN=1,147,
+**FP=236**, **FN=7,652**, TP=1,508. 72.6% of the entire dataset is a
+false negative — yomitoki calls the molecule accessible, the chemist
+called it difficult. This dwarfs the false-positive count (236, 2.2%)
+that FM-1 explains. Component means confirm the shape: `ring_topology`'s
+mean contribution is actually *slightly higher* for the chemist-easy
+class (0.206) than the chemist-hard class (0.184) on this dataset —
+backwards, not just weak. `stereochemical_burden` is in the right
+direction (0.079 hard vs. 0.030 easy) but small in absolute terms.
+**The honest reading: on MPScore, a large majority of what chemists call
+"difficult" is invisible to all four of yomitoki's current components,
+not merely miscalibrated within them.** Plausible missing factors (not
+investigated further this round — would need a citable primitive, not
+guessed at): functional-group *compatibility* in a specific reaction
+context (this dataset's rating exercise was conducted around
+cage-forming imine/aldehyde chemistry), purification difficulty,
+known-troublesome reagent classes — categories of "hard" a structural
+topology score was never designed to see.
+
+### FM-1 replicates; FM-2/FM-3 are present but not decisive
+
+Descriptor means by confusion-matrix category (full set):
+
+| category | n | heavy atoms | rings | aromatic rings | stereocenters | bridgeheads |
+|---|---|---|---|---|---|---|
+| TP (correct "hard") | 1,508 | 21.5 | 3.54 | 1.03 | 3.68 | 0.99 |
+| TN (correct "easy") | 1,147 | 15.6 | 1.79 | 1.52 | 0.60 | 0.04 |
+| **FP** (said hard, actually easy) | 236 | **38.8** | **5.61** | **4.60** | 0.94 | 1.34 |
+| **FN** (said easy, actually hard) | 7,652 | 14.6 | 1.60 | 0.87 | 0.90 | 0.09 |
+
+**FM-1 (large/ring-rich/aromatic over-penalization) replicates
+directly**: FP molecules are the largest (38.8 heavy atoms, nearly
+double TP's 21.5), most ring-rich (5.61 rings), and most aromatic (4.60
+aromatic rings) of any category — the same signature found on TS2/TS3.
+One nuance not seen on TS2/TS3: here FP's bridgehead mean (1.34) is
+*higher*, not lower, than TP's (0.99) — on TS2/TS3, FP was specifically
+*non*-bridged. FM-1 is therefore better stated as "large, ring-rich,
+highly-fused molecules are over-penalized" rather than narrowly "*flat*
+fused-aromatic-only" — the flat-vs-bridged distinction that looked sharp
+on TS2/TS3 does not hold as cleanly here. Reported as a partial, not a
+full, replication.
+
+**FM-2 representation check**: 41.8% of the usable set (4,404/10,543)
+has at least one stereocenter — well-represented, not sparse. FN's mean
+stereocenter count (0.90) is higher than TN's (0.60), directionally
+consistent with FM-2, but small relative to TP's (3.68), and FN is
+numerically dominated by the base-rate mismatch described above, not by
+stereocenter-rich molecules specifically. The ablation panel's
+mechanistic finding (round 22 part 2: four stereocenters alone,
+holding ring count at 1, cannot cross the 0.5 threshold) stands on its
+own as a controlled result; its *share* of MPScore's real-world error is
+small.
+
+**FM-3 representation check**: 8.9% of the usable set (937/10,543) has
+any bridgehead or spiro atom — present, but too sparse for a clean
+dose-response curve, and confounded by the FP-vs-TP pattern above (both
+elevated-bridging categories, cutting across the hard/easy label rather
+than separating by it). Bridging correlates with yomitoki's *own* score
+being high, which the ablation panel already established directly and
+unconditionally — this cross-tab neither confirms nor refutes whether
+that response is *correctly calibrated* against real difficulty.
+
+### Confidence vs. expert disagreement: not measurable on this dataset
+
+Of the 1,533 molecules rated by ≥2 chemists (where `agreement_fraction`
+is defined), `overall.confidence` is **1.0 for 1,531 of them (99.9%) and
+0.85 for the remaining 2** — essentially zero variance. Consistent with
+round 22's earlier finding that confidence is driven almost entirely by
+`applicability.stereo_complete`/`stereo_uncheckable`, and MPScore's
+molecules (mostly simple, explicitly-drawn precursor candidates) are
+nearly all stereo-complete. **No relationship between confidence and
+expert disagreement can be assessed on this dataset — reported as "not
+measurable," not as a null result**, since a null result would require
+actual variance to fail to correlate with.
+
+### Design-change decisions (evidence-based, no implementation this round)
+
+- **A. Fused-aromatic ring burden redesign: SUPPORTED.** The core FM-1
+  mechanism (large/ring-rich/highly-aromatic molecules over-penalized)
+  replicates independently on a second dataset with a different label
+  source, different domain, and negligible molecule overlap. The
+  flat-only nuance from TS2/TS3 does not fully replicate (bridging is
+  also elevated in MPScore's false positives) — any redesign should
+  target ring/atom-count-driven over-penalization broadly, not narrowly
+  assume "flat rings only."
+- **B. Stereochemical aggregation weight redesign: INCONCLUSIVE.** The
+  mechanism is real and directly demonstrated (ablation panel, round 22
+  part 2), and its directional signature is present in MPScore's FN
+  category, but its *contribution* to MPScore's overall error is small
+  relative to the dominant, unexplained false-negative base rate. Not
+  enough evidence to prioritize this over addressing the larger,
+  unexplained gap first.
+- **C. Bridged/cage severity redesign: INCONCLUSIVE — underrepresented.**
+  8.9% coverage is too sparse for a dose-response test on this dataset,
+  and the available signal (elevated bridging in both TP and FP) doesn't
+  separate "correctly detects difficulty" from "over-fires regardless of
+  difficulty." Needs a dataset enriched for bridged/caged/macrocyclic
+  molecules with independent difficulty labels, which neither TS1/2/3
+  nor MPScore provides in quantity.
+- **D. Overall confidence redesign: SUPPORTED, but not by this round's
+  MPScore data.** The evidence is round 22 part 1's TS1 finding
+  (confidence anti-correlated with correctness via a dataset-provenance
+  confound) — that finding is unrefuted and this round adds nothing
+  either way, since MPScore's confidence values have no variance to
+  test. Recorded as supported on the strength of the earlier evidence,
+  not double-counted from this round.
+
+### Is a CASP/route-availability-labeled development set needed next? **NO, not yet.**
+
+Reasoning: MPScore's chemist-intuition labels and TS2's Retro*-derived
+labels are about as methodologically different as two synthesizability
+ground-truth sources can be (subjective expert judgment vs. an automated
+retrosynthesis planner's route search; different molecule domains;
+different label balance; 0.03% overlap) — and yomitoki scores at chance
+level against *both*. If the weakness were specific to Retro*'s
+"≤10-step route" semantics, MPScore's independent human-judgment labels
+would be the population where yomitoki should have looked *better*, not
+identically chance-level. It didn't. That is evidence the weakness is
+in yomitoki's own structural-heuristic coverage (a large majority of
+"hard" is invisible to all four current components, per the false
+-negative analysis above), not in a mismatch between yomitoki's
+difficulty concept and any one label source's semantics. Building a
+third, CASP-based label source before understanding *why* the existing
+two-for-two chance-level result happens would very likely just
+reproduce the same pattern a third time at real infrastructure cost
+(AiZynthFinder policy/stock setup, compute for route search). The
+higher-value next step is root-causing the false-negative dominance
+itself — on a development set, per this project's own ordering rule,
+never by tuning against TS1/2/3 or re-running this MPScore set
+repeatedly until a change looks good on it.
+
+## Not done in round 22 parts 2-3 (deliberately)
 
 - No fix. This is diagnosis; per the round's own test-set-integrity and
   no-blind-tuning rules, any actual formula/weight change is a separate,
@@ -218,3 +400,17 @@ fusion, not investigated further this round.
 - The `ring_topology` bridged-complexity saturation (CTRL axis) is
   reported but not chased further — a second, distinct question from
   FM-1/FM-2 that this round's scope didn't extend to.
+- No weight/threshold/formula/confidence change, on the strength of
+  MPScore's results or otherwise — every design-change candidate above
+  is a decision record, not an implementation.
+- No re-measurement of TS1/TS2/TS3 — this section's evidence comes
+  entirely from MPScore, a genuinely new dataset, not a re-look at the
+  confirmatory sets.
+- No CASP/AiZynthFinder route-availability set built or started — judged
+  not yet warranted, see the reasoning above; may be revisited once the
+  false-negative-dominance root cause is better understood.
+- `stevenkbennett/synthetic_accessibility_project`'s `training_database.csv`,
+  `training_mols.{csv,json}`, and `reaxys_database.csv` were not used —
+  only the three raw per-chemist files, since `training_database.csv`'s
+  own `chemist_score` column was found not to be a resolved consensus
+  (see `../datasets/README.md`).

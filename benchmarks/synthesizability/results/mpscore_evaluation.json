@@ -1,0 +1,291 @@
+{
+  "n_total_molecules": 10966,
+  "n_defined_consensus": 10543,
+  "accuracy_full": {
+    "n": 10543,
+    "metrics": {
+      "n": 10543,
+      "roc_auc": 0.5131681648968921,
+      "pr_auc": 0.8626900009071325,
+      "accuracy": 0.2518258560182111,
+      "balanced_accuracy": 0.49699264619979977,
+      "precision": 0.8646788990825688,
+      "recall": 0.1646288209606987,
+      "f1": 0.2765957446808511,
+      "mcc": -0.005464915448843798,
+      "confusion_matrix": {
+        "tn": 1147,
+        "fp": 236,
+        "fn": 7652,
+        "tp": 1508
+      }
+    },
+    "roc_auc_95ci": {
+      "point": 0.5131681648968921,
+      "low": 0.4961116635218551,
+      "high": 0.5291045459520186,
+      "n_valid_resamples": 1000
+    },
+    "pr_auc_95ci": {
+      "point": 0.8626900009071325,
+      "low": 0.8534697918813917,
+      "high": 0.8721260156936902,
+      "n_valid_resamples": 1000
+    }
+  },
+  "accuracy_n_raters_2plus": {
+    "n": 1110,
+    "metrics": {
+      "n": 1110,
+      "roc_auc": 0.48668302187998874,
+      "pr_auc": 0.816269936164912,
+      "accuracy": 0.30180180180180183,
+      "balanced_accuracy": 0.47266175227720914,
+      "precision": 0.8007968127490039,
+      "recall": 0.21706263498920086,
+      "f1": 0.3415463041631266,
+      "mcc": -0.04860507665149346,
+      "confusion_matrix": {
+        "tn": 134,
+        "fp": 50,
+        "fn": 725,
+        "tp": 201
+      }
+    },
+    "roc_auc_95ci": {
+      "point": 0.48668302187998874,
+      "low": 0.44365913186923667,
+      "high": 0.531703725536889,
+      "n_valid_resamples": 1000
+    },
+    "pr_auc_95ci": {
+      "point": 0.816269936164912,
+      "low": 0.7866705896963443,
+      "high": 0.8488757719413577,
+      "n_valid_resamples": 1000
+    }
+  },
+  "accuracy_n_raters_3": {
+    "n": 41,
+    "metrics": {
+      "n": 41,
+      "roc_auc": 0.43809523809523815,
+      "pr_auc": 0.44509362490374116,
+      "accuracy": 0.4634146341463415,
+      "balanced_accuracy": 0.4583333333333333,
+      "precision": 0.4166666666666667,
+      "recall": 0.25,
+      "f1": 0.3125,
+      "mcc": -0.09154903633375856,
+      "confusion_matrix": {
+        "tn": 14,
+        "fp": 7,
+        "fn": 15,
+        "tp": 5
+      }
+    },
+    "roc_auc_95ci": {
+      "point": 0.43809523809523815,
+      "low": 0.25839371980676334,
+      "high": 0.6238095238095238,
+      "n_valid_resamples": 1000
+    },
+    "pr_auc_95ci": {
+      "point": 0.44509362490374116,
+      "low": 0.3040377607038302,
+      "high": 0.6640817840447201,
+      "n_valid_resamples": 1000
+    }
+  },
+  "component_distributions_full": {
+    "0": {
+      "size_topology": {
+        "n": 1383,
+        "mean_contribution": 0.12437519007029951
+      },
+      "ring_topology": {
+        "n": 1383,
+        "mean_contribution": 0.20579658543362844
+      },
+      "stereochemical_burden": {
+        "n": 1383,
+        "mean_contribution": 0.02960573197444565
+      },
+      "functional_group_liability": {
+        "n": 1383,
+        "mean_contribution": 0.17434179159975138
+      },
+      "input_quality": {
+        "n": 1383,
+        "mean_contribution": 0.0
+      }
+    },
+    "1": {
+      "size_topology": {
+        "n": 9160,
+        "mean_contribution": 0.10443946816722195
+      },
+      "ring_topology": {
+        "n": 9160,
+        "mean_contribution": 0.18378582319841713
+      },
+      "stereochemical_burden": {
+        "n": 9160,
+        "mean_contribution": 0.07929263305838812
+      },
+      "functional_group_liability": {
+        "n": 9160,
+        "mean_contribution": 0.18659088697279938
+      },
+      "input_quality": {
+        "n": 9160,
+        "mean_contribution": 0.0
+      }
+    }
+  },
+  "finding_rates_full": {
+    "1": {
+      "FUNCTIONAL_GROUP_REACTIVE": [
+        8400,
+        9160
+      ],
+      "STEREO_CENTER_COUNT": [
+        3127,
+        9160
+      ],
+      "RING_BRIDGED_COMPLEXITY": [
+        710,
+        9160
+      ],
+      "STEREO_DENSITY_HIGH": [
+        444,
+        9160
+      ],
+      "FUNCTIONAL_GROUP_DENSE": [
+        424,
+        9160
+      ],
+      "SIZE_LARGE_MOLECULAR_WEIGHT": [
+        360,
+        9160
+      ],
+      "RING_MACROCYCLE": [
+        326,
+        9160
+      ],
+      "RING_SPIRO": [
+        71,
+        9160
+      ],
+      "RING_FUSED_DENSE": [
+        44,
+        9160
+      ],
+      "SIZE_HIGH_ROTATABLE_BOND_COUNT": [
+        7,
+        9160
+      ],
+      "INPUT_DISCONNECTED": [
+        3,
+        9160
+      ]
+    },
+    "0": {
+      "FUNCTIONAL_GROUP_REACTIVE": [
+        1259,
+        1383
+      ],
+      "FUNCTIONAL_GROUP_DENSE": [
+        266,
+        1383
+      ],
+      "STEREO_CENTER_COUNT": [
+        219,
+        1383
+      ],
+      "SIZE_LARGE_MOLECULAR_WEIGHT": [
+        190,
+        1383
+      ],
+      "RING_BRIDGED_COMPLEXITY": [
+        82,
+        1383
+      ],
+      "RING_MACROCYCLE": [
+        40,
+        1383
+      ],
+      "STEREO_DENSITY_HIGH": [
+        17,
+        1383
+      ],
+      "SIZE_HIGH_ROTATABLE_BOND_COUNT": [
+        16,
+        1383
+      ],
+      "RING_FUSED_DENSE": [
+        1,
+        1383
+      ]
+    }
+  },
+  "fm_stratification_full": {
+    "representation": {
+      "n_total": 10543,
+      "n_with_stereocenters": 4404,
+      "pct_with_stereocenters": 41.77179171013943,
+      "n_with_bridging_or_spiro": 937,
+      "pct_with_bridging_or_spiro": 8.887413449682253
+    },
+    "by_category": {
+      "FN": {
+        "n": 7652,
+        "heavy_atoms": 14.629508625196028,
+        "rings": 1.6008886565603764,
+        "aromatic_rings": 0.8703606900156822,
+        "stereocenters": 0.8963669628855201,
+        "bridgeheads": 0.09069524307370622,
+        "spiro": 0.012545739675901725,
+        "fused_ring_atoms": 0.992681651855724
+      },
+      "TP": {
+        "n": 1508,
+        "heavy_atoms": 21.50994694960212,
+        "rings": 3.5411140583554377,
+        "aromatic_rings": 1.0344827586206897,
+        "stereocenters": 3.683023872679045,
+        "bridgeheads": 0.9920424403183024,
+        "spiro": 0.07891246684350132,
+        "fused_ring_atoms": 5.066976127320955
+      },
+      "TN": {
+        "n": 1147,
+        "heavy_atoms": 15.639930252833478,
+        "rings": 1.7872711421098517,
+        "aromatic_rings": 1.5161290322580645,
+        "stereocenters": 0.5989537925021796,
+        "bridgeheads": 0.04010462074978204,
+        "spiro": 0.0017436791630340018,
+        "fused_ring_atoms": 0.8535309503051438
+      },
+      "FP": {
+        "n": 236,
+        "heavy_atoms": 38.817796610169495,
+        "rings": 5.610169491525424,
+        "aromatic_rings": 4.5974576271186445,
+        "stereocenters": 0.9364406779661016,
+        "bridgeheads": 1.3389830508474576,
+        "spiro": 0.0,
+        "fused_ring_atoms": 3.5084745762711864
+      }
+    }
+  },
+  "confidence_vs_disagreement": {
+    "n_multi_rater": 1533,
+    "confidence_distribution": {
+      "1.0": 1531,
+      "0.85": 2
+    },
+    "n_unique_confidence_values": 2
+  }
+}

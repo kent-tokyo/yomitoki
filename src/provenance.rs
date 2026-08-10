@@ -3,12 +3,12 @@
 use sha2::{Digest, Sha256};
 
 use crate::config::AnalysisConfig;
-use crate::report::Provenance;
+use crate::report::{FragmentCorpusProvenance, Provenance};
 use crate::rules::RULESET_VERSION;
 
 /// Bumped whenever the shape of `SynthesizabilityReport` changes in a way
 /// that could affect existing consumers.
-const SCHEMA_VERSION: &str = "0.4.0";
+const SCHEMA_VERSION: &str = "0.5.0";
 
 /// The chematic version requirement yomitoki is built against (AGENTS.md
 /// §4.6). Not read from chematic itself — chematic doesn't expose a
@@ -31,11 +31,17 @@ pub(crate) fn build(config: &AnalysisConfig) -> Provenance {
         yomitoki_version: env!("CARGO_PKG_VERSION").to_string(),
         chematic_version: CHEMATIC_VERSION_REQUIREMENT.to_string(),
         ruleset_version: RULESET_VERSION.to_string(),
-        model_version: config
-            .fragment_model
-            .corpus
-            .as_deref()
-            .map(|corpus| corpus.version().to_string()),
+        fragment_corpus: config.fragment_model.corpus.as_deref().map(|corpus| {
+            FragmentCorpusProvenance {
+                version: corpus.version().to_string(),
+                source_name: corpus.domain.source_name.clone(),
+                domain: corpus.domain.domain.clone(),
+                synthesis_focused: corpus.domain.synthesis_focused,
+                description: corpus.domain.description.clone(),
+                fragment_definition_version: corpus.fragment_definition_version.clone(),
+                reference_distribution_version: corpus.reference_distribution_version.clone(),
+            }
+        }),
         config_hash: config_hash(config),
     }
 }

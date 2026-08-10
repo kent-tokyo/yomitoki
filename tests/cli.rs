@@ -67,8 +67,8 @@ fn fragment_corpus_flag_with_a_missing_directory_fails_cleanly() {
 }
 
 #[test]
-fn fragment_corpus_flag_with_a_real_corpus_populates_fragment_rarity() {
-    // Same fixture-building approach as tests/fragment_rarity.rs: hashes
+fn fragment_corpus_flag_with_a_real_corpus_populates_fragment_precedent() {
+    // Same fixture-building approach as tests/fragment_precedent.rs: hashes
     // come from the real chematic::fp::morgan_fp_counts output for "CCO",
     // not hand-computed, so they're guaranteed to match what the running
     // binary itself will compute.
@@ -94,10 +94,18 @@ fn fragment_corpus_flag_with_a_real_corpus_populates_fragment_rarity() {
         serde_json::to_vec(&serde_json::json!({
             "artifact_sha256": "sha256:cli-test-fixture",
             // A flat, uninformative reference distribution -- fine for
-            // this test, which only checks that fragment_rarity gets
+            // this test, which only checks that fragment_precedent gets
             // populated at all, not what it says (see tests/
-            // fragment_rarity.rs for formula-behavior coverage).
+            // fragment_precedent.rs for formula-behavior coverage).
             "reference_distribution": [0.0, 1.0],
+            "fragment_definition_version": "test-fixture-v1",
+            "reference_distribution_version": "test-fixture-v1",
+            "corpus_domain": {
+                "source_name": "CLI Test Fixture",
+                "domain": "test",
+                "synthesis_focused": false,
+                "description": "Not a real corpus -- exists only to exercise the CLI's --fragment-corpus wiring.",
+            },
         }))
         .unwrap(),
     )
@@ -113,13 +121,18 @@ fn fragment_corpus_flag_with_a_real_corpus_populates_fragment_rarity() {
     let stdout = String::from_utf8(output.stdout).expect("utf8");
     let report: serde_json::Value = serde_json::from_str(&stdout).expect("valid json");
     assert!(
-        !report["components"]["fragment_rarity"].is_null(),
+        !report["components"]["fragment_precedent"].is_null(),
         "{stdout}"
     );
-    assert_eq!(
-        report["provenance"]["model_version"],
-        "sha256:cli-test-fixture"
+    assert!(
+        report["components"]["fragment_rarity"].is_null(),
+        "{stdout}"
     );
+    let fragment_corpus = &report["provenance"]["fragment_corpus"];
+    assert_eq!(fragment_corpus["version"], "sha256:cli-test-fixture");
+    assert_eq!(fragment_corpus["source_name"], "CLI Test Fixture");
+    assert_eq!(fragment_corpus["domain"], "test");
+    assert_eq!(fragment_corpus["synthesis_focused"], false);
 }
 
 #[test]

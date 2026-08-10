@@ -1,5 +1,5 @@
 //! Diagnostic tool: look up a SMILES's fragments in a built corpus and
-//! report how well-covered they are. Not part of the `fragment_rarity`
+//! report how well-covered they are. Not part of the `fragment_precedent`
 //! scoring component — this exists to answer one question before that
 //! component is designed: does a given corpus actually distinguish common,
 //! precedented fragments from rare ones?

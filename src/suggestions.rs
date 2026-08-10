@@ -13,8 +13,8 @@
 //! v0.1, one per finding this module knows how to translate into an
 //! actionable suggestion: `RingBridgedComplexity` -> replace-with-monocyclic,
 //! `RingMacrocycle` -> simplify-closure, `StereoDensityHigh` -> reduce
-//! density, `FragmentRarityHigh` -> increase-fragment-precedent (only
-//! reachable when a fragment corpus is configured — `FragmentRarityHigh`
+//! density, `FragmentPrecedentWeak` -> increase-fragment-precedent (only
+//! reachable when a fragment corpus is configured — `FragmentPrecedentWeak`
 //! itself is never produced otherwise). The other 2
 //! (`ReduceAdjacentQuaternaryCenters`, `RemoveSimilarReactiveGroup`) have no
 //! underlying signal to derive from yet: quaternary-carbon adjacency isn't
@@ -61,7 +61,7 @@ fn suggestion_for(finding: &Finding) -> Option<SimplificationSuggestion> {
              not a guarantee."
                 .to_string(),
         ),
-        FindingCode::FragmentRarityHigh => (
+        FindingCode::FragmentPrecedentWeak => (
             SuggestionCode::IncreaseFragmentPrecedent,
             "This molecule's structural fragments are, on average, uncommon relative \
              to the configured reference corpus. A more precedented analog covering \
@@ -156,12 +156,12 @@ mod tests {
     }
 
     #[test]
-    fn fragment_rarity_finding_produces_an_increase_precedent_suggestion_with_no_atoms() {
-        // FragmentRarityHigh findings never carry atoms either (see
-        // components/fragment_rarity.rs -- fragment hashes aren't atom
+    fn fragment_precedent_weak_finding_produces_an_increase_precedent_suggestion_with_no_atoms() {
+        // FragmentPrecedentWeak findings never carry atoms either (see
+        // components/fragment_precedent.rs -- fragment hashes aren't atom
         // -mapped) -- same "don't fabricate atoms" discipline as
         // StereoDensityHigh above.
-        let findings = vec![finding(FindingCode::FragmentRarityHigh, Vec::new())];
+        let findings = vec![finding(FindingCode::FragmentPrecedentWeak, Vec::new())];
         let suggestions = derive(&findings);
         assert_eq!(suggestions.len(), 1);
         assert_eq!(

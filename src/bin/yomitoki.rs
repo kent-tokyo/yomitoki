@@ -20,10 +20,10 @@
 //!
 //! `--fragment-corpus <dir>` loads a `tools/build-fragment-corpus` output
 //! directory (via `FragmentCorpus::load_dir`) and enables the
-//! `fragment_rarity` component for this run — omitted, `fragment_rarity`
-//! stays `None`, the same as every prior CLI release (no corpus ships with
-//! yomitoki itself; AGENTS.md §5.4). Loaded once, before any molecule is
-//! analyzed, not per-record.
+//! `fragment_precedent` component for this run — omitted,
+//! `fragment_precedent` stays `None`, the same as every prior CLI release
+//! (no corpus ships with yomitoki itself; AGENTS.md §5.4). Loaded once,
+//! before any molecule is analyzed, not per-record.
 
 use std::fs::File;
 use std::io::{BufReader, Write};
@@ -108,7 +108,7 @@ whitespace-separated name column).
 
 <dir> for --fragment-corpus is a tools/build-fragment-corpus output
 directory (containing fragment_frequencies.json and manifest.json).
-Enables the fragment_rarity component; omitted, it stays None.";
+Enables the fragment_precedent component; omitted, it stays None.";
 
 #[derive(Serialize)]
 struct BatchItem<'a> {

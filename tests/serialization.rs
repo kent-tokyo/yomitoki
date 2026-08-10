@@ -8,6 +8,17 @@ use yomitoki::{
     SynthesizabilityReport, Verdict,
 };
 
+fn sample_provenance() -> Provenance {
+    Provenance {
+        schema_version: "0.1.0".to_string(),
+        yomitoki_version: "0.1.0".to_string(),
+        chematic_version: "0.11".to_string(),
+        ruleset_version: "0.1.0".to_string(),
+        fragment_corpus: None,
+        config_hash: "sha256:deadbeef".to_string(),
+    }
+}
+
 fn sample_report() -> SynthesizabilityReport {
     let ring_topology = ComponentScore {
         raw: 0.6,
@@ -28,7 +39,7 @@ fn sample_report() -> SynthesizabilityReport {
             size_topology: None,
             ring_topology: Some(ring_topology),
             stereochemical_burden: None,
-            fragment_rarity: None,
+            fragment_precedent: None,
             functional_group_liability: None,
             input_quality: None,
         },
@@ -62,14 +73,7 @@ fn sample_report() -> SynthesizabilityReport {
             unusual_valence: false,
             domain_distance: None,
         },
-        provenance: Provenance {
-            schema_version: "0.1.0".to_string(),
-            yomitoki_version: "0.1.0".to_string(),
-            chematic_version: "0.11".to_string(),
-            ruleset_version: "0.1.0".to_string(),
-            model_version: None,
-            config_hash: "sha256:deadbeef".to_string(),
-        },
+        provenance: sample_provenance(),
     }
 }
 
@@ -128,7 +132,45 @@ fn unimplemented_components_are_none_not_fabricated_zero() {
     assert!(report.components.stereochemical_burden.is_some());
     assert!(report.components.functional_group_liability.is_some());
     assert!(report.components.input_quality.is_some());
-    assert!(report.components.fragment_rarity.is_none());
+    assert!(report.components.fragment_precedent.is_none());
+}
+
+#[test]
+fn schema_uses_fragment_precedent_not_fragment_rarity() {
+    // Round 18 rename (AGENTS.md §5.4): the serialized field/key must be
+    // `fragment_precedent`, and the old `fragment_rarity` name must not
+    // appear anywhere in current schema output.
+    let report = sample_report();
+    let json = serde_json::to_string(&report).expect("serializes");
+    assert!(json.contains("\"fragment_precedent\""), "{json}");
+    assert!(!json.contains("fragment_rarity"), "{json}");
+}
+
+#[test]
+fn provenance_carries_fragment_corpus_domain_when_configured() {
+    // FragmentCorpusProvenance (round 18) replaces the old bare
+    // model_version: Option<String> — round-trips through JSON and
+    // exposes the corpus-domain fields a report reader needs to
+    // distinguish "rare in this corpus" from "hard to synthesize".
+    let mut report = sample_report();
+    report.provenance.fragment_corpus = Some(yomitoki::FragmentCorpusProvenance {
+        version: "sha256:test".to_string(),
+        source_name: "ChEMBL-37".to_string(),
+        domain: "bioactivity".to_string(),
+        synthesis_focused: false,
+        description: "Bioactive compound reference corpus.".to_string(),
+        fragment_definition_version: "morgan-ecfp-v1".to_string(),
+        reference_distribution_version: "quantile-grid-v1".to_string(),
+    });
+
+    let json = serde_json::to_string(&report).expect("serializes");
+    let back: SynthesizabilityReport = serde_json::from_str(&json).expect("deserializes");
+    assert_eq!(report, back);
+
+    let fragment_corpus = back.provenance.fragment_corpus.expect("configured above");
+    assert_eq!(fragment_corpus.source_name, "ChEMBL-37");
+    assert_eq!(fragment_corpus.domain, "bioactivity");
+    assert!(!fragment_corpus.synthesis_focused);
 }
 
 #[test]

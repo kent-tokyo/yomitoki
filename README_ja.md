@@ -17,7 +17,7 @@ yomitokiは、[chematic](https://github.com/kent-tokyo/chematic)上に構築さ�
 
 > yomitokiは合成容易性を推定するだけではなく、その推定の根拠と推論過程を明らかにします。
 
-> **ステータス: `0.1.0-alpha.2`がcrates.ioに公開済みです。** 計画中の6コンポーネントすべてが実装済みです(`fragment_rarity`含む)。ただし`fragment_rarity`はopt-inです — yomitoki自体にはfragment-frequencyコーパスが同梱されていないため(AGENTS.md §5.4は巨大バイナリとしてコーパスを直接埋め込むことを禁止しています)、コーパスを構築(`tools/build-fragment-corpus/`)して設定(`AnalysisConfig.fragment_model`)しない限り無効のままです。**設定した場合:** `fragment_rarity`はコーパス相対のパーセンタイル信号として再設計され(round 17)、対象としていたケースの過大評価を修正しました — 実際の20万分子コーパスで、アスピリンの`overall.difficulty`は`0.273 → 0.095`、dodecaneは`0.068 → 0.000`まで改善しています。既知の注意点もあります: カフェインや橋かけ環・スピロ環、立体中心が密な分子など、構造的には妥当な分子の一部はコーパス設定時に*より難しく*判定されます。これはChEMBLが合成容易性ではなく生物活性スクリーニング用のコーパスであるためです — 実測に基づく正直なbefore/afterは「制限事項」を参照。`fragment_rarity`という名前自体も、正式な`0.1.0`までに`fragment_precedent`へ改名される見込みです — 難易度を上げる方向にも下げる方向にも作用するようになった以上、「rarity detector」という名前はもう実態に合っていません。詳細は[`CHANGELOG.md`](CHANGELOG.md)を参照してください。これはpre-releaseであり、正式な`0.1.0`までに公開APIが変わる可能性があります。現在のスコープと未実装部分については[`docs/architecture.md`](docs/architecture.md)を参照してください。
+> **ステータス: `0.1.0-alpha.2`はcrates.ioに公開済みですが、このリポジトリの現在の内容はそれより先行しています。** 計画中の6コンポーネントすべてが実装済みです(`fragment_precedent`含む — `0.1.0-alpha.2`公開後のround 18で`fragment_rarity`から改名。難易度を上げる方向にも下げる方向にも作用するようになった以上、「rarity detector」という名前はもう実態に合っていませんでした)。ただし`fragment_precedent`はopt-inです — yomitoki自体にはfragment-frequencyコーパスが同梱されていないため(AGENTS.md §5.4は巨大バイナリとしてコーパスを直接埋め込むことを禁止しています)、コーパスを構築(`tools/build-fragment-corpus/`)して設定(`AnalysisConfig.fragment_model`)しない限り無効のままです。**設定した場合:** コーパス相対のパーセンタイル信号として、対象としていたケースの過大評価を修正します — 実際の20万分子コーパスで、アスピリンの`overall.difficulty`は`0.273 → 0.095`、dodecaneは`0.068 → 0.000`まで改善しています。既知の注意点もあります: カフェインや橋かけ環・スピロ環、立体中心が密な分子など、構造的には妥当な分子の一部はコーパス設定時に*より難しく*判定されます。これはChEMBLが合成容易性ではなく生物活性スクリーニング用のコーパスであるためです — `Provenance.fragment_corpus`経由でレポートごとに追跡可能になりました。実測に基づく正直なbefore/afterは「制限事項」を参照。詳細は[`CHANGELOG.md`](CHANGELOG.md)を参照してください。これはpre-releaseであり、正式な`0.1.0`までに公開APIが変わる可能性があります。現在のスコープと未実装部分については[`docs/architecture.md`](docs/architecture.md)を参照してください。
 
 ## 位置付け
 
@@ -36,7 +36,7 @@ yomitokiはroute searchを一切実行しません — これはv0.1のスコー
 ## yomitokiがすること
 
 * 分子を(`chematic`経由で)パースし、単一の数値ではなく構造化された`SynthesizabilityReport`を返す。
-* 評価を独立したコンポーネントに分解する(ring topology、size/topology、stereochemical burden、functional-group liability、input quality/applicability、fragment rarity — 最後のものはopt-in、詳細は下記「制限事項」)。
+* 評価を独立したコンポーネントに分解する(ring topology、size/topology、stereochemical burden、functional-group liability、input quality/applicability、fragment precedent — 最後のものはopt-in、詳細は下記「制限事項」)。
 * **score**(合成容易性/困難性)、**confidence**(その判断の信頼性)、**applicability**(その分子がそもそもモデルの適用範囲内かどうか)を別々のフィールドとして分離する — 作りにくい分子だからといって自動的に低confidenceになるわけではない。
 * 単なる文章ではなく、機械可読なfinding codeと構造化されたevidenceを出力する。
 * retrosynthesis探索を一切実行しない。yomitokiは分子単体を評価するのみで、それを作るための経路を計画することはしない。
@@ -85,7 +85,7 @@ yomitoki analyze --input molecules.sdf --format jsonl --output reports.jsonl
 * バッチモードは入力順序を維持し、1レコードの失敗で全体を停止しない — 失敗したレコードはスキップされるのではなくエラーエントリになる(JSONの`"error"`フィールド、またはhuman形式の`ERROR:`ブロック)。プロセスの終了コードは、全レコードの処理が完了した後、1件でも失敗があった場合にのみ非ゼロになる。
 * `jsonl`形式は単一分子モードとバッチモードの両方で同じ`{"input", "report"|"error"}`ラッパー形式を使う — どちらの呼び出し形式で生成しても、下流のline-by-lineパーサーは単一のスキーマを見ることになる。
 * 終了コード: `0`成功、`1`分子のパース/解析失敗(単一分子モード)またはバッチ内の1件以上の失敗、`2`使用方法エラー(引数不正)。
-* `--fragment-corpus <dir>`は`tools/build-fragment-corpus`の出力ディレクトリを読み込み、その実行で`fragment_rarity`を有効化します(分子解析が始まる前に一度だけ読み込まれます)。指定しない場合、レポートは`fragment_rarity: null`のままです — このフラグが追加される前と同じです。yomitoki自体にはコーパスが同梱されていないためで、詳細は下記「制限事項」を参照。
+* `--fragment-corpus <dir>`は`tools/build-fragment-corpus`の出力ディレクトリを読み込み、その実行で`fragment_precedent`を有効化します(分子解析が始まる前に一度だけ読み込まれます)。指定しない場合、レポートは`fragment_precedent: null`のままです — このフラグが追加される前と同じです。yomitoki自体にはコーパスが同梱されていないためで、詳細は下記「制限事項」を参照。
 
 ## レポートの形式
 
@@ -174,9 +174,9 @@ fragment corpusが設定されていない場合(デフォルト — 下記参�
 | `size_topology` | 実装済み |
 | `stereochemical_burden` | 実装済み(四面体型立体中心のみ — 「制限事項」参照) |
 | `functional_group_liability` | 実装済み(反応性/不安定な官能基 + dense functionalization — 「制限事項」参照) |
-| `fragment_rarity` | 実装済み、opt-in — `AnalysisConfig.fragment_model`にコーパスが設定されていない限り`None`。コーパス相対パーセンタイル信号。既知のcorpus-domain-bias注意点あり、「制限事項」参照 |
+| `fragment_precedent` | 実装済み、opt-in — `AnalysisConfig.fragment_model`にコーパスが設定されていない限り`None`。コーパス相対パーセンタイル信号。既知のcorpus-domain-bias注意点あり、「制限事項」参照 |
 
-本当に評価されていないコンポーネントは`ComponentScores`内で`None`として表現され(未設定の`fragment_rarity`など)、捏造されたゼロスコアとしては表現されません。
+本当に評価されていないコンポーネントは`ComponentScores`内で`None`として表現され(未設定の`fragment_precedent`など)、捏造されたゼロスコアとしては表現されません。
 
 `suggestions: Vec<SimplificationSuggestion>`は6種類のコードのうち4種類(`ReplaceBridgedRingWithMonocyclicAnalog`、`SimplifyMacrocyclicClosure`、`ReduceStereocenterDensity`、`IncreaseFragmentPrecedent`)について生成されます — 詳細は「制限事項」を参照。すべての提案は診断的・heuristicなものであり、確実性を主張することはありません(`expected_effect`は常に`MayReduceDifficulty`であり、`LikelyReducesDifficulty`にはなりません)。
 
@@ -216,17 +216,17 @@ spiro ring system                           5.52               0.20  LikelyAcces
 
 ## 制限事項
 
-* 計画されている6コンポーネントすべてを実装しています(上の表を参照)が、`fragment_rarity`はコーパスが設定されている場合(`AnalysisConfig.fragment_model`)のみ`overall.difficulty`/`overall.synthesizability`に寄与します — yomitoki自体にはコーパスが同梱されていないためです(AGENTS.md §5.4)。未設定の場合、両フィールドは従来通り他の5コンポーネントのみを反映します。
+* 計画されている6コンポーネントすべてを実装しています(上の表を参照)が、`fragment_precedent`はコーパスが設定されている場合(`AnalysisConfig.fragment_model`)のみ`overall.difficulty`/`overall.synthesizability`に寄与します — yomitoki自体にはコーパスが同梱されていないためです(AGENTS.md §5.4)。未設定の場合、両フィールドは従来通り他の5コンポーネントのみを反映します。
 * 負電荷原子(カルボン酸イオン、スルホン酸イオン、リン酸イオンなど)を含む分子では、立体解析(`stereo_complete`と`stereochemical_burden`全体)が一切実行できません — これはchematicの実際のバグであり([#267](https://github.com/kent-tokyo/chematic/issues/267))、設計上の選択ではありません。yomitokiはこれに対してクラッシュしたり推測したりすることは一切ありません(`ApplicabilityReport.stereo_uncheckable`と`StereoAnalysisSkipped`フィンディングを参照)が、上流で修正されるまではそのような分子について立体化学のシグナルを一切持ちません。
-* `size_topology`のrotatable bond(回転可能結合)に関する項は、市販されている単純な非分岐長鎖分子(回転可能結合は多いが合成難易度はほぼゼロ)を過大評価します — `fragment_rarity`はそうしたフラグメントを一般的/前例のあるものと認識することで補正します。round 16では単純な`1 - document_frequency`式がこれを逆に悪化させることが判明しましたが、round 17でコーパス相対パーセンタイル式へ再設計し、実際の20万分子ChEMBLコーパスでend-to-endに修正を確認しました: dodecaneの`overall.difficulty`は`0.068`(コーパス未設定)→`0.000`(コーパス設定)まで改善しています。一般的なキャリブレーションの主張ではありません — 下記の項目、および`rules.rs`の"Fragment rarity"セクション(計算式とcorpus-domain-biasの議論)も参照してください。
-* `fragment_rarity`のコーパス相対信号は、与えられたコーパスの質に依存します。ChEMBL(生物活性スクリーニング用であり、合成容易性用ではない)を設定した場合、構造的には妥当な一部の分子がコーパス設定時に**より難しく**判定されます — これは計算式の不具合ではなく実測値そのものであるため、正直に報告します(コーパス自身の頻度テーブルから独立して再計算しても同じ値が再現されることを確認済み): カフェイン`0.287 → 0.516`、橋かけ二環系(ノルボルナン)`0.341 → 0.985`、スピロ環系`0.199 → 1.000`、立体中心が密な分子`0.275 → 1.000`。原因はおそらくChEMBLの頻度テーブルがバイオアッセイ済み化合物に出現する部分構造を反映しているのであって、合成上ありふれたビルディングブロックを反映しているわけではないためです — 「ChEMBLで希少」と「合成が難しい」は同じ主張ではありません。自然な解決策は合成寄りの参照コーパスへの切り替えであり、計算式のさらなる変更ではありません。
+* `size_topology`のrotatable bond(回転可能結合)に関する項は、市販されている単純な非分岐長鎖分子(回転可能結合は多いが合成難易度はほぼゼロ)を過大評価します — `fragment_precedent`はそうしたフラグメントを一般的/前例のあるものと認識することで補正します。round 16では単純な`1 - document_frequency`式がこれを逆に悪化させることが判明しましたが、round 17でコーパス相対パーセンタイル式へ再設計し、実際の20万分子ChEMBLコーパスでend-to-endに修正を確認しました: dodecaneの`overall.difficulty`は`0.068`(コーパス未設定)→`0.000`(コーパス設定)まで改善しています。一般的なキャリブレーションの主張ではありません — 下記の項目、および`rules.rs`の"Fragment precedent"セクション(計算式とcorpus-domain-biasの議論)も参照してください。
+* `fragment_precedent`のコーパス相対信号は、与えられたコーパスの質に依存します。ChEMBL(生物活性スクリーニング用であり、合成容易性用ではない — round 18以降`Provenance.fragment_corpus.synthesis_focused`でレポートごとに追跡可能)を設定した場合、構造的には妥当な一部の分子がコーパス設定時に**より難しく**判定されます — これは計算式の不具合ではなく実測値そのものであるため、正直に報告します(コーパス自身の頻度テーブルから独立して再計算しても同じ値が再現されることを確認済み): カフェイン`0.287 → 0.516`、橋かけ二環系(ノルボルナン)`0.341 → 0.985`、スピロ環系`0.199 → 1.000`、立体中心が密な分子`0.275 → 1.000`。原因はおそらくChEMBLの頻度テーブルがバイオアッセイ済み化合物に出現する部分構造を反映しているのであって、合成上ありふれたビルディングブロックを反映しているわけではないためです — 「ChEMBLで希少」と「合成が難しい」は同じ主張ではありません。自然な解決策は合成寄りの参照コーパスへの切り替えであり、計算式のさらなる変更ではありません。
 * `stereochemical_burden`は四面体型立体中心の個数と密度のみを対象としています。以下は調査した上でなお未実装です。理由はそれぞれ異なります(詳しい根拠は`docs/architecture.md`参照):
   * E/Z二重結合の立体化学 — chematicはSMILESの`/`/`\`結合マーカーから直接E/Zを割り当てられます(2D座標は不要 — ここに以前あった記述は誤りでした)。ただし入力SMILESが実際にマークした結合にしか適用されません。四面体型中心にある`stereo_completeness`のような「立体化学的だが未指定」の二重結合を検出する仕組みが存在しないため、指定済みのものだけをカウントすると「SMILESがどれだけ丁寧に書かれたか」を測ることになってしまいます — これは下記のatropisomerismを却下した理由と同じ種類の問題が、別の形で現れたものです。
   * Atropisomerism — chematicの`detect_atropisomers`を実際にテストし、不採用としました。同一分子でも`c1ccccc1-c2ccccc2`と書くとatropisomer判定され、`c1ccccc1c2ccccc2`と書くと判定されず、さらに*para*置換ビフェニルを本物のヒンダードな*ortho*置換ビフェニルと同一に扱います。これをラップするとyomitoki自身のatom順序/表記に対する不変性の保証に反します。
   * 連続する立体中心、四級炭素への隣接 — どちらも(指定済み・未指定を問わない)原子レベルの立体中心候補リストが必要ですが、chematicは集計カウントしか公開していません。これをyomitoki内で自前実装すると、検証済みのchematic primitiveを利用する側から、立体中心認識そのものを所有する側へと踏み出すことになります — これまで実装したすべてのコンポーネントが越えていない一線です。
   * meso化合物検出 — グラフ自己同型/位相的対称類が必要です。chematicは内部的にこれを持っています(`chematic-smiles::canonical_automorphism`)が、外部には公開していません。
 * `functional_group_liability`は反応性/不安定な官能基(chematicのBrenk et al. 2008構造アラートセットを直接ラップ)と、dense functionalization(chematicのErtl 2017 `identify_functional_groups`による、互いに独立した官能基クラスターの個数)をカバーしています。相互に非互換な官能基の組み合わせと保護基の圧力は未実装です — 上記2つと異なり、どちらも根拠となる検証済みのprimitiveがchematicに存在せず、どちらかを手作業でキュレーションすることはAGENTS.mdが警告する「化学的に弱いルールを過剰に一般化する」ことそのものになってしまうためです。化学選択性の負担、多官能性の対称性破れ、難しい酸化状態の組み合わせも未実装です — 最後の項目はchematicに酸化状態関連のAPIが一切存在しないためです。Brenkのセットは医薬品化学のスクリーニングライブラリにおける「望ましさ」フィルターとして検証されたものであり、合成難易度のシグナルではありません。そのため一部のアラートは一般的で安価に前例のある官能基にも反応します — 例えばアスピリンは4つのBrenkアラートに引っかかり、合成が非常に容易であるにもかかわらず`ModeratelyAccessible`と判定されます。これは上記のrotatable bondの問題と同じ形の既知のギャップであり、同じ解決策を意図しています — コーパスを設定するとアスピリンの`overall.difficulty`は`0.273`から`0.095`へ改善することがround 17でend-to-endに確認されました(上記2項目のcorpus-domain-bias注意点も同様に適用されます)。dense functionalizationにも独自の既知のギャップがあります:位相的に「分離している」官能基クラスターの個数を数えるため、密に相互接続した多官能性システム(グルコースの水酸基が連なる環や、縮環したβ-ラクタムなど)は1つのクラスターに収束してしまい、官能基が1つしかない分子と同じカウントになります。
-* yomitoki自体にはfragment corpusが同梱されていないため(AGENTS.md §5.4)、デフォルトでは新規/希少な部分構造は検出されません — `fragment_rarity`は、コーパスを構築(`tools/build-fragment-corpus`)して設定するまで`None`のままです。コーパスをデフォルトで同梱するかどうかはまだ決まっていません(AGENTS.md §5.4が示す`yomitoki-core`/`yomitoki-models`/`yomitoki-data`分割、またはfeature flag付き外部ファイル)。
+* yomitoki自体にはfragment corpusが同梱されていないため(AGENTS.md §5.4)、デフォルトでは新規/希少な部分構造は検出されません — `fragment_precedent`は、コーパスを構築(`tools/build-fragment-corpus`)して設定するまで`None`のままです。コーパスをデフォルトで同梱するかどうかはまだ決まっていません(AGENTS.md §5.4が示す`yomitoki-core`/`yomitoki-models`/`yomitoki-data`分割、またはfeature flag付き外部ファイル)。
 * 簡略化提案は`SuggestionCode`の6種類のうち4種類(架橋環、macrocycle、立体中心密度、そしてfragment corpusが設定されている場合はfragment precedentの増加)をカバーしています。残る2種類には、まだ存在しない信号が必要です:四級炭素の隣接はどこでも計算されておらず、`brenk_matches_detailed`はパターンごとに原子をまとめて返す(occurrence単位ではない)ため「複数ある類似の反応性基のうち1つを除去する」提案がどの出現を指すべきか特定できません。すべての提案のconfidenceは提案コードごとではなく一律の固定値(0.5)です — 実際の合成結果によるキャリブレーションが存在しないためです。
 * `ApplicabilityReport.domain_distance`は、キャリブレーション用コーパスが存在するまで(Phase 2以降)常に`None`です。
 * 対応範囲は厳選されたorganic元素のサブセットに限定されており、全元素対応やorganometallicへの対応は試みていません。
@@ -246,4 +246,4 @@ spiro ring system                           5.52               0.20  LikelyAcces
 
 ## ロードマップ
 
-残りの計画: 同梱されるfragment corpus(`fragment_rarity`自体は実装済みですがopt-in — 「制限事項」参照)、SAscore/RAscore/route-search outcomeに対する*キャリブレーション*(SAscoreに対する最小限の*比較*はキャリブレーションではなく、既に上記の通り実装済みです)、そして将来的にはPythonバインディング。
+残りの計画: 同梱されるfragment corpus(`fragment_precedent`自体は実装済みですがopt-in — 「制限事項」参照)、SAscore/RAscore/route-search outcomeに対する*キャリブレーション*(SAscoreに対する最小限の*比較*はキャリブレーションではなく、既に上記の通り実装済みです)、そして将来的にはPythonバインディング。

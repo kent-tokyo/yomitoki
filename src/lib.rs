@@ -22,9 +22,9 @@ pub use error::YomitokiError;
 pub use fragment_corpus::FragmentCorpus;
 pub use report::{
     ApplicabilityReport, AtomIndex, ComponentScore, ComponentScores, ConfidenceScore, Contribution,
-    ExpectedEffect, Finding, FindingCode, FindingEvidence, FindingRef, OverallAssessment,
-    ProbabilityLikeScore, Provenance, Severity, SimplificationSuggestion, SuggestionCode,
-    SynthesizabilityReport, Verdict,
+    ExpectedEffect, Finding, FindingCode, FindingEvidence, FindingRef, FragmentCorpusProvenance,
+    OverallAssessment, ProbabilityLikeScore, Provenance, Severity, SimplificationSuggestion,
+    SuggestionCode, SynthesizabilityReport, Verdict,
 };
 
 /// Re-exported only so `tools/build-fragment-corpus` can filter its input
@@ -35,8 +35,8 @@ pub use report::{
 pub use rules::SUPPORTED_ELEMENTS;
 
 /// Re-exported only so `tools/build-fragment-corpus` can record which
-/// `fragment_rarity` formula/ruleset version was current when a corpus was
-/// built (manifest provenance — round 17). Not part of the supported
+/// `fragment_precedent` formula/ruleset version was current when a corpus
+/// was built (manifest provenance — round 17). Not part of the supported
 /// public API.
 #[doc(hidden)]
 pub use rules::RULESET_VERSION;

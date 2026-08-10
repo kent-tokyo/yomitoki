@@ -85,23 +85,23 @@ pub(crate) fn render(
             evidence.value.unwrap_or(0.0) as usize,
             evidence.threshold.unwrap_or(0.0) as usize
         ),
-        FindingCode::FragmentRarityHigh => {
+        FindingCode::FragmentPrecedentWeak => {
             let pct = evidence.value.unwrap_or(0.0).round() as u32;
             format!(
-                "Fragment precedent is unusually weak: {pct}{} percentile in the \
-                 reference corpus — this molecule's structural fragments are less \
-                 common than most of the corpus, which may indicate genuine synthetic \
-                 novelty, or simply a gap in this corpus's coverage; this is not a \
-                 claim about which.",
+                "Fragment precedent is weak relative to the configured reference \
+                 corpus: {pct}{} percentile — this molecule's structural fragments \
+                 are less common than most of the corpus, which may indicate genuine \
+                 synthetic novelty, or simply a gap in this corpus's coverage; this \
+                 is not a claim about which.",
                 ordinal_suffix(pct)
             )
         }
         FindingCode::FragmentPrecedentStrong => {
             let pct = evidence.value.unwrap_or(0.0).round() as u32;
             format!(
-                "Fragment precedent is unusually strong: {pct}{} percentile in the \
-                 reference corpus — this molecule's structural fragments are more \
-                 common than most of the corpus.",
+                "Fragment precedent is strong relative to the configured reference \
+                 corpus: {pct}{} percentile — this molecule's structural fragments \
+                 are more common than most of the corpus.",
                 ordinal_suffix(pct)
             )
         }

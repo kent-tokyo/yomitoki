@@ -1,7 +1,9 @@
-//! `fragment_rarity` component + `FragmentCorpus::load_dir` behavior —
+//! `fragment_precedent` component + `FragmentCorpus::load_dir` behavior —
 //! round 17's corpus-relative signed precedent redesign (see
-//! `rules.rs`'s "Fragment rarity" section for the formula, and round 16's
-//! finding that the original absolute-scale formula was confirmed broken).
+//! `rules.rs`'s "Fragment precedent" section for the formula, and round
+//! 16's finding that the original absolute-scale formula was confirmed
+//! broken), plus round 18's rename from `fragment_rarity` and
+//! corpus-domain provenance contract.
 //!
 //! Corpora are built from real `chematic::fp::morgan_fp_counts` output for
 //! chosen fixture molecules (not hand-computed hashes) so the fragment
@@ -24,6 +26,33 @@ use yomitoki::{AnalysisConfig, FindingCode, FragmentCorpus, SuggestionCode, anal
 
 const RADIUS: u32 = 2;
 const TOTAL: u64 = 1000;
+
+/// The manifest fields round 18 made required (`corpus_domain`,
+/// `fragment_definition_version`, `reference_distribution_version`) —
+/// merged into every hand-built manifest fixture in this file so tests
+/// that aren't specifically exercising *these* fields' own validation
+/// don't fail on them incidentally.
+fn required_manifest_extras() -> serde_json::Value {
+    serde_json::json!({
+        "fragment_definition_version": "test-fixture-v1",
+        "reference_distribution_version": "test-fixture-v1",
+        "corpus_domain": {
+            "source_name": "Test Fixture",
+            "domain": "test",
+            "synthesis_focused": false,
+            "description": "Not a real corpus -- exists only for integration test fixtures.",
+        },
+    })
+}
+
+fn merged_manifest(mut fields: serde_json::Value) -> serde_json::Value {
+    let extras = required_manifest_extras();
+    fields
+        .as_object_mut()
+        .expect("manifest fixture must be a JSON object")
+        .extend(extras.as_object().unwrap().clone());
+    fields
+}
 
 /// Writes a corpus where `smiles`'s own fragments each have document
 /// frequency `occurrence / TOTAL`, and the reference distribution is the
@@ -66,10 +95,10 @@ fn write_corpus_with_distribution(
     )
     .unwrap();
 
-    let manifest = serde_json::json!({
+    let manifest = merged_manifest(serde_json::json!({
         "artifact_sha256": "sha256:test-fixture",
         "reference_distribution": reference_distribution,
-    });
+    }));
     std::fs::write(
         dir.join("manifest.json"),
         serde_json::to_vec_pretty(&manifest).unwrap(),
@@ -89,11 +118,11 @@ fn config_with_corpus(dir: &Path) -> AnalysisConfig {
 }
 
 #[test]
-fn no_corpus_configured_leaves_fragment_rarity_none() {
+fn no_corpus_configured_leaves_fragment_precedent_none() {
     let config = AnalysisConfig::default();
     let report = analyze_smiles("CCO", &config).expect("valid SMILES");
-    assert!(report.components.fragment_rarity.is_none());
-    assert!(report.provenance.model_version.is_none());
+    assert!(report.components.fragment_precedent.is_none());
+    assert!(report.provenance.fragment_corpus.is_none());
     assert!(report.dominant_supports().is_empty());
 }
 
@@ -108,7 +137,7 @@ fn molecule_at_the_corpus_median_gets_no_finding_and_near_zero_contribution() {
     let report = analyze_smiles("CCO", &config).expect("valid SMILES");
     let score = report
         .components
-        .fragment_rarity
+        .fragment_precedent
         .expect("corpus is configured");
     assert!(
         score.contribution.abs() < 1e-9,
@@ -119,13 +148,13 @@ fn molecule_at_the_corpus_median_gets_no_finding_and_near_zero_contribution() {
         !report
             .findings
             .iter()
-            .any(|f| f.code == FindingCode::FragmentRarityHigh
+            .any(|f| f.code == FindingCode::FragmentPrecedentWeak
                 || f.code == FindingCode::FragmentPrecedentStrong)
     );
 }
 
 #[test]
-fn molecule_at_a_low_percentile_gets_a_rarity_penalty_and_a_positive_contribution() {
+fn molecule_at_a_low_percentile_gets_a_weak_precedent_penalty_and_a_positive_contribution() {
     // occurrence/TOTAL = 0.05 -> percentile 0.05 -> signed_signal = 0.9 ->
     // a penalty (positive contribution to difficulty).
     let dir = tempfile::tempdir().expect("tempdir");
@@ -137,18 +166,18 @@ fn molecule_at_a_low_percentile_gets_a_rarity_penalty_and_a_positive_contributio
         report
             .findings
             .iter()
-            .any(|f| f.code == FindingCode::FragmentRarityHigh)
+            .any(|f| f.code == FindingCode::FragmentPrecedentWeak)
     );
     assert!(
         report
             .dominant_penalties()
             .iter()
-            .any(|c| c.code == FindingCode::FragmentRarityHigh)
+            .any(|c| c.code == FindingCode::FragmentPrecedentWeak)
     );
     assert!(report.dominant_supports().is_empty());
     let score = report
         .components
-        .fragment_rarity
+        .fragment_precedent
         .expect("corpus is configured");
     assert!(
         score.contribution > 0.0,
@@ -186,7 +215,7 @@ fn molecule_at_a_high_percentile_gets_precedent_support_and_a_negative_contribut
     );
     let score = report
         .components
-        .fragment_rarity
+        .fragment_precedent
         .expect("corpus is configured");
     assert!(
         score.contribution < 0.0,
@@ -242,7 +271,7 @@ fn strong_precedent_support_never_erases_ring_topology_burden() {
     // The support is real (contribution is negative)...
     let fragment_score = with_corpus
         .components
-        .fragment_rarity
+        .fragment_precedent
         .expect("corpus is configured");
     assert!(fragment_score.contribution < 0.0);
     // ...but capped: it can only offset size_topology's +
@@ -280,13 +309,13 @@ fn load_dir_errors_cleanly_on_mixed_radii() {
         serde_json::to_vec_pretty(&table).unwrap(),
     )
     .unwrap();
+    let manifest = merged_manifest(serde_json::json!({
+        "artifact_sha256": "x",
+        "reference_distribution": identity_distribution(),
+    }));
     std::fs::write(
         dir.path().join("manifest.json"),
-        serde_json::to_vec_pretty(&serde_json::json!({
-            "artifact_sha256": "x",
-            "reference_distribution": identity_distribution(),
-        }))
-        .unwrap(),
+        serde_json::to_vec_pretty(&manifest).unwrap(),
     )
     .unwrap();
 
@@ -307,10 +336,47 @@ fn load_dir_errors_cleanly_on_a_missing_reference_distribution() {
         serde_json::to_vec_pretty(&table).unwrap(),
     )
     .unwrap();
-    // No reference_distribution at all -- a corpus built before round 17.
+    // Every other required manifest field present (round 18's
+    // corpus_domain/*_version fields), but no reference_distribution at
+    // all -- isolates round 17's own validation from round 18's, so this
+    // still tests what its name claims.
+    let manifest = merged_manifest(serde_json::json!({"artifact_sha256": "x"}));
     std::fs::write(
         dir.path().join("manifest.json"),
-        serde_json::to_vec_pretty(&serde_json::json!({"artifact_sha256": "x"})).unwrap(),
+        serde_json::to_vec_pretty(&manifest).unwrap(),
+    )
+    .unwrap();
+
+    let result = FragmentCorpus::load_dir(dir.path());
+    assert!(result.is_err());
+}
+
+#[test]
+fn load_dir_errors_cleanly_on_a_missing_corpus_domain() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let table = serde_json::json!({
+        "total_molecules_processed": 10,
+        "distinct_fragment_count": 1,
+        "fragments": [{"radius": 2, "fragment_hash": 1, "occurrence_count": 5}],
+    });
+    std::fs::write(
+        dir.path().join("fragment_frequencies.json"),
+        serde_json::to_vec_pretty(&table).unwrap(),
+    )
+    .unwrap();
+    // reference_distribution present, but no corpus_domain -- a corpus
+    // built before round 18. There is no undeclared-domain fallback (see
+    // FragmentCorpusProvenance's doc for why domain provenance isn't
+    // optional).
+    std::fs::write(
+        dir.path().join("manifest.json"),
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "artifact_sha256": "x",
+            "reference_distribution": identity_distribution(),
+            "fragment_definition_version": "test-fixture-v1",
+            "reference_distribution_version": "test-fixture-v1",
+        }))
+        .unwrap(),
     )
     .unwrap();
 
@@ -363,5 +429,36 @@ fn regression_a_realistically_common_molecule_does_not_score_harder_with_a_corpu
         "regression: a realistically-common molecule scored harder with a corpus \
          configured (without={difficulty_without}, with={difficulty_with}) -- this is \
          the exact round-16 bug"
+    );
+}
+
+/// **Regression test — round 18.** `Provenance.fragment_corpus` must carry
+/// the corpus's own domain declaration through end-to-end, not just its
+/// version identifier — this is the whole point of the round-18
+/// provenance contract (AGENTS.md §5.4): a report reader needs to know
+/// *which chemical domain* a `fragment_precedent` signal was measured
+/// against.
+#[test]
+fn provenance_carries_the_configured_corpus_domain() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    write_corpus(dir.path(), "CCO", 500);
+    let config = config_with_corpus(dir.path());
+
+    let report = analyze_smiles("CCO", &config).expect("valid SMILES");
+    let fragment_corpus = report
+        .provenance
+        .fragment_corpus
+        .expect("corpus is configured");
+    assert_eq!(fragment_corpus.version, "sha256:test-fixture");
+    assert_eq!(fragment_corpus.source_name, "Test Fixture");
+    assert_eq!(fragment_corpus.domain, "test");
+    assert!(!fragment_corpus.synthesis_focused);
+    assert_eq!(
+        fragment_corpus.fragment_definition_version,
+        "test-fixture-v1"
+    );
+    assert_eq!(
+        fragment_corpus.reference_distribution_version,
+        "test-fixture-v1"
     );
 }

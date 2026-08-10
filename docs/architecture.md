@@ -12,8 +12,8 @@ belongs to a different, unrelated project.
 
 ## Crate boundary
 
-Single crate, `yomitoki`, no workspace split. `fragment_rarity` now exists
-and needs a `FragmentCorpus`, but that corpus is loaded at runtime from an
+Single crate, `yomitoki`, no workspace split. `fragment_precedent` now
+exists and needs a `FragmentCorpus`, but that corpus is loaded at runtime from an
 external directory (`FragmentCorpus::load_dir`, built with
 `tools/build-fragment-corpus`) — no corpus is embedded in this crate, so
 there's still no large embedded model to justify splitting into
@@ -125,13 +125,13 @@ change across yomitoki's own test suite before and after the bump.)
 | SAscore (comparison only, not used by any component) | `chematic::chem::sa_score(&Molecule) -> f64` (Ertl & Schuffenhauer 2009; `examples/sa_score_comparison.rs` only) |
 | SDF batch reading | `chematic::mol::SdfReader::new(&str) -> impl Iterator<Item = Result<(Molecule, MolMetadata), MolParseError>>` — CLI-only, gated on the `mol` feature |
 | SMILES-table batch reading | `chematic::mol::SmilesRecordReader::new(impl BufRead, SmilesReaderOptions) -> impl Iterator<Item = Result<MoleculeRecord, SmilesTableError>>` — CLI-only, gated on the `mol` feature |
-| Circular/ECFP-like fragment hashing | `chematic::fp::morgan_fp_counts(&Molecule, radius: u32) -> HashMap<u64, u32>` (`fragment_rarity`; cumulative over iterations `0..=radius`, gated on the `fp` feature) |
+| Circular/ECFP-like fragment hashing | `chematic::fp::morgan_fp_counts(&Molecule, radius: u32) -> HashMap<u64, u32>` (`fragment_precedent`; cumulative over iterations `0..=radius`, gated on the `fp` feature) |
 
 Dependency declaration: `chematic = { version = "0.12", features = ["smiles",
 "perception", "chem", "mol", "fp"] }`. The `chematic` facade crate has
 `default = []` — without explicit features it exposes nothing. `mol` is used
 only by the CLI binary (`src/bin/yomitoki.rs`), not by the library; `fp` is
-used only by `fragment_rarity`.
+used only by `fragment_precedent`.
 
 Known gaps in chematic's public API (relevant to yomitoki, not filed upstream
 yet): no macrocycle predicate in `chematic-perception` (only
@@ -185,11 +185,11 @@ outrank a bridged-ring finding once enough of them pile up — see
 for a fixture pinning down a specific case of this.
 
 `ComponentScores` has all six report fields
-(`size_topology`, `ring_topology`, `stereochemical_burden`, `fragment_rarity`,
+(`size_topology`, `ring_topology`, `stereochemical_burden`, `fragment_precedent`,
 `functional_group_liability`, `input_quality`), each typed
 `Option<ComponentScore>`. `ring_topology`, `size_topology`,
 `stereochemical_burden`, `functional_group_liability`, and `input_quality`
-are always `Some` in v0.1. `fragment_rarity` is implemented but opt-in: it's
+are always `Some` in v0.1. `fragment_precedent` is implemented but opt-in: it's
 `Some` only when `AnalysisConfig.fragment_model` has a `FragmentCorpus`
 configured, `None` otherwise (the default — no corpus ships with yomitoki
 itself; §5.4 below). This is a deliberate choice over populating
@@ -256,7 +256,7 @@ code this module knows how to translate:
 `RingBridgedComplexity` → `ReplaceBridgedRingWithMonocyclicAnalog`,
 `RingMacrocycle` → `SimplifyMacrocyclicClosure`,
 `StereoDensityHigh` → `ReduceStereocenterDensity`,
-`FragmentRarityHigh` → `IncreaseFragmentPrecedent` (only reachable when a
+`FragmentPrecedentWeak` → `IncreaseFragmentPrecedent` (only reachable when a
 fragment corpus is configured — see below). The other 2 have no underlying
 signal to derive from yet: quaternary-carbon adjacency isn't computed
 anywhere; `brenk_matches_detailed` unions atoms per pattern rather than
@@ -317,14 +317,14 @@ may decouple once calibration is introduced.
 rotatable-bond term over-penalizes simple, commercially available long
 unbranched chains (many rotatable bonds, essentially no synthetic
 difficulty) — the same "structural complexity vs. actual difficulty"
-conflation that existing SA-scoring tools are prone to. `fragment_rarity`
+conflation that existing SA-scoring tools are prone to. `fragment_precedent`
 is meant to correct for this by recognizing such fragments as
 common/precedented. Round 16 found the original naive-document-frequency
 formula made this specific case *worse* (dodecane `0.068 → 0.227`); round
 17's corpus-relative percentile redesign confirms it fixed, end-to-end
 against a real 200k-molecule corpus: dodecane's `overall.difficulty` now
 measures `0.068 → 0.000`. Not a general calibration claim — see the fourth
-caveat below and `rules.rs`'s "Fragment rarity" section for the formula
+caveat below and `rules.rs`'s "Fragment precedent" section for the formula
 and its corpus-domain-bias discussion.
 
 **Second known caveat, same shape:** `functional_group_liability` wraps
@@ -335,14 +335,17 @@ aspirin trips `phenol`/`phenolic_aldehyde`/`active_ester`/`acetal_ketal`
 and, without a corpus configured, lands at `ModeratelyAccessible`
 (synthesizability 0.74) despite being one of the most trivially
 synthesizable molecules there is; paracetamol similarly trips
-`phenol`/`aniline`/`secondary_amine`. `fragment_rarity` corrects for this
+`phenol`/`aniline`/`secondary_amine`. `fragment_precedent` corrects for this
 the same way once a corpus is configured — round 17 confirms it
 end-to-end: aspirin's `overall.difficulty` measures `0.273 → 0.095`,
 paracetamol's `0.243 → 0.095`.
 
 **Fourth known caveat, discovered by round 17's validation panel:**
-`fragment_rarity`'s corpus-relative signal is only as good as the corpus
-it's given. Against the real 200k-molecule ChEMBL-37 corpus, several
+`fragment_precedent`'s corpus-relative signal is only as good as the corpus
+it's given (round 18 makes this traceable per-report via
+`Provenance.fragment_corpus.synthesis_focused`, without yet changing
+scoring behavior based on it — see the roadmap above). Against the real
+200k-molecule ChEMBL-37 corpus, several
 structurally-legitimate molecules score *harder*, not easier, once the
 corpus is configured — caffeine (`0.287 → 0.516`), a bridged bicyclic /
 norbornane (`0.341 → 0.985`), a spiro ring system (`0.199 → 1.000`), and a
@@ -403,12 +406,12 @@ into `overall.confidence` yet — only applicability's is — so this is
 informational in the schema today, not yet load-bearing for verdict
 selection.
 
-`fragment_rarity` is exactly the kind of component whose rule coverage
+`fragment_precedent` is exactly the kind of component whose rule coverage
 genuinely varies (with which corpus is configured, and how well it covers
 a given molecule), but its `ComponentScore.confidence` is still a flat
 `1.0` in v0.1 — deliberately: there's no sampling-uncertainty model yet for
 "how much should an unseen fragment's rarity be discounted by corpus size"
-(see `components/fragment_rarity.rs`). Confidence will stop being
+(see `components/fragment_precedent.rs`). Confidence will stop being
 effectively-constant once that gap is closed, not merely once the
 component exists.
 
@@ -531,43 +534,60 @@ second one.
 
 **Roadmap to a non-alpha `0.1.0`, decided after round 17's redesign shipped
 as `0.1.0-alpha.2`:** the code/formula/cap design is judged v0.1-ready, but
-corpus *semantics* are not settled yet. Three items block the non-alpha
-release, in order:
+corpus *semantics* were not settled yet. Three items were identified,
+in order:
 
-1. **Rename `fragment_rarity` to `fragment_precedent`** (component module,
-   `ComponentScores.fragment_rarity` field, `AnalysisConfig.fragment_model`
-   naming, `FindingCode::FragmentRarityHigh` → something in the
-   `FragmentPrecedent*` family). Justification: the component no longer
+1. ~~**Rename `fragment_rarity` to `fragment_precedent`**~~ — **done,
+   round 18.** Component module (`components/fragment_precedent.rs`),
+   `ComponentScores.fragment_precedent` field, `FindingCode::
+   FragmentPrecedentWeak` (was `FragmentRarityHigh`), explanation text,
+   suggestions, CLI help, and every doc comment referencing the old name.
+   `AnalysisConfig.fragment_model`/`FragmentModelConfig` were audited and
+   *not* renamed — see config.rs's own doc comment for the reasoning
+   (that name was already generic, not rarity-specific, and renaming it
+   to something precedent-specific would narrow it unnecessarily).
+   Justification for the parts that did rename: the component no longer
    detects rarity as a one-directional penalty — round 17 made it argue
-   difficulty both up (rare fragments) *and* down (precedented ones), so
-   "rarity detector" undersells what it actually does. Renaming now, while
-   the crate is still alpha and schema-breaking changes are cheap, avoids
-   a breaking rename after `0.1.0`.
-2. **A corpus-domain provenance contract in the manifest** — e.g. a
-   `corpus_domain` block (`name`, `intended_use`,
-   `synthesis_focused: bool`) so a report consumer (and yomitoki's own
-   documentation) can state what a configured corpus's precedent signal
-   actually means, instead of implicitly treating "prevalent in this
-   corpus" as "synthetically precedented." ChEMBL 37 is documented by
-   ChEMBL itself as a bioactive/drug-like-molecule corpus, not a
-   synthesis-focused one — round 17's caffeine/norbornane/spiro/
+   difficulty both up (weakly precedented fragments) *and* down (strongly
+   precedented ones), so "rarity detector" undersold what it actually
+   does. `schema_version` bumped `0.4.0` → `0.5.0`; no deprecated alias
+   kept (clean break, pre-`0.1.0`).
+2. ~~**A corpus-domain provenance contract in the manifest**~~ — **done,
+   round 18.** `manifest.json` now carries a required `corpus_domain`
+   block (`source_name`, `domain`, `synthesis_focused`, `description`),
+   set via new required `tools/build-fragment-corpus` CLI flags
+   (`--corpus-domain-name`/`--corpus-domain`/
+   `--corpus-synthesis-focused`/`--corpus-domain-description` — required,
+   not defaulted, since guessing a domain would defeat the point). Every
+   report produced against a configured corpus now carries this in
+   `Provenance.fragment_corpus` (`FragmentCorpusProvenance`, replacing the
+   old bare `model_version: Option<String>`), so a report reader can trace
+   which corpus *and which domain* produced its `fragment_precedent`
+   signal — "rare in ChEMBL" and "hard to synthesize" are traceably
+   different claims now, not implicitly conflated. Deliberately
+   provenance-only this round: `synthesis_focused: false` does not lower a
+   score, reduce confidence, or refuse the corpus — see
+   `FragmentCorpusProvenance::synthesis_focused`'s own doc. ChEMBL 37 is
+   documented by ChEMBL itself as a bioactive/drug-like-molecule corpus,
+   not a synthesis-focused one — round 17's caffeine/norbornane/spiro/
    stereocenter-dense findings are exactly this mismatch surfacing, not a
-   formula bug (see "Scoring direction" above).
+   formula bug (see "Scoring direction" above); the local `out_200000_v4`
+   corpus build declares `synthesis_focused: false` accordingly.
 3. **Validate against at least one synthesis-focused reference corpus**
    (e.g. a reaction-precursor or building-block database) before settling
    the `GeneralOrganic` profile's precedent-signal contract on ChEMBL
    alone — a single bioactivity-biased corpus shouldn't define what
-   "precedented" means for the profile's official behavior.
+   "precedented" means for the profile's official behavior. **The
+   remaining blocker** for a non-alpha `0.1.0`.
 
-Only after these three does a non-alpha `0.1.0` make sense; none of them
-change the underlying formula or cap logic itself, which round 17 already
-validated end-to-end.
+None of the three change the underlying formula or cap logic itself, which
+round 17 already validated end-to-end.
 
 Not implemented in v0.1 so far (tracked, not stubbed with fake data):
 
-* A corpus shipped with (or alongside) yomitoki for `fragment_rarity` to
+* A corpus shipped with (or alongside) yomitoki for `fragment_precedent` to
   use by default. The component itself is implemented
-  (`components/fragment_rarity.rs`) and opt-in via
+  (`components/fragment_precedent.rs`) and opt-in via
   `AnalysisConfig.fragment_model`, but no corpus ships — AGENTS.md §5.4
   forbids embedding one directly in the library as a huge binary, and no
   decision has been made about the `yomitoki-core`/`yomitoki-models`/
@@ -577,9 +597,10 @@ Not implemented in v0.1 so far (tracked, not stubbed with fake data):
   `FragmentCorpus::load_dir` in the meantime. See
   `tasks/upstream_and_corpus_research.md` (gitignored) for the corpus-size
   -vs-signal measurements this was decided in view of.
-* **`fragment_rarity`'s scoring formula was confirmed broken in round 16,
-  redesigned and fixed in round 17.** Round 16 found `raw =
-  FRAGMENT_RARITY_WEIGHT * (1.0 - mean_document_frequency)` had no
+* **`fragment_precedent`'s scoring formula was confirmed broken in round
+  16, redesigned and fixed in round 17.** Round 16 found `raw =
+  FRAGMENT_RARITY_WEIGHT * (1.0 - mean_document_frequency)` (the constant
+  itself has since been removed) had no
   "common enough → ~zero contribution" reference point — real molecules'
   mean document frequency in a diverse corpus rarely exceeds ~0.3–0.4 even
   for ordinary fragments, so `1.0 - mean_document_frequency` sat around
@@ -598,7 +619,7 @@ Not implemented in v0.1 so far (tracked, not stubbed with fake data):
   burden. Confirmed end-to-end against the real 200k-molecule corpus:
   aspirin `0.273 → 0.095`, paracetamol `0.243 → 0.095`, dodecane
   `0.068 → 0.000` — all three documented target cases now move in the
-  intended direction. See `rules.rs`'s "Fragment rarity" section for the
+  intended direction. See `rules.rs`'s "Fragment precedent" section for the
   full formula, the measured corpus quantiles it was designed against, and
   its own known caveat: some structurally-legitimate molecules (caffeine,
   bridged/spiro ring systems, stereocenter-dense cores) score *harder*

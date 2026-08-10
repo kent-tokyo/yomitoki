@@ -7,7 +7,7 @@
 use chematic::core::Molecule;
 
 use crate::components::{
-    applicability, fragment_rarity, functional_group_liability, ring_topology, size_topology,
+    applicability, fragment_precedent, functional_group_liability, ring_topology, size_topology,
     stereochemical_burden,
 };
 use crate::config::{AnalysisConfig, Strictness};
@@ -38,14 +38,14 @@ pub fn analyze(
     let fg_outcome = functional_group_liability::compute(molecule);
     // Only runs when a corpus is configured — no corpus ships with
     // yomitoki itself (AGENTS.md §5.4), so this is `None` by default and
-    // every result below (`ComponentScores.fragment_rarity`, `difficulty`,
-    // `dominant_penalties`, `Provenance.model_version`) is unaffected,
-    // matching today's behavior exactly when unconfigured.
+    // every result below (`ComponentScores.fragment_precedent`,
+    // `difficulty`, `dominant_penalties`, `Provenance.fragment_corpus`) is
+    // unaffected, matching today's behavior exactly when unconfigured.
     let fragment_outcome = config
         .fragment_model
         .corpus
         .as_deref()
-        .map(|corpus| fragment_rarity::compute(molecule, corpus));
+        .map(|corpus| fragment_precedent::compute(molecule, corpus));
 
     let mut findings: Vec<Finding> = Vec::new();
     findings.extend(applicability_outcome.findings);
@@ -57,7 +57,7 @@ pub fn analyze(
     findings.extend(stereo_outcome.findings);
     let fg_findings_offset = findings.len();
     findings.extend(fg_outcome.findings);
-    // At most one finding (`FragmentRarityHigh` or `FragmentPrecedentStrong`)
+    // At most one finding (`FragmentPrecedentWeak` or `FragmentPrecedentStrong`)
     // — pushed directly rather than via an offset-rebased Vec like the
     // other four, since there's only ever 0 or 1.
     let fragment_finding_ref: Option<FindingRef> = fragment_outcome
@@ -94,12 +94,12 @@ pub fn analyze(
         + AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN * stereo_score.normalized.value()
         + AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY * fg_score.normalized.value();
 
-    // fragment_rarity is a *correction term* on top of the four always-on
-    // components, not a fifth peer weighted-summed term — round 16 found
-    // the peer-weighted-sum model structurally couldn't let common
-    // -fragment evidence reduce difficulty at all (see
-    // rules.rs's "Fragment rarity" section). `precedent_support` is capped
-    // at size_topology + functional_group_liability's own contribution:
+    // fragment_precedent is a *correction term* on top of the four
+    // always-on components, not a fifth peer weighted-summed term — round
+    // 16 found the peer-weighted-sum model structurally couldn't let
+    // common-fragment evidence reduce difficulty at all (see rules.rs's
+    // "Fragment precedent" section). `precedent_support` is capped at
+    // size_topology + functional_group_liability's own contribution:
     // strong fragment precedent can offset "this looks like an unusual
     // substituent pattern" burden, but must never zero out
     // ring_topology/stereochemical_burden burden just because a
@@ -113,10 +113,10 @@ pub fn analyze(
         let support_cap = AGGREGATE_WEIGHT_SIZE_TOPOLOGY * size_score.normalized.value()
             + AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY * fg_score.normalized.value();
         let applied_support = outcome.precedent_support.min(support_cap);
-        let net = outcome.rarity_penalty - applied_support;
+        let net = outcome.precedent_penalty - applied_support;
         difficulty_value += net;
 
-        let signed_signal = outcome.rarity_penalty - outcome.precedent_support;
+        let signed_signal = outcome.precedent_penalty - outcome.precedent_support;
         fragment_score = Some(ComponentScore {
             raw: signed_signal,
             normalized: ProbabilityLikeScore::new(signed_signal.abs()),
@@ -139,13 +139,13 @@ pub fn analyze(
                 // with `net`'s actual effect on `difficulty` — a reader
                 // of `dominant_supports` sees what the support really did,
                 // not what it could have done uncapped.
-                contribution: ProbabilityLikeScore::new(if outcome.rarity_penalty > 0.0 {
-                    outcome.rarity_penalty
+                contribution: ProbabilityLikeScore::new(if outcome.precedent_penalty > 0.0 {
+                    outcome.precedent_penalty
                 } else {
                     applied_support
                 }),
             };
-            if outcome.rarity_penalty > 0.0 {
+            if outcome.precedent_penalty > 0.0 {
                 fragment_penalty_contribution = Some(contribution);
             } else {
                 fragment_support_contribution = Some(contribution);
@@ -189,9 +189,9 @@ pub fn analyze(
     });
 
     // Same ranking discipline as `dominant_penalties`, mirrored for
-    // difficulty-*reducing* evidence — today only `fragment_rarity`'s
+    // difficulty-*reducing* evidence — today only `fragment_precedent`'s
     // precedent-support case can produce one, but this isn't
-    // fragment_rarity-specific machinery (any future component with
+    // fragment_precedent-specific machinery (any future component with
     // support-flavored evidence would extend this the same way).
     let mut dominant_supports: Vec<Contribution> = Vec::new();
     if let Some(c) = fragment_support_contribution {
@@ -215,7 +215,7 @@ pub fn analyze(
         size_topology: Some(size_score),
         ring_topology: Some(ring_score),
         stereochemical_burden: Some(stereo_score),
-        fragment_rarity: fragment_score,
+        fragment_precedent: fragment_score,
         functional_group_liability: Some(fg_score),
         input_quality: Some(applicability_outcome.score),
     };

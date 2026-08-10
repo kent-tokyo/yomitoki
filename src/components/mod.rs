@@ -1,5 +1,5 @@
 pub(crate) mod applicability;
-pub(crate) mod fragment_rarity;
+pub(crate) mod fragment_precedent;
 pub(crate) mod functional_group_liability;
 pub(crate) mod ring_topology;
 pub(crate) mod size_topology;

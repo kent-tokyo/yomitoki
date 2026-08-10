@@ -1,10 +1,12 @@
-//! Builds a fragment-frequency corpus for the `fragment_rarity` scoring
+//! Builds a fragment-frequency corpus for the `fragment_precedent` scoring
 //! component (AGENTS.md §5.4, §24). Not part of the published `yomitoki`
 //! crate — a standalone, unpublished build tool.
 //!
 //! ```text
 //! build-fragment-corpus --output <dir> \
 //!   --source "<name>|<license>|<url>|<path>" [--source ...] \
+//!   --corpus-domain-name <name> --corpus-domain <domain> \
+//!   --corpus-synthesis-focused true|false --corpus-domain-description <text> \
 //!   [--radius 2] [--limit N] \
 //!   [--delimiter whitespace|tab|comma] [--smiles-column N] \
 //!   [--name-column N|none] [--title-line]
@@ -44,9 +46,13 @@
 //!   though the manifest's own `generated_at_unix` field legitimately
 //!   isn't), and `reference_distribution`: a 1001-point quantile grid
 //!   (p = 0.000, 0.001, ..., 1.000) of the corpus's own molecule-level mean
-//!   -document-frequency distribution, letting `fragment_rarity` convert a
+//!   -document-frequency distribution, letting `fragment_precedent` convert a
 //!   query molecule's mean document frequency into an empirical percentile
 //!   against this exact corpus rather than an arbitrary absolute scale.
+//! - `manifest.json`'s `corpus_domain` (round 18): what chemical space this
+//!   corpus represents and whether its builder claims it's
+//!   synthesis-focused — required, not guessed; see `--corpus-domain-*`
+//!   below.
 
 use std::collections::{HashMap, HashSet};
 use std::process::ExitCode;
@@ -67,6 +73,10 @@ struct Args {
     limit: Option<usize>,
     sources: Vec<SourceArg>,
     reader_options: chematic::mol::SmilesReaderOptions,
+    corpus_domain_name: String,
+    corpus_domain: String,
+    corpus_synthesis_focused: bool,
+    corpus_domain_description: String,
 }
 
 const DEFAULT_RADIUS: u32 = 2;
@@ -78,6 +88,8 @@ const USAGE: &str = "\
 Usage:
   build-fragment-corpus --output <dir> \\
     --source \"<name>|<license>|<url>|<path>\" [--source ...] \\
+    --corpus-domain-name <name> --corpus-domain <domain> \\
+    --corpus-synthesis-focused true|false --corpus-domain-description <text> \\
     [--radius 2] [--limit N] \\
     [--delimiter whitespace|tab|comma] [--smiles-column N] \\
     [--name-column N|none] [--title-line]
@@ -90,7 +102,14 @@ _counts is cumulative, so multiple radii would be redundant).
 --delimiter/--smiles-column/--name-column/--title-line configure how
 non-.sdf sources are parsed (defaults: whitespace, column 0, column 1, no
 header — a plain .smi file). They apply to every non-.sdf --source in this
-invocation.";
+invocation.
+--corpus-domain-name/--corpus-domain/--corpus-synthesis-focused/
+--corpus-domain-description are all required (round 18): they record what
+chemical space this corpus represents (e.g. \"ChEMBL-37\" / \"bioactivity\" /
+false / \"Bioactive compound reference corpus; not a synthesis-focused
+precedent corpus.\") in the manifest, so a report can later distinguish
+\"rare in this corpus\" from \"hard to synthesize\" — no default is guessed,
+since guessing a domain would defeat the point.";
 
 fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
     let mut output = None;
@@ -98,6 +117,10 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
     let mut limit = None;
     let mut sources = Vec::new();
     let mut reader_options = chematic::mol::SmilesReaderOptions::default();
+    let mut corpus_domain_name = None;
+    let mut corpus_domain = None;
+    let mut corpus_synthesis_focused = None;
+    let mut corpus_domain_description = None;
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -166,6 +189,34 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
                 };
             }
             "--title-line" => reader_options.title_line = true,
+            "--corpus-domain-name" => {
+                corpus_domain_name =
+                    Some(args.next().ok_or("--corpus-domain-name requires a value")?)
+            }
+            "--corpus-domain" => {
+                corpus_domain = Some(args.next().ok_or("--corpus-domain requires a value")?)
+            }
+            "--corpus-synthesis-focused" => {
+                let value = args
+                    .next()
+                    .ok_or("--corpus-synthesis-focused requires a value")?;
+                corpus_synthesis_focused = Some(match value.as_str() {
+                    "true" => true,
+                    "false" => false,
+                    other => {
+                        return Err(format!(
+                            "invalid --corpus-synthesis-focused value {other:?} (expected \
+                             true|false)"
+                        ));
+                    }
+                });
+            }
+            "--corpus-domain-description" => {
+                corpus_domain_description = Some(
+                    args.next()
+                        .ok_or("--corpus-domain-description requires a value")?,
+                )
+            }
             other => return Err(format!("unrecognized argument {other:?}")),
         }
     }
@@ -174,12 +225,22 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
     if sources.is_empty() {
         return Err("at least one --source is required".to_string());
     }
+    let corpus_domain_name = corpus_domain_name.ok_or("--corpus-domain-name is required")?;
+    let corpus_domain = corpus_domain.ok_or("--corpus-domain is required")?;
+    let corpus_synthesis_focused =
+        corpus_synthesis_focused.ok_or("--corpus-synthesis-focused is required")?;
+    let corpus_domain_description =
+        corpus_domain_description.ok_or("--corpus-domain-description is required")?;
 
     Ok(Args {
         output,
         radius: radius.unwrap_or(DEFAULT_RADIUS),
         limit,
         sources,
+        corpus_domain_name,
+        corpus_domain,
+        corpus_synthesis_focused,
+        corpus_domain_description,
         reader_options,
     })
 }
@@ -262,7 +323,7 @@ struct CorpusManifest {
     /// informational provenance, not a compatibility constraint: the corpus
     /// format itself doesn't change across ruleset versions, but this lets
     /// a future investigation correlate a corpus's `reference_distribution`
-    /// with which `fragment_rarity` formula it was measured against
+    /// with which `fragment_precedent` formula it was measured against
     /// (round 17).
     yomitoki_ruleset_version_at_build: String,
     /// Version tag for how a "fragment" is defined and hashed — bump this
@@ -278,7 +339,7 @@ struct CorpusManifest {
     total_molecules_processed: u64,
     distinct_fragment_count: u64,
     /// Mean, across all kept molecules, of each molecule's own mean
-    /// document frequency (the same statistic `fragment_rarity::compute`
+    /// document frequency (the same statistic `fragment_precedent::compute`
     /// computes per query molecule) — a single-number summary of how
     /// "common" a typical corpus molecule's fragments are, measured
     /// directly rather than assumed (round 16/17).
@@ -294,22 +355,49 @@ struct CorpusManifest {
     /// purpose, kept in the manifest itself for the same reason as
     /// `fragment_definition` above.
     reference_distribution_definition: String,
+    /// Version tag for how the reference distribution is computed (the
+    /// resampling method, grid resolution, and what statistic it's a
+    /// distribution *of*) — bump this independently of `tool_version` if
+    /// that computation ever changes, since it invalidates comparability
+    /// with corpora built under a prior definition (round 18, mirroring
+    /// `fragment_definition_version` above).
+    reference_distribution_version: String,
     /// A `DISTRIBUTION_GRID_POINTS`-point quantile grid (index `i`
     /// corresponds to percentile `i / (DISTRIBUTION_GRID_POINTS - 1)`) of
     /// this corpus's own molecule-level mean-document-frequency
     /// distribution — one value per kept molecule (that molecule's mean
     /// document frequency across its own fragments, against this same
     /// corpus), sorted, then resampled onto the grid. Lets
-    /// `fragment_rarity` convert a query molecule's mean document
+    /// `fragment_precedent` convert a query molecule's mean document
     /// frequency into an empirical percentile *against this exact corpus*
     /// (`FragmentCorpus::percentile_rank`) instead of an arbitrary
-    /// absolute scale — see `rules::FRAGMENT_RARITY_WEIGHT`'s doc comment
-    /// for why the old absolute-scale formula was wrong.
+    /// absolute scale — see `rules.rs`'s "Fragment precedent" section for
+    /// why the old absolute-scale formula was wrong.
     reference_distribution: Vec<f64>,
     /// Named convenience subset of `reference_distribution`'s 1001 points,
     /// for a human or tool that wants the standard quantiles without
     /// indexing into the full grid.
     reference_distribution_quantiles: NamedQuantiles,
+    /// What chemical space this corpus is claimed to represent (round 18
+    /// — AGENTS.md §5.4). Required, not optional-with-a-guessed-default:
+    /// `fragment_precedent`'s signal is only ever as good as the corpus
+    /// it's given, and "rare in ChEMBL" vs. "hard to synthesize" is
+    /// exactly the distinction this exists to keep traceable — see
+    /// `CorpusDomain`'s own doc.
+    corpus_domain: CorpusDomain,
+}
+
+/// What chemical space a corpus is claimed to represent, and whether its
+/// builder claims it's synthesis-focused specifically — carried into
+/// `yomitoki::FragmentCorpusProvenance` verbatim when a report is built
+/// against this corpus. A provenance declaration the builder asserts, not
+/// something this tool verifies.
+#[derive(Serialize)]
+struct CorpusDomain {
+    source_name: String,
+    domain: String,
+    synthesis_focused: bool,
+    description: String,
 }
 
 #[derive(Serialize)]
@@ -463,7 +551,7 @@ fn run(args: &Args) -> Result<(), String> {
 
     // Second pass: now that `frequency` is complete, compute each kept
     // molecule's own mean document frequency against it, matching exactly
-    // what `fragment_rarity::compute` does at inference time.
+    // what `fragment_precedent::compute` does at inference time.
     let total = total_molecules_processed.max(1) as f64;
     let mut mean_dfs: Vec<f64> = molecule_fragment_hashes
         .iter()
@@ -555,8 +643,15 @@ fn run(args: &Args) -> Result<(), String> {
              exact corpus.",
             DISTRIBUTION_GRID_POINTS - 1
         ),
+        reference_distribution_version: "quantile-grid-v1".to_string(),
         reference_distribution,
         reference_distribution_quantiles,
+        corpus_domain: CorpusDomain {
+            source_name: args.corpus_domain_name.clone(),
+            domain: args.corpus_domain.clone(),
+            synthesis_focused: args.corpus_synthesis_focused,
+            description: args.corpus_domain_description.clone(),
+        },
     };
     let manifest_json = serde_json::to_vec_pretty(&manifest)
         .map_err(|e| format!("could not serialize manifest: {e}"))?;
@@ -583,6 +678,21 @@ mod tests {
             .into_iter()
     }
 
+    // Every parse_args test that exercises a successful parse needs the
+    // four --corpus-domain-* flags too, since round 18 made them required
+    // (no guessed default) — kept as one constant slice so each test only
+    // has to append its own scenario-specific flags.
+    const DOMAIN_ARGS: &[&str] = &[
+        "--corpus-domain-name",
+        "Test Corpus",
+        "--corpus-domain",
+        "test",
+        "--corpus-synthesis-focused",
+        "false",
+        "--corpus-domain-description",
+        "A fixture corpus for parse_args tests.",
+    ];
+
     #[test]
     fn parses_minimal_invocation() {
         let parsed = parse_args(args(&[
@@ -590,6 +700,14 @@ mod tests {
             "out",
             "--source",
             "DrugBank|CC0-1.0|https://example.test|data.sdf",
+            "--corpus-domain-name",
+            "Test Corpus",
+            "--corpus-domain",
+            "test",
+            "--corpus-synthesis-focused",
+            "false",
+            "--corpus-domain-description",
+            "A fixture corpus for parse_args tests.",
         ]))
         .unwrap();
         assert_eq!(parsed.output, "out");
@@ -600,11 +718,18 @@ mod tests {
         assert_eq!(parsed.sources[0].license, "CC0-1.0");
         assert_eq!(parsed.sources[0].url, "https://example.test");
         assert_eq!(parsed.sources[0].path, "data.sdf");
+        assert_eq!(parsed.corpus_domain_name, "Test Corpus");
+        assert_eq!(parsed.corpus_domain, "test");
+        assert!(!parsed.corpus_synthesis_focused);
+        assert_eq!(
+            parsed.corpus_domain_description,
+            "A fixture corpus for parse_args tests."
+        );
     }
 
     #[test]
     fn parses_custom_radius_and_limit_and_multiple_sources() {
-        let parsed = parse_args(args(&[
+        let mut argv = vec![
             "--output",
             "out",
             "--radius",
@@ -615,26 +740,60 @@ mod tests {
             "A|CC0-1.0|https://a.test|a.sdf",
             "--source",
             "B|CC-BY-4.0|https://b.test|b.smi",
-        ]))
-        .unwrap();
+        ];
+        argv.extend_from_slice(DOMAIN_ARGS);
+        let parsed = parse_args(args(&argv)).unwrap();
         assert_eq!(parsed.radius, 3);
         assert_eq!(parsed.limit, Some(100));
         assert_eq!(parsed.sources.len(), 2);
     }
 
     #[test]
+    fn parses_synthesis_focused_true() {
+        let mut argv = vec!["--output", "out", "--source", "A|L|U|p"];
+        argv.extend_from_slice(DOMAIN_ARGS);
+        // Override the fixture's "false" with "true" — DOMAIN_ARGS's value
+        // is simply superseded since parse_args keeps the last flag seen.
+        argv.extend_from_slice(&["--corpus-synthesis-focused", "true"]);
+        let parsed = parse_args(args(&argv)).unwrap();
+        assert!(parsed.corpus_synthesis_focused);
+    }
+
+    #[test]
     fn rejects_missing_output() {
-        assert!(parse_args(args(&["--source", "A|L|U|p"])).is_err());
+        let mut argv = vec!["--source", "A|L|U|p"];
+        argv.extend_from_slice(DOMAIN_ARGS);
+        assert!(parse_args(args(&argv)).is_err());
     }
 
     #[test]
     fn rejects_missing_sources() {
-        assert!(parse_args(args(&["--output", "out"])).is_err());
+        let mut argv = vec!["--output", "out"];
+        argv.extend_from_slice(DOMAIN_ARGS);
+        assert!(parse_args(args(&argv)).is_err());
     }
 
     #[test]
     fn rejects_malformed_source() {
-        assert!(parse_args(args(&["--output", "out", "--source", "only-two|parts"])).is_err());
+        let mut argv = vec!["--output", "out", "--source", "only-two|parts"];
+        argv.extend_from_slice(DOMAIN_ARGS);
+        assert!(parse_args(args(&argv)).is_err());
+    }
+
+    #[test]
+    fn rejects_missing_corpus_domain_flags() {
+        assert!(
+            parse_args(args(&["--output", "out", "--source", "A|L|U|p"])).is_err(),
+            "corpus-domain-* flags are required (round 18), not defaulted"
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_synthesis_focused_value() {
+        let mut argv = vec!["--output", "out", "--source", "A|L|U|p"];
+        argv.extend_from_slice(DOMAIN_ARGS);
+        argv.extend_from_slice(&["--corpus-synthesis-focused", "yes"]);
+        assert!(parse_args(args(&argv)).is_err());
     }
 
     #[test]

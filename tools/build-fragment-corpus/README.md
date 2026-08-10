@@ -1,21 +1,23 @@
 # build-fragment-corpus
 
-Builds the fragment-frequency corpus the `fragment_rarity` scoring
+Builds the fragment-frequency corpus the `fragment_precedent` scoring
 component needs — AGENTS.md §5.4 requires a real corpus, not a fabricated
 one. Standalone, unpublished build tool: not part of the `yomitoki` crate
 published to crates.io (excluded from `cargo publish` automatically, since
 it's a nested crate with its own `Cargo.toml`).
 
-**`fragment_rarity`'s scoring formula was confirmed broken in round 16 and
-redesigned in round 17** as a corpus-relative percentile signal, which is
-why this tool computes and stores a `reference_distribution` (see Output
-below) — a corpus built with the pre-round-17 tool won't have one and will
-be rejected by `FragmentCorpus::load_dir`. Confirmed fixed end-to-end
-against the real 200k-molecule corpus for the three documented target
-cases (aspirin `0.273 → 0.095`, paracetamol `0.243 → 0.095`, dodecane
-`0.068 → 0.000`), with a known corpus-domain-bias caveat for some
+**`fragment_precedent`'s scoring formula was confirmed broken in round 16
+and redesigned in round 17** as a corpus-relative percentile signal, which
+is why this tool computes and stores a `reference_distribution` (see
+Output below) — a corpus built with the pre-round-17 tool won't have one
+and will be rejected by `FragmentCorpus::load_dir`. Confirmed fixed
+end-to-end against the real 200k-molecule corpus for the three documented
+target cases (aspirin `0.273 → 0.095`, paracetamol `0.243 → 0.095`,
+dodecane `0.068 → 0.000`), with a known corpus-domain-bias caveat for some
 structurally-legitimate molecules — see the main crate's `rules.rs`
-"Fragment rarity" section for the full before/after data.
+"Fragment precedent" section for the full before/after data. (The
+component itself was named `fragment_rarity` before round 18 — renamed
+since it argues difficulty both up and down, not just up.)
 
 ## Status
 
@@ -50,6 +52,9 @@ structurally-legitimate molecules — see the main crate's `rules.rs`
 cargo run --release -- \
   --output data/out \
   --source "ChEMBL 37|CC-BY-SA-3.0|https://www.ebi.ac.uk/chembl/|data/raw/chembl_37_chemreps.txt" \
+  --corpus-domain-name "ChEMBL-37" --corpus-domain "bioactivity" \
+  --corpus-synthesis-focused false \
+  --corpus-domain-description "Bioactive compound reference corpus (drug-like molecules tested for biological activity); not a synthesis-focused precedent corpus." \
   --delimiter tab --smiles-column 1 --name-column 0 --title-line \
   --radius 2
 ```
@@ -102,13 +107,13 @@ differs run to run).
   `tool_version`, `artifact_sha256`, plus (round 17, for reproducibility):
   - `yomitoki_ruleset_version_at_build` — `yomitoki::RULESET_VERSION`
     current when this corpus was built (correlates a corpus's numbers with
-    which `fragment_rarity` formula produced them).
+    which `fragment_precedent` formula produced them).
   - `fragment_definition_version` / `fragment_definition` — a version tag
     plus a human-readable description of exactly how a "fragment" is
     defined and hashed, so `fragment_frequencies.json` is interpretable
     without reading this tool's Rust source.
   - `mean_document_frequency` / `median_document_frequency` — corpus-wide
-    summary of the same per-molecule statistic `fragment_rarity::compute`
+    summary of the same per-molecule statistic `fragment_precedent::compute`
     computes at inference time.
   - `reference_distribution_definition` — human-readable description of
     the grid below.
@@ -118,10 +123,19 @@ differs run to run).
     after the frequency table is complete, over every kept molecule.
     `FragmentCorpus::percentile_rank` uses this to convert a query
     molecule's mean document frequency into an empirical percentile
-    against this exact corpus (see `rules.rs`'s "Fragment rarity" section
-    for why an absolute scale doesn't work).
+    against this exact corpus (see `rules.rs`'s "Fragment precedent"
+    section for why an absolute scale doesn't work).
+  - `reference_distribution_version` — version tag for how the reference
+    distribution is computed, independent of `tool_version` (round 18,
+    mirroring `fragment_definition_version` above).
   - `reference_distribution_quantiles` — named q01/q05/q10/q25/q50/q75/
     q90/q95/q99 convenience subset of the grid above.
+  - `corpus_domain` (round 18, **required** — see `--corpus-domain-*`
+    below) — `source_name`/`domain`/`synthesis_focused`/`description`:
+    what chemical space this corpus represents, so a report produced
+    against it (`Provenance.fragment_corpus`) can distinguish "rare in
+    this corpus" from "hard to synthesize." A provenance declaration the
+    builder asserts, not something this tool verifies.
 
 ## Not yet done
 

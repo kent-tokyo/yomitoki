@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`fragment_rarity` renamed to `fragment_precedent`** (round 18, API/
+  schema semantic cleanup — no scoring formula change). The component
+  argues difficulty both up (weakly precedented fragments) and down
+  (strongly precedented ones), so "rarity detector" — a one-directional
+  name — undersold what it measures.
+  **Migration from `0.1.0-alpha.2`:**
+  - `ComponentScores.fragment_rarity` → `ComponentScores.fragment_precedent`
+  - `FindingCode::FragmentRarityHigh` → `FindingCode::FragmentPrecedentWeak`
+    (`FindingCode::FragmentPrecedentStrong` is unchanged — the two are
+    now a matched pair)
+  - `components::fragment_rarity` (internal module) →
+    `components::fragment_precedent`
+  - `Provenance.model_version: Option<String>` →
+    `Provenance.fragment_corpus: Option<FragmentCorpusProvenance>` (see
+    below — a superset, not a same-shape rename)
+  - `AnalysisConfig.fragment_model`/`FragmentModelConfig` are **unchanged**
+    — audited and deliberately kept: that name was already generic ("config
+    for whatever fragment-level model is configured"), not rarity-specific,
+    so renaming it to something precedent-specific would have narrowed it
+    for no benefit. See `config.rs`'s doc comment for the full reasoning.
+  - `--fragment-corpus` (CLI flag) is **unchanged** — it names the corpus
+    artifact itself, which was never called "rarity."
+  No deprecated alias kept for any of the above (clean break, pre-`0.1.0`,
+  per project policy). `schema_version` bumped `0.4.0` → `0.5.0`.
+- **Corpus-domain provenance contract added** (round 18, AGENTS.md §5.4).
+  `tools/build-fragment-corpus`'s `manifest.json` now carries a required
+  `corpus_domain` block (`source_name`, `domain`, `synthesis_focused`,
+  `description`), set via new required CLI flags
+  (`--corpus-domain-name`/`--corpus-domain`/`--corpus-synthesis-focused`/
+  `--corpus-domain-description` — required, not defaulted: guessing a
+  domain would defeat the point). Also new: `fragment_definition_version`,
+  `reference_distribution_version`, `mean_document_frequency`,
+  `median_document_frequency`, `reference_distribution_definition`,
+  `reference_distribution_quantiles` (named q01–q99 convenience subset of
+  the full 1001-point grid). Every report produced against a configured
+  corpus now carries this in the new `Provenance.fragment_corpus`
+  (`FragmentCorpusProvenance`), so a report can be traced back to which
+  corpus *and which chemical domain* produced its `fragment_precedent`
+  signal — "rare in ChEMBL" and "hard to synthesize" are now traceably
+  distinct claims, not implicitly conflated. Deliberately provenance-only
+  this round: `synthesis_focused: false` does not lower a score, reduce
+  confidence, or refuse the corpus — deciding whether/how scoring should
+  react to it is future work, once a synthesis-focused corpus exists to
+  compare against. `yomitoki::RULESET_VERSION` re-exported
+  (`#[doc(hidden)]`) so the build tool can record which ruleset was current
+  at build time. Corpora built before round 18 (missing `corpus_domain`)
+  are rejected by `FragmentCorpus::load_dir` with no fallback, same
+  treatment as round 17's `reference_distribution` requirement — rebuild
+  with the current tool.
+
 ## [0.1.0-alpha.2] - 2026-08-10
 
 Second public preview. Publishes the round-17 `fragment_rarity` redesign

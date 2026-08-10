@@ -32,13 +32,24 @@ pub enum Strictness {
     Strict,
 }
 
-/// Fragment-rarity model configuration (AGENTS.md §12's `fragment_model`
-/// field). `corpus: None` (the default) disables the `fragment_rarity`
-/// component entirely — `ComponentScores.fragment_rarity` stays `None`, the
-/// same as every other v0.1 default. No corpus ships with yomitoki itself
-/// (AGENTS.md §5.4 forbids embedding one directly in the library); load one
-/// with [`FragmentCorpus::load_dir`] and attach it here to enable the
-/// component.
+/// Fragment model configuration (AGENTS.md §12's `fragment_model` field).
+/// `corpus: None` (the default) disables the `fragment_precedent`
+/// component entirely — `ComponentScores.fragment_precedent` stays `None`,
+/// the same as every other v0.1 default. No corpus ships with yomitoki
+/// itself (AGENTS.md §5.4 forbids embedding one directly in the library);
+/// load one with [`FragmentCorpus::load_dir`] and attach it here to enable
+/// the component.
+///
+/// Named `FragmentModelConfig`/`fragment_model`, not
+/// `FragmentPrecedentConfig`/`fragment_precedent` (considered and rejected
+/// in round 18, alongside the `fragment_rarity` -> `fragment_precedent`
+/// rename elsewhere in this crate): this type is already the generic
+/// "config for whatever fragment-level model is configured," not tied to
+/// the precedent-scoring approach specifically — it currently holds
+/// exactly one thing (a `FragmentCorpus`), but the name deliberately
+/// leaves room for a future fragment-level model that isn't
+/// precedent-based without implying a mismatch the way a
+/// precedent-specific name would.
 ///
 /// `Serialize` is hand-implemented (not derived) so `AnalysisConfig`'s
 /// `config_hash` reflects *which* corpus is configured (via
@@ -80,7 +91,7 @@ pub struct AnalysisConfig {
     /// Heavy-atom count above which a molecule is `Verdict::OutOfDomain`
     /// (`FindingCode::InputTooLarge`). Defaults to 150.
     pub max_heavy_atoms: usize,
-    /// Fragment-rarity corpus configuration — see [`FragmentModelConfig`].
+    /// Fragment-precedent corpus configuration — see [`FragmentModelConfig`].
     pub fragment_model: FragmentModelConfig,
 }
 

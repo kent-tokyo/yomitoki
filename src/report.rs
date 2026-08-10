@@ -115,18 +115,18 @@ pub enum FindingCode {
     /// This molecule's fragments sit at a low percentile of the configured
     /// [`crate::FragmentCorpus`]'s (`AnalysisConfig.fragment_model`) own
     /// mean-document-frequency distribution — i.e. this molecule's
-    /// fragments are, relative to the reference corpus, unusually rare.
-    /// Only ever produced when a corpus is configured. Contributes a
-    /// difficulty *penalty* — see `components::fragment_rarity`'s module
-    /// doc; the opposite-direction case is
-    /// [`FindingCode::FragmentPrecedentStrong`].
-    FragmentRarityHigh,
+    /// fragments are, relative to the reference corpus, weakly precedented
+    /// (unusually rare). Only ever produced when a corpus is configured.
+    /// Contributes a difficulty *penalty* — see
+    /// `components::fragment_precedent`'s module doc; the opposite
+    /// -direction case is [`FindingCode::FragmentPrecedentStrong`].
+    FragmentPrecedentWeak,
     /// This molecule's fragments sit at a high percentile of the
     /// configured [`crate::FragmentCorpus`]'s own mean-document-frequency
     /// distribution — unusually strong precedent relative to the
     /// reference corpus. Only ever produced when a corpus is configured.
     /// Contributes a difficulty *support* (a reduction, capped — see
-    /// `components::fragment_rarity`'s module doc), appearing in
+    /// `components::fragment_precedent`'s module doc), appearing in
     /// `SynthesizabilityReport::dominant_supports`, not
     /// `dominant_penalties`.
     FragmentPrecedentStrong,
@@ -225,10 +225,10 @@ pub struct ComponentScore {
     /// This component's actual contribution to `overall.difficulty` —
     /// signed, unlike `normalized`/most other fields here: always
     /// non-negative for the five components whose evidence only ever
-    /// argues difficulty should be *higher*, but `fragment_rarity` can
+    /// argues difficulty should be *higher*, but `fragment_precedent` can
     /// contribute a negative value (a molecule with unusually strong
     /// corpus precedent lowers difficulty, capped — see
-    /// `components::fragment_rarity`'s module doc). A plain `f64`, not
+    /// `components::fragment_precedent`'s module doc). A plain `f64`, not
     /// `ProbabilityLikeScore`, specifically so a negative value is
     /// preserved rather than silently clamped to `0.0`.
     pub contribution: f64,
@@ -239,8 +239,8 @@ pub struct ComponentScore {
 
 /// Per-component scores. Each field is `Option` — `None` means "not
 /// evaluated in this version," not "evaluated, found nothing" (a fabricated
-/// zero would be dishonest). `fragment_rarity` is `None` unless a corpus is
-/// configured (`AnalysisConfig.fragment_model`); every other field is
+/// zero would be dishonest). `fragment_precedent` is `None` unless a corpus
+/// is configured (`AnalysisConfig.fragment_model`); every other field is
 /// always `Some`; see `docs/architecture.md`.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ComponentScores {
@@ -252,11 +252,14 @@ pub struct ComponentScores {
     /// The `stereochemical_burden` component's score (tetrahedral
     /// stereocenter count and density).
     pub stereochemical_burden: Option<ComponentScore>,
-    /// The `fragment_rarity` component's score. `None` unless
+    /// The `fragment_precedent` component's score (round 18 rename from
+    /// `fragment_rarity` — it argues difficulty both up, for weakly
+    /// precedented fragments, and down, for strongly precedented ones, so
+    /// "rarity" alone undersold what it measures). `None` unless
     /// `AnalysisConfig.fragment_model` has a corpus configured — no corpus
     /// ships with yomitoki itself (AGENTS.md §5.4; see
     /// `docs/architecture.md`), so this is `None` by default.
-    pub fragment_rarity: Option<ComponentScore>,
+    pub fragment_precedent: Option<ComponentScore>,
     /// The `functional_group_liability` component's score (reactive/
     /// unstable functional groups, dense functionalization).
     pub functional_group_liability: Option<ComponentScore>,
@@ -356,8 +359,9 @@ pub enum SuggestionCode {
     /// reachable in v0.1 (`brenk_matches_detailed` unions atoms per
     /// pattern, not per occurrence; see `docs/architecture.md`).
     RemoveSimilarReactiveGroup,
-    /// Favor a more precedented/common fragment — not yet reachable in
-    /// v0.1 (`fragment_rarity` is deferred; see `docs/architecture.md`).
+    /// Favor a more precedented/common fragment — only reachable when a
+    /// fragment corpus is configured (`fragment_precedent` is opt-in; see
+    /// `docs/architecture.md`).
     IncreaseFragmentPrecedent,
     /// Simplify a macrocyclic ring closure.
     SimplifyMacrocyclicClosure,
@@ -412,18 +416,61 @@ pub struct Provenance {
     /// Version of the named thresholds/weights in `rules.rs` — bumped
     /// whenever any scoring constant changes.
     pub ruleset_version: String,
-    /// The configured fragment corpus's identifier
-    /// (`FragmentCorpus::version`, currently its `artifact_sha256`), or
-    /// `None` if `AnalysisConfig.fragment_model` has no corpus configured
-    /// (the default — no corpus ships with yomitoki itself; AGENTS.md
-    /// §5.4). AGENTS.md §16's `Provenance` sketch names this field
-    /// `model_version` as always-populated; `Option` reflects that v0.1's
-    /// `fragment_rarity` is opt-in, not that the field means something
-    /// different.
-    pub model_version: Option<String>,
+    /// Provenance for the configured fragment-precedent reference corpus,
+    /// or `None` if `AnalysisConfig.fragment_model` has no corpus
+    /// configured (the default — no corpus ships with yomitoki itself;
+    /// AGENTS.md §5.4). Round 18 replaced the AGENTS.md §16 sketch's
+    /// always-populated `model_version: String` with this richer,
+    /// still-`Option` structure: a bare version string can't answer "which
+    /// chemical domain does this precedent signal actually reflect" — see
+    /// [`FragmentCorpusProvenance`].
+    pub fragment_corpus: Option<FragmentCorpusProvenance>,
     /// SHA-256 of the `AnalysisConfig`'s canonical JSON serialization, so
     /// reports produced under different configs are distinguishable.
     pub config_hash: String,
+}
+
+/// Provenance for the fragment-precedent reference corpus a report was
+/// produced under (AGENTS.md §5.4; round 18). Exists so a report can be
+/// traced back to which corpus — and which chemical domain — actually
+/// produced its `fragment_precedent` signal: "rare in ChEMBL" and "hard to
+/// synthesize" are not the same claim (see `rules.rs`'s "Fragment
+/// precedent" section), and a report reader needs the corpus's own domain
+/// declaration to tell them apart. This is a provenance declaration, not a
+/// correctness guarantee, and (deliberately, this round) not yet wired
+/// into scoring or confidence — see `synthesis_focused`'s own doc.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FragmentCorpusProvenance {
+    /// The corpus's own identifier (`FragmentCorpus::version`, currently
+    /// its `artifact_sha256`) — what `Provenance.model_version` held
+    /// before round 18.
+    pub version: String,
+    /// Human-readable name of the corpus's source (e.g. `"ChEMBL 37"`).
+    pub source_name: String,
+    /// What chemical space this corpus is claimed to represent (e.g.
+    /// `"bioactivity"`) — free text, not a closed enum, since the set of
+    /// domains a future corpus might declare isn't known in advance.
+    pub domain: String,
+    /// Whether this corpus's builder claims it represents synthetic
+    /// precedent specifically, as opposed to (e.g.) bioactivity-screening
+    /// prevalence. A provenance declaration copied from the corpus
+    /// manifest, not something yomitoki verifies — and, this round,
+    /// deliberately not wired into any scoring/confidence behavior (a
+    /// `false` value does not lower a score, reduce confidence, or refuse
+    /// the corpus): making the signal's origin traceable and deciding how
+    /// scoring should react to it are separate rounds of work.
+    pub synthesis_focused: bool,
+    /// Human-readable description of the corpus's intended use, copied
+    /// from the corpus manifest.
+    pub description: String,
+    /// Version tag for how a "fragment" is defined/hashed in this corpus
+    /// (`tools/build-fragment-corpus`'s `fragment_definition_version`) —
+    /// distinct from `version` above, which identifies *this specific
+    /// build*, not the definition it was built under.
+    pub fragment_definition_version: String,
+    /// Version tag for how the reference distribution (the percentile
+    /// grid `FragmentCorpus::percentile_rank` queries) is computed.
+    pub reference_distribution_version: String,
 }
 
 /// The top-level report returned by `analyze`/`analyze_smiles`.
@@ -441,7 +488,7 @@ pub struct SynthesizabilityReport {
     /// [`SynthesizabilityReport::dominant_penalties`].
     pub dominant_penalties: Vec<Contribution>,
     /// Factors that *reduce* difficulty, ranked by magnitude, highest
-    /// first — populated only by `fragment_rarity`'s precedent-support
+    /// first — populated only by `fragment_precedent`'s precedent-support
     /// case (`FindingCode::FragmentPrecedentStrong`), only when a corpus
     /// is configured; empty otherwise, same as every prior version.
     pub dominant_supports: Vec<Contribution>,

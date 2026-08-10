@@ -26,23 +26,24 @@ to read it and explain what it finds.
 > yomitoki does not merely estimate synthesizability; it exposes
 > the evidence and reasoning behind the estimate.
 
-> **Status: `0.1.0-alpha.2` is published.** All six planned components
-> are implemented, including `fragment_rarity` — but it's opt-in: no
-> fragment-frequency corpus ships with yomitoki itself (AGENTS.md §5.4
-> forbids embedding one directly as a huge binary), so it stays inactive
-> unless you build one (`tools/build-fragment-corpus/`) and configure it
-> (`AnalysisConfig.fragment_model`). **If you do configure one:**
-> `fragment_rarity` was redesigned (round 17) as a corpus-relative
-> percentile signal, fixing the documented over-penalty on its target cases
-> — aspirin's `overall.difficulty` measures `0.273 → 0.095` and dodecane's
-> `0.068 → 0.000` against a real 200k-molecule corpus. It also has a known
-> caveat: some structurally-legitimate molecules (caffeine, bridged/spiro
-> ring systems, stereocenter-dense cores) score *harder* once a corpus is
-> configured, because ChEMBL is a bioactivity corpus, not a
-> synthesis-focused one — see Limitations for the honest before/after data.
-> `fragment_rarity` itself is likely to be renamed (`fragment_precedent`)
-> before a non-alpha `0.1.0`, since it now argues difficulty both up and
-> down, not just up — "rarity detector" undersells what it does. See
+> **Status: `0.1.0-alpha.2` is published; this checkout is ahead of it.**
+> All six planned components are implemented, including
+> `fragment_precedent` (renamed from `fragment_rarity` in round 18, after
+> `0.1.0-alpha.2` shipped — it now argues difficulty both up *and* down,
+> not just up, so "rarity detector" undersold what it does) — but it's
+> opt-in: no fragment-frequency corpus ships with yomitoki itself
+> (AGENTS.md §5.4 forbids embedding one directly as a huge binary), so it
+> stays inactive unless you build one (`tools/build-fragment-corpus/`) and
+> configure it (`AnalysisConfig.fragment_model`). **If you do configure
+> one:** a corpus-relative percentile signal, fixing the documented
+> over-penalty on its target cases — aspirin's `overall.difficulty`
+> measures `0.273 → 0.095` and dodecane's `0.068 → 0.000` against a real
+> 200k-molecule corpus. It also has a known caveat: some
+> structurally-legitimate molecules (caffeine, bridged/spiro ring systems,
+> stereocenter-dense cores) score *harder* once a corpus is configured,
+> because ChEMBL is a bioactivity corpus, not a synthesis-focused one —
+> now traceable per-report via `Provenance.fragment_corpus`, see
+> Limitations for the honest before/after data. See
 > [`CHANGELOG.md`](CHANGELOG.md) for the full version history. This is a
 > pre-release: the public API may still change before a non-alpha `0.1.0`.
 > See [`docs/architecture.md`](docs/architecture.md) for the current scope
@@ -141,10 +142,10 @@ yomitoki analyze --input molecules.sdf --format jsonl --output reports.jsonl
   mode) or at least one batch record failed, `2` a usage error (bad
   arguments).
 * `--fragment-corpus <dir>` loads a `tools/build-fragment-corpus` output
-  directory and enables `fragment_rarity` for the run (loaded once, before
-  any molecule is analyzed). Without it, reports have `fragment_rarity:
-  null`, same as before this flag existed — no corpus ships with yomitoki
-  itself, see Limitations below.
+  directory and enables `fragment_precedent` for the run (loaded once,
+  before any molecule is analyzed). Without it, reports have
+  `fragment_precedent: null`, same as before this flag existed — no corpus
+  ships with yomitoki itself, see Limitations below.
 
 ## Report shape
 
@@ -254,10 +255,10 @@ config hash) so results are comparable across versions — see
 | `size_topology` | implemented |
 | `stereochemical_burden` | implemented (tetrahedral centers only — see Limitations) |
 | `functional_group_liability` | implemented (reactive/unstable groups + dense functionalization — see Limitations) |
-| `fragment_rarity` | implemented, opt-in — `None` unless `AnalysisConfig.fragment_model` has a corpus configured; corpus-relative percentile signal with a known corpus-domain-bias caveat, see Limitations |
+| `fragment_precedent` | implemented, opt-in — `None` unless `AnalysisConfig.fragment_model` has a corpus configured; corpus-relative percentile signal with a known corpus-domain-bias caveat, see Limitations |
 
 Components stay `None` in `ComponentScores` when genuinely not evaluated
-(unconfigured `fragment_rarity`), never as fabricated zero scores.
+(unconfigured `fragment_precedent`), never as fabricated zero scores.
 
 `suggestions: Vec<SimplificationSuggestion>` is populated for 4 of its 6
 possible codes (`ReplaceBridgedRingWithMonocyclicAnalog`,
@@ -324,7 +325,7 @@ has been validated against real synthesis outcomes yet.
 ## Limitations
 
 * All six planned components are implemented (see table above), but
-  `fragment_rarity` only contributes to `overall.difficulty`/
+  `fragment_precedent` only contributes to `overall.difficulty`/
   `overall.synthesizability` when a corpus is configured
   (`AnalysisConfig.fragment_model`) — no corpus ships with yomitoki itself
   (AGENTS.md §5.4). Without one, both fields reflect the other five
@@ -339,7 +340,7 @@ has been validated against real synthesis outcomes yet.
   such molecules until it's fixed upstream.
 * `size_topology`'s rotatable-bond term over-penalizes simple, commercially
   available long unbranched chains (many rotatable bonds, essentially no
-  synthetic difficulty) — `fragment_rarity` is meant to correct this by
+  synthetic difficulty) — `fragment_precedent` is meant to correct this by
   recognizing such fragments as common/precedented. Round 17 redesigned it
   as a corpus-relative percentile signal (rather than a naive
   `1 - document_frequency` term, which round 16 found made the problem
@@ -347,15 +348,16 @@ has been validated against real synthesis outcomes yet.
   200k-molecule ChEMBL corpus: dodecane's `overall.difficulty` measures
   `0.068` (no corpus) → `0.000` (corpus configured), and aspirin's
   `0.273` → `0.095`. This is not a general calibration claim, and it has a
-  known caveat — see the next point and `rules.rs`'s "Fragment rarity"
+  known caveat — see the next point and `rules.rs`'s "Fragment precedent"
   section for the full formula and its corpus-domain-bias discussion.
-* `fragment_rarity`'s corpus-relative signal is only as good as the corpus
-  it's given. Configured against ChEMBL (a bioactivity-screening corpus,
-  not a synthesis-focused one), some structurally-legitimate molecules
-  score *harder*, not easier, once the corpus is on — reported honestly,
-  not tuned away, since these numbers are real measurements, not a
-  formula bug (independently re-derived from the corpus's own frequency
-  table and reproduced exactly):
+* `fragment_precedent`'s corpus-relative signal is only as good as the
+  corpus it's given. Configured against ChEMBL (a bioactivity-screening
+  corpus, not a synthesis-focused one — traceable per-report since round 18
+  via `Provenance.fragment_corpus.synthesis_focused`), some
+  structurally-legitimate molecules score *harder*, not easier, once the
+  corpus is on — reported honestly, not tuned away, since these numbers
+  are real measurements, not a formula bug (independently re-derived from
+  the corpus's own frequency table and reproduced exactly):
   caffeine `0.287 → 0.516`, a bridged bicyclic (norbornane) `0.341 →
   0.985`, a spiro ring system `0.199 → 1.000`, and a stereocenter-dense
   molecule `0.275 → 1.000`. The likely cause is that ChEMBL's
@@ -409,7 +411,7 @@ has been validated against real synthesis outcomes yet.
   trips four Brenk alerts and, without a corpus configured, lands at
   `ModeratelyAccessible` despite being trivially synthesizable. This is a
   known gap with the same shape and intended fix as the rotatable-bond one
-  above: `fragment_rarity`'s round-17 redesign confirms it end-to-end —
+  above: `fragment_precedent`'s round-17 redesign confirms it end-to-end —
   aspirin's `overall.difficulty` measures `0.273` → `0.095` once a corpus
   is configured, `LikelyAccessible`. See the corpus-domain-bias caveat two
   points above; the same caveat applies here. Dense functionalization has
@@ -419,7 +421,7 @@ has been validated against real synthesis outcomes yet.
   hydroxyls, or a fused β-lactam) collapses to one cluster — identical in
   count to a molecule with a single, ordinary functional group.
 * No fragment corpus ships with yomitoki (AGENTS.md §5.4), so out of the
-  box, novel/rare substructures are not detected — `fragment_rarity` stays
+  box, novel/rare substructures are not detected — `fragment_precedent` stays
   `None` until you build one (`tools/build-fragment-corpus`) and configure
   it. No decision has been made yet about shipping one by default (the
   `yomitoki-core`/`yomitoki-models`/`yomitoki-data` split §5.4 sketches, or
@@ -457,8 +459,8 @@ No paper or citable release exists yet.
 
 ## Roadmap
 
-Remaining planned work: a shipped fragment corpus (`fragment_rarity` itself
-is implemented but opt-in — see Limitations), *calibration* against
+Remaining planned work: a shipped fragment corpus (`fragment_precedent`
+itself is implemented but opt-in — see Limitations), *calibration* against
 SAscore/RAscore/route-search outcomes (a minimum *comparison* against
 SAscore, not calibration, now exists — see above), and eventually Python
 bindings.

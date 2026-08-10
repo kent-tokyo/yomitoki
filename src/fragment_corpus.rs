@@ -1,10 +1,10 @@
 //! Loads a fragment-frequency corpus built by `tools/build-fragment-corpus`
-//! (AGENTS.md §5.4) for the `fragment_rarity` component.
+//! (AGENTS.md §5.4) for the `fragment_precedent` component.
 //!
 //! No corpus ships with `yomitoki` itself — AGENTS.md §5.4 forbids
 //! embedding one directly in the library as a huge binary, and no decision
 //! has been made yet about where a built corpus would ship from (see
-//! `tasks/upstream_and_corpus_research.md`, gitignored). `fragment_rarity`
+//! `tasks/upstream_and_corpus_research.md`, gitignored). `fragment_precedent`
 //! stays `None` unless a caller explicitly builds a corpus (via the tool
 //! above) and loads it here.
 //!
@@ -35,14 +35,38 @@ struct FrequencyTableFile {
 }
 
 #[derive(Deserialize)]
+struct CorpusDomainFile {
+    source_name: String,
+    domain: String,
+    synthesis_focused: bool,
+    description: String,
+}
+
+#[derive(Deserialize)]
 struct ManifestFile {
     artifact_sha256: String,
     reference_distribution: Vec<f64>,
+    fragment_definition_version: String,
+    reference_distribution_version: String,
+    corpus_domain: CorpusDomainFile,
+}
+
+/// What chemical space a configured [`FragmentCorpus`] claims to
+/// represent (round 18 — AGENTS.md §5.4). Carried into
+/// [`crate::Provenance`] verbatim so a report can be traced back to which
+/// corpus, and which domain, produced its `fragment_precedent` signal:
+/// "rare in ChEMBL" and "hard to synthesize" are not the same claim.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct CorpusDomain {
+    pub(crate) source_name: String,
+    pub(crate) domain: String,
+    pub(crate) synthesis_focused: bool,
+    pub(crate) description: String,
 }
 
 /// A loaded fragment-frequency corpus, as produced by
 /// `tools/build-fragment-corpus`. Attach one via
-/// [`crate::config::FragmentModelConfig`] to enable the `fragment_rarity`
+/// [`crate::config::FragmentModelConfig`] to enable the `fragment_precedent`
 /// component.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FragmentCorpus {
@@ -54,6 +78,9 @@ pub struct FragmentCorpus {
     /// percentile `i / (len - 1)`. See [`FragmentCorpus::percentile_rank`].
     reference_distribution: Vec<f64>,
     version: String,
+    pub(crate) domain: CorpusDomain,
+    pub(crate) fragment_definition_version: String,
+    pub(crate) reference_distribution_version: String,
 }
 
 impl FragmentCorpus {
@@ -65,10 +92,15 @@ impl FragmentCorpus {
     /// `--radius <N>` (a single value; the tool's flag was a list before
     /// round 17, since `chematic::fp::morgan_fp_counts` is cumulative and
     /// multiple radii would store the same fragments redundantly). The
-    /// manifest must carry a non-empty `reference_distribution` — corpora
-    /// built before round 17 don't have one and need rebuilding; there is
-    /// no absolute-scale fallback (see `rules::FRAGMENT_RARITY_WEIGHT`'s
-    /// doc comment for why an absolute scale doesn't work).
+    /// manifest must carry a non-empty `reference_distribution` and a
+    /// `corpus_domain` block — corpora built before round 17
+    /// (`reference_distribution`) or round 18 (`corpus_domain`,
+    /// `fragment_definition_version`, `reference_distribution_version`)
+    /// don't have these and need rebuilding; there is no absolute-scale or
+    /// undeclared-domain fallback (see `rules.rs`'s "Fragment precedent"
+    /// section for why an absolute scale doesn't work, and
+    /// `FragmentCorpusProvenance`'s doc for why domain provenance isn't
+    /// optional).
     pub fn load_dir(dir: impl AsRef<Path>) -> Result<FragmentCorpus, YomitokiError> {
         let dir = dir.as_ref();
         let table: FrequencyTableFile = read_json(&dir.join("fragment_frequencies.json"))?;
@@ -106,13 +138,22 @@ impl FragmentCorpus {
             frequency,
             reference_distribution: manifest.reference_distribution,
             version: manifest.artifact_sha256,
+            domain: CorpusDomain {
+                source_name: manifest.corpus_domain.source_name,
+                domain: manifest.corpus_domain.domain,
+                synthesis_focused: manifest.corpus_domain.synthesis_focused,
+                description: manifest.corpus_domain.description,
+            },
+            fragment_definition_version: manifest.fragment_definition_version,
+            reference_distribution_version: manifest.reference_distribution_version,
         })
     }
 
-    /// The corpus identifier reported in `Provenance.model_version` —
-    /// currently the built artifact's `artifact_sha256` (see
-    /// `tools/build-fragment-corpus`'s manifest), so two reports can be
-    /// compared knowing whether they used the same corpus.
+    /// The corpus identifier reported in
+    /// `Provenance.fragment_corpus.version` — currently the built
+    /// artifact's `artifact_sha256` (see `tools/build-fragment-corpus`'s
+    /// manifest), so two reports can be compared knowing whether they used
+    /// the same corpus.
     pub fn version(&self) -> &str {
         &self.version
     }
@@ -122,9 +163,9 @@ impl FragmentCorpus {
     /// empirical percentile in `0.0..=1.0` (linear interpolation between
     /// the two nearest grid points). `0.0` = at or below the rarest
     /// molecule this corpus has seen; `1.0` = at or above the most common.
-    /// This is what makes `fragment_rarity`'s signal corpus-*relative*
+    /// This is what makes `fragment_precedent`'s signal corpus-*relative*
     /// rather than an absolute scale no real corpus approaches the
-    /// extremes of (see `rules::FRAGMENT_RARITY_WEIGHT`'s doc comment).
+    /// extremes of (see `rules.rs`'s "Fragment precedent" section).
     pub(crate) fn percentile_rank(&self, mean_document_frequency: f64) -> f64 {
         let grid = &self.reference_distribution;
         match grid.binary_search_by(|v| v.partial_cmp(&mean_document_frequency).unwrap()) {

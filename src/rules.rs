@@ -111,11 +111,11 @@ pub(crate) const SIZE_WEIGHT_PER_MOLECULAR_WEIGHT_UNIT: f64 = 0.0006;
 /// commercially available long unbranched chains, which have many
 /// rotatable bonds but essentially no synthetic difficulty — exactly the
 /// "structural complexity vs. actual difficulty" conflation AGENTS.md §2
-/// names as a problem with existing tools. `fragment_rarity` (§5.4)
+/// names as a problem with existing tools. `fragment_precedent` (§5.4)
 /// corrects this once a corpus is configured — round 16 found the
 /// original formula did the *opposite* end-to-end; round 17's
 /// corpus-relative redesign (see `rules::FRAGMENT_PRECEDENT_FINDING_
-/// THRESHOLD`'s doc / the "Fragment rarity" section above) fixes the
+/// THRESHOLD`'s doc / the "Fragment precedent" section above) fixes the
 /// documented case specifically: dodecane's `overall.difficulty` measured
 /// `0.068` → `0.000` against the real 200k-molecule ChEMBL corpus
 /// (`--fragment-corpus`), the corrected direction. Not a general
@@ -198,14 +198,15 @@ pub(crate) const STEREO_DENSITY_FINDING_THRESHOLD: f64 = 0.25;
 /// aspirin (`CC(=O)Oc1ccccc1C(=O)O`) trips `phenol`, `phenolic_aldehyde`,
 /// `active_ester`, and `acetal_ketal`; paracetamol trips `phenol`,
 /// `aniline`, and `secondary_amine`. Neither molecule is remotely
-/// difficult to make. `fragment_rarity` (§5.4) corrects for this the same
-/// way it corrects the rotatable-bond term (`SIZE_WEIGHT_PER_ROTATABLE_
-/// BOND`) once a corpus is configured — round 17's corpus-relative
-/// redesign measured aspirin's `overall.difficulty` at `0.273` → `0.095`
-/// against the real 200k-molecule ChEMBL corpus (the corrected direction;
-/// round 16 found the original formula went the other way). Paracetamol
-/// similarly measured `0.243` → `0.095`. See this file's "Fragment
-/// rarity" section for the formula and its corpus-domain-bias caveat.
+/// difficult to make. `fragment_precedent` (§5.4) corrects for this the
+/// same way it corrects the rotatable-bond term (`SIZE_WEIGHT_PER_
+/// ROTATABLE_BOND`) once a corpus is configured — round 17's
+/// corpus-relative redesign measured aspirin's `overall.difficulty` at
+/// `0.273` → `0.095` against the real 200k-molecule ChEMBL corpus (the
+/// corrected direction; round 16 found the original formula went the
+/// other way). Paracetamol similarly measured `0.243` → `0.095`. See this
+/// file's "Fragment precedent" section for the formula and its
+/// corpus-domain-bias caveat.
 pub(crate) const FG_WEIGHT_PER_REACTIVE_GROUP: f64 = 0.12;
 
 /// Scale in the `normalized = 1 - exp(-raw / scale)` burden transform
@@ -281,8 +282,16 @@ pub(crate) const AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN: f64 = 0.5;
 pub(crate) const AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY: f64 = 0.4;
 
 // ---------------------------------------------------------------------------
-// Fragment rarity (AGENTS.md §5.4) — corpus-relative signed precedent
+// Fragment precedent (AGENTS.md §5.4) — corpus-relative signed precedent
 // ---------------------------------------------------------------------------
+//
+// Named `fragment_precedent`, not `fragment_rarity` (round 18 rename): the
+// component argues difficulty both up (weakly precedented fragments) and
+// down (strongly precedented ones), so "rarity detector" — a one-directional
+// name — undersold what it actually measures. AGENTS.md §5.4 itself is
+// still titled "Fragment rarity" (a private, gitignored spec document, not
+// updated this round), but the section number is what's load-bearing here,
+// not its title text.
 //
 // Round 16 found the original formula (`raw = WEIGHT * (1.0 -
 // mean_document_frequency)`, added unconditionally to difficulty) broken,
@@ -303,8 +312,8 @@ pub(crate) const AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY: f64 = 0.4;
 //
 //   p = corpus.percentile_rank(mean_document_frequency)  // empirical CDF
 //   signed_signal = 1.0 - 2.0 * p                         // in [-1, 1]
-//   rarity_penalty    = max(signed_signal, 0.0)           // p < 0.5: rare
-//   precedent_support = max(-signed_signal, 0.0)          // p > 0.5: common
+//   precedent_penalty = max(signed_signal, 0.0)           // p < 0.5: weakly precedented
+//   precedent_support  = max(-signed_signal, 0.0)         // p > 0.5: strongly precedented
 //
 // `signed_signal` is continuous and crosses zero exactly at the corpus
 // median (p = 0.5), so it already provides a *soft* neutral zone around
@@ -356,13 +365,19 @@ pub(crate) const AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY: f64 = 0.4;
 // bicyclic ring can be genuinely easy to source/build while still being
 // under-represented in ChEMBL's compound population, so it registers as
 // "rare" here even though "rare in ChEMBL" and "hard to synthesize" are
-// not the same claim. `fragment_rarity`'s corpus-relative percentile is
+// not the same claim. `fragment_precedent`'s corpus-relative percentile is
 // only ever as good as the corpus it's given — swapping in a
 // synthesis-focused corpus (e.g. a reaction-precursor or building-block
 // database) instead of ChEMBL would be the natural next step to reduce
-// this bias, not a further formula change.
+// this bias, not a further formula change. Round 18 makes this domain
+// distinction *traceable* (`FragmentCorpusProvenance.synthesis_focused` in
+// every report's `Provenance.fragment_corpus`, sourced from the corpus
+// manifest's own `corpus_domain` declaration) without changing scoring
+// behavior based on it — deciding whether/how `synthesis_focused: false`
+// should affect a score or its confidence is explicitly deferred to a
+// future round, once a synthesis-focused corpus exists to compare against.
 
-/// Minimum `|signed_signal|` for `fragment_rarity` to emit a
+/// Minimum `|signed_signal|` for `fragment_precedent` to emit a
 /// `Finding`/`Contribution` at all — purely a *display* threshold ("is
 /// this worth surfacing as evidence"), not a scoring dead-band:
 /// `signed_signal` still applies to `overall.difficulty` continuously
@@ -417,7 +432,7 @@ pub(crate) const DIFFICULTY_CHALLENGING_MAX: f64 = 0.75;
 /// §9), regardless of which finding it was derived from. Deliberately flat
 /// rather than per-suggestion-code: nothing in v0.1 has been calibrated
 /// against real synthesis outcomes (no corpus exists — same gap as
-/// `fragment_rarity`), so differentiating confidence between, say, a
+/// `fragment_precedent`), so differentiating confidence between, say, a
 /// bridged-ring suggestion and a stereocenter-density one would imply a
 /// precision this crate doesn't have. `0.5` reads as "this follows from our
 /// own scoring model's causality, not from validated outcomes" — high

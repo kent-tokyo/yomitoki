@@ -1,0 +1,12 @@
+c1ccccc1	FM1_R1_benzene
+c1ccc2ccccc2c1	FM1_R2_naphthalene
+c1ccc2cc3ccccc3cc2c1	FM1_R3_anthracene
+c1ccc2cc3cc4ccccc4cc3cc2c1	FM1_R4_tetracene
+C1CCCCC1CCCC	FM2_S0_none
+C1CCCCC1C(F)CCC	FM2_S1_one
+C1CCCCC1C(F)C(Cl)CC	FM2_S2_two
+C1CCCCC1C(F)C(Cl)C(Br)C	FM2_S3_three
+C1CCCCC1C(F)C(Cl)C(Br)C(I)C	FM2_S4_four
+C1CCCCC1	CTRL_B0_cyclohexane
+C1CC2CCC1C2	CTRL_B2_norbornane
+C1C2CC3CC1CC(C2)C3	CTRL_B4_adamantane

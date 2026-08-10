@@ -68,6 +68,7 @@ def run(input_path: Path, bin_path: Path, fragment_corpus: Path | None) -> list[
                 "yomitoki_applicability": report["applicability"],
                 "yomitoki_fragment_precedent": report.get("fragment_precedent"),
                 "yomitoki_findings": [f["code"] for f in report["findings"]],
+                "yomitoki_components": report["components"],
             }
         )
     return records

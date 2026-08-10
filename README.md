@@ -242,8 +242,11 @@ Dominant penalties:
 3. Stereo analysis could not be run for this molecule: it contains a negatively charged atom, which triggers an arithmetic-overflow bug in chematic's stereo perception (panics in debug builds, produces an unverified result in release builds — see chematic issue #267). Stereocenter count/density and stereo completeness are unavailable, not verified to be zero/complete.
 ```
 
-With no fragment corpus configured (the default — see below), scores
-overall remain lower than a corpus-backed analysis would produce.
+Configuring a fragment corpus (see below) only changes the `fragment_precedent`
+evidence field's contents — since round 21 (option C), `overall.difficulty`/
+`overall.synthesizability` are computed from `ring_topology`/`size_topology`/
+`stereochemical_burden`/`functional_group_liability` alone and are
+identical with or without a corpus configured.
 
 Every report also carries a `Provenance` block (schema version, yomitoki
 version, chematic version, ruleset version, fragment-corpus model version,
@@ -497,8 +500,12 @@ treats these results as confirmatory, not as something to retune against.
   corpus exists (Phase 2+).
 * Coverage is limited to a curated organic-element subset — no attempt at
   full periodic-table or organometallic support.
-* Scores and thresholds are rule-based and unvalidated against external
-  benchmarks so far; no calibration or comparison results exist yet.
+* Scores and thresholds are rule-based, not fit to any labeled dataset.
+  An external benchmark now exists (see
+  [External benchmark](#external-benchmark-v010) above) with mixed
+  results — competitive with BR-SAScore on TS1, chance-level on TS2,
+  weaker than both competitors on TS3 — and no weight/threshold has been
+  changed in response to it (see that section's test-set-integrity rule).
 
 ## Reproducibility
 

@@ -161,7 +161,7 @@ Dominant penalties:
 3. Stereo analysis could not be run for this molecule: it contains a negatively charged atom, which triggers an arithmetic-overflow bug in chematic's stereo perception (panics in debug builds, produces an unverified result in release builds — see chematic issue #267). Stereocenter count/density and stereo completeness are unavailable, not verified to be zero/complete.
 ```
 
-在未配置 fragment corpus 的情况下(默认状态 — 见下文),总体分数仍会低于配置了语料库后给出的结果。
+配置 fragment corpus 只会改变 `fragment_precedent` 证据字段的内容 —— 自第 21 轮(option C)起,`overall.difficulty`/`overall.synthesizability` 仅由 `ring_topology`/`size_topology`/`stereochemical_burden`/`functional_group_liability` 计算得出,无论是否配置语料库,结果始终一致。
 
 每份报告还包含一个 `Provenance` 区块(schema 版本、yomitoki 版本、chematic 版本、ruleset 版本、fragment corpus 的模型版本、config hash),使不同版本之间的结果具有可比性 — 详见 `docs/architecture.md`。
 
@@ -237,7 +237,7 @@ spiro ring system                           5.52               0.20  LikelyAcces
 * 简化建议目前覆盖 `SuggestionCode` 6 种代码中的 3 种(桥环、macrocycle、立体中心密度)。其余 3 种各自因不同原因不可达:`IncreaseFragmentPrecedent` 已于第 21 轮弃用(不再计入 `overall.difficulty` 后,"这会降低难度" 的说法已不成立);季碳邻位关系尚未在任何地方计算;`brenk_matches_detailed` 按模式而非按出现次数合并原子,因此"移除多个相似反应性基团中的一个"无法定位具体是哪一次出现。所有建议的置信度都是一个统一的固定常数(0.5),而非按建议代码区分 — 因为目前没有针对真实合成结果的校准数据。
 * 在校准语料库出现之前(Phase 2 及以后),`ApplicabilityReport.domain_distance` 始终为 `None`。
 * 覆盖范围仅限于精选的有机元素子集,不尝试支持完整元素周期表或有机金属化合物。
-* 目前评分与阈值均为基于规则的设定,尚未针对外部基准进行验证;目前还没有校准或对比结果。
+* 评分与阈值均为基于规则的设定,并未针对任何带标签的数据集进行拟合。外部基准测试已经完成(见上文[外部基准测试](#外部基准测试v010))—— 结果好坏参半:在 TS1 上与 BR-SAScore 相当,在 TS2 上仅相当于随机猜测,在 TS3 上弱于两个竞品。目前尚未根据这些结果调整过任何 weight/threshold(见该节的 test-set-integrity 规则)。
 
 ## 可复现性
 

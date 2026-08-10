@@ -161,7 +161,7 @@ Dominant penalties:
 3. Stereo analysis could not be run for this molecule: it contains a negatively charged atom, which triggers an arithmetic-overflow bug in chematic's stereo perception (panics in debug builds, produces an unverified result in release builds — see chematic issue #267). Stereocenter count/density and stereo completeness are unavailable, not verified to be zero/complete.
 ```
 
-fragment corpusが設定されていない場合(デフォルト — 下記参照)、全体的なスコアはコーパスを使った分析より低めになります。
+fragment corpusを設定しても変わるのは`fragment_precedent`のevidenceの内容だけです — round 21(option C)以降、`overall.difficulty`/`overall.synthesizability`は`ring_topology`/`size_topology`/`stereochemical_burden`/`functional_group_liability`のみから計算され、コーパス設定の有無にかかわらず常に同一です。
 
 各レポートには`Provenance`ブロック(schema version、yomitoki version、chematic version、ruleset version、fragment corpusのモデルバージョン、config hash)も含まれており、バージョン間で結果を比較できるようになっています — `docs/architecture.md`を参照してください。
 
@@ -238,7 +238,7 @@ yomitoki v0.1.0の凍結デフォルト設定を、BR-SAScore自身のTS1/TS2/TS
 * 簡略化提案は`SuggestionCode`の6種類のうち3種類(架橋環、macrocycle、立体中心密度)をカバーしています。残る3種類はそれぞれ別の理由で到達不能です:`IncreaseFragmentPrecedent`はround 21で廃止されました(`overall.difficulty`に寄与しなくなった以上「これでdifficultyが下がる」という主張が成立しないため)。四級炭素の隣接はどこでも計算されておらず、`brenk_matches_detailed`はパターンごとに原子をまとめて返す(occurrence単位ではない)ため「複数ある類似の反応性基のうち1つを除去する」提案がどの出現を指すべきか特定できません。すべての提案のconfidenceは提案コードごとではなく一律の固定値(0.5)です — 実際の合成結果によるキャリブレーションが存在しないためです。
 * `ApplicabilityReport.domain_distance`は、キャリブレーション用コーパスが存在するまで(Phase 2以降)常に`None`です。
 * 対応範囲は厳選されたorganic元素のサブセットに限定されており、全元素対応やorganometallicへの対応は試みていません。
-* スコアと閾値はルールベースであり、これまで外部ベンチマークに対する検証は行われていません。キャリブレーションや比較結果はまだ存在しません。
+* スコアと閾値はルールベースであり、ラベル付きデータセットに対してフィットさせたものではありません。外部ベンチマークは実施済みです(上記[外部ベンチマーク](#外部ベンチマークv010)を参照) — 結果は一様ではなく、TS1ではBR-SAScoreと拮抗、TS2ではchanceレベル、TS3では両競合より劣ります。この結果を受けてweight/thresholdを変更したことはまだありません(同セクションのtest-set-integrity方針を参照)。
 
 ## 再現性
 

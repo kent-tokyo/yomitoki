@@ -529,6 +529,40 @@ second one.
 
 ## Non-goals / deferred
 
+**Roadmap to a non-alpha `0.1.0`, decided after round 17's redesign shipped
+as `0.1.0-alpha.2`:** the code/formula/cap design is judged v0.1-ready, but
+corpus *semantics* are not settled yet. Three items block the non-alpha
+release, in order:
+
+1. **Rename `fragment_rarity` to `fragment_precedent`** (component module,
+   `ComponentScores.fragment_rarity` field, `AnalysisConfig.fragment_model`
+   naming, `FindingCode::FragmentRarityHigh` → something in the
+   `FragmentPrecedent*` family). Justification: the component no longer
+   detects rarity as a one-directional penalty — round 17 made it argue
+   difficulty both up (rare fragments) *and* down (precedented ones), so
+   "rarity detector" undersells what it actually does. Renaming now, while
+   the crate is still alpha and schema-breaking changes are cheap, avoids
+   a breaking rename after `0.1.0`.
+2. **A corpus-domain provenance contract in the manifest** — e.g. a
+   `corpus_domain` block (`name`, `intended_use`,
+   `synthesis_focused: bool`) so a report consumer (and yomitoki's own
+   documentation) can state what a configured corpus's precedent signal
+   actually means, instead of implicitly treating "prevalent in this
+   corpus" as "synthetically precedented." ChEMBL 37 is documented by
+   ChEMBL itself as a bioactive/drug-like-molecule corpus, not a
+   synthesis-focused one — round 17's caffeine/norbornane/spiro/
+   stereocenter-dense findings are exactly this mismatch surfacing, not a
+   formula bug (see "Scoring direction" above).
+3. **Validate against at least one synthesis-focused reference corpus**
+   (e.g. a reaction-precursor or building-block database) before settling
+   the `GeneralOrganic` profile's precedent-signal contract on ChEMBL
+   alone — a single bioactivity-biased corpus shouldn't define what
+   "precedented" means for the profile's official behavior.
+
+Only after these three does a non-alpha `0.1.0` make sense; none of them
+change the underlying formula or cap logic itself, which round 17 already
+validated end-to-end.
+
 Not implemented in v0.1 so far (tracked, not stubbed with fake data):
 
 * A corpus shipped with (or alongside) yomitoki for `fragment_rarity` to

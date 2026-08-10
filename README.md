@@ -26,13 +26,13 @@ to read it and explain what it finds.
 > yomitoki does not merely estimate synthesizability; it exposes
 > the evidence and reasoning behind the estimate.
 
-> **Status: `0.1.0-alpha.1` is published; this checkout is ahead of it.**
-> All six planned components are implemented, including `fragment_rarity`
-> — but it's opt-in: no fragment-frequency corpus ships with yomitoki
-> itself (AGENTS.md §5.4 forbids embedding one directly as a huge binary),
-> so it stays inactive unless you build one (`tools/build-fragment-corpus/`)
-> and configure it (`AnalysisConfig.fragment_model`). **If you do configure
-> one:** `fragment_rarity` was redesigned (round 17) as a corpus-relative
+> **Status: `0.1.0-alpha.2` is published.** All six planned components
+> are implemented, including `fragment_rarity` — but it's opt-in: no
+> fragment-frequency corpus ships with yomitoki itself (AGENTS.md §5.4
+> forbids embedding one directly as a huge binary), so it stays inactive
+> unless you build one (`tools/build-fragment-corpus/`) and configure it
+> (`AnalysisConfig.fragment_model`). **If you do configure one:**
+> `fragment_rarity` was redesigned (round 17) as a corpus-relative
 > percentile signal, fixing the documented over-penalty on its target cases
 > — aspirin's `overall.difficulty` measures `0.273 → 0.095` and dodecane's
 > `0.068 → 0.000` against a real 200k-molecule corpus. It also has a known
@@ -40,8 +40,10 @@ to read it and explain what it finds.
 > ring systems, stereocenter-dense cores) score *harder* once a corpus is
 > configured, because ChEMBL is a bioactivity corpus, not a
 > synthesis-focused one — see Limitations for the honest before/after data.
-> `0.1.0-alpha.1` on crates.io predates all of this — see
-> [`CHANGELOG.md`](CHANGELOG.md) for what's changed since. This is a
+> `fragment_rarity` itself is likely to be renamed (`fragment_precedent`)
+> before a non-alpha `0.1.0`, since it now argues difficulty both up and
+> down, not just up — "rarity detector" undersells what it does. See
+> [`CHANGELOG.md`](CHANGELOG.md) for the full version history. This is a
 > pre-release: the public API may still change before a non-alpha `0.1.0`.
 > See [`docs/architecture.md`](docs/architecture.md) for the current scope
 > and what's still missing.

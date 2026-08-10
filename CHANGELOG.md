@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.2] - 2026-08-10
+
+Second public preview. Publishes the round-17 `fragment_rarity` redesign
+below — still a pre-release, not the completed v0.1 scope. `fragment_rarity`
+is a working, corpus-validated correction mechanism now, but is likely to
+be renamed (`fragment_precedent`) before a non-alpha `0.1.0`, since
+"rarity detector" no longer describes what the component does (it argues
+difficulty both up *and* down, not just up) — see `docs/architecture.md`
+for the full reasoning. `0.1.0` is also waiting on a corpus-domain
+provenance contract in the manifest and validation against at least one
+synthesis-focused reference corpus (ChEMBL alone is bioactivity-biased,
+not calibrated for synthetic precedent) before the `GeneralOrganic`
+profile's contract is considered settled.
+
 ### Added
 
 - `fragment_rarity` component (AGENTS.md §5.4), implemented and opt-in.
@@ -54,7 +68,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ChEMBL corpus specifically, due to corpus-domain bias (ChEMBL is a
   bioactivity corpus, not a synthesis-focused one) — see `rules.rs`'s
   "Fragment rarity" section for the full before/after numbers.
-  `ruleset_version` bumped to 0.8.0 then 0.9.0, `schema_version` to 0.3.0.
+  `ruleset_version` bumped to 0.8.0 then 0.9.0, `schema_version` to 0.4.0
+  (the `ComponentScore.contribution` type change above is itself a schema
+  change).
 - `--fragment-corpus <dir>` CLI flag (`yomitoki analyze`), loads a
   `tools/build-fragment-corpus` output directory once before analyzing any
   molecule and enables `fragment_rarity` for the run. Omitted, behavior is

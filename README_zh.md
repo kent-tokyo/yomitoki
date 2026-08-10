@@ -17,7 +17,7 @@ yomitoki 不仅仅返回一个单一的合成可及性分数,而是读取分子�
 
 > yomitoki 不仅仅是估算可合成性,它还揭示了该估算背后的证据与推理过程。
 
-> **状态:`0.1.0-alpha.1` 已发布到 crates.io,但本仓库当前内容领先于该版本。** 计划中的六个组件已全部实现(包括 `fragment_rarity`)。不过 `fragment_rarity` 是可选启用的 —— yomitoki 本身不附带 fragment-frequency 语料库(AGENTS.md §5.4 禁止将语料库作为巨型二进制文件直接嵌入库中),除非构建(`tools/build-fragment-corpus/`)并配置(`AnalysisConfig.fragment_model`)一个语料库,否则该组件保持未启用状态。**如果你确实配置了语料库:** `fragment_rarity` 已重新设计为语料库相对百分位信号(第 17 轮),修复了目标案例中原有的过度惩罚问题 —— 在真实的 20 万分子语料库上端到端测试,阿司匹林的 `overall.difficulty` 从 `0.273` 降至 `0.095`,dodecane 从 `0.068` 降至 `0.000`。同时也存在一个已知的注意事项:一些结构上完全合理的分子(咖啡因、桥环/螺环体系、富含立体中心的分子)在配置语料库后得分反而*更高*(更难),原因是 ChEMBL 是面向生物活性筛选的语料库,而非面向合成可及性的语料库。详见"局限性"中如实记录的 before/after 数据。已发布的 `0.1.0-alpha.1` 早于以上所有变更 —— 变更内容请参见 [`CHANGELOG.md`](CHANGELOG.md)。这是一个预发布版本,在正式 `0.1.0` 之前公开 API 仍可能变化。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
+> **状态:`0.1.0-alpha.2` 已发布到 crates.io。** 计划中的六个组件已全部实现(包括 `fragment_rarity`)。不过 `fragment_rarity` 是可选启用的 —— yomitoki 本身不附带 fragment-frequency 语料库(AGENTS.md §5.4 禁止将语料库作为巨型二进制文件直接嵌入库中),除非构建(`tools/build-fragment-corpus/`)并配置(`AnalysisConfig.fragment_model`)一个语料库,否则该组件保持未启用状态。**如果你确实配置了语料库:** `fragment_rarity` 已重新设计为语料库相对百分位信号(第 17 轮),修复了目标案例中原有的过度惩罚问题 —— 在真实的 20 万分子语料库上端到端测试,阿司匹林的 `overall.difficulty` 从 `0.273` 降至 `0.095`,dodecane 从 `0.068` 降至 `0.000`。同时也存在一个已知的注意事项:一些结构上完全合理的分子(咖啡因、桥环/螺环体系、富含立体中心的分子)在配置语料库后得分反而*更高*(更难),原因是 ChEMBL 是面向生物活性筛选的语料库,而非面向合成可及性的语料库。详见"局限性"中如实记录的 before/after 数据。`fragment_rarity` 这个名字本身预计也会在正式 `0.1.0` 之前重命名为 `fragment_precedent` —— 既然它现在既会提高也会降低难度评分,"rarity detector" 这个名字已经不再准确。变更内容请参见 [`CHANGELOG.md`](CHANGELOG.md)。这是一个预发布版本,在正式 `0.1.0` 之前公开 API 仍可能变化。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
 
 ## 生态定位
 

@@ -92,7 +92,9 @@ pub(crate) fn render(
                  corpus: {pct}{} percentile — this molecule's structural fragments \
                  are less common than most of the corpus, which may indicate genuine \
                  synthetic novelty, or simply a gap in this corpus's coverage; this \
-                 is not a claim about which.",
+                 is not a claim about which. fragment_precedent is an explanatory \
+                 reference-corpus signal, not a direct synthetic-difficulty term — \
+                 it does not affect overall.difficulty.",
                 ordinal_suffix(pct)
             )
         }
@@ -101,7 +103,9 @@ pub(crate) fn render(
             format!(
                 "Fragment precedent is strong relative to the configured reference \
                  corpus: {pct}{} percentile — this molecule's structural fragments \
-                 are more common than most of the corpus.",
+                 are more common than most of the corpus. fragment_precedent is an \
+                 explanatory reference-corpus signal, not a direct synthetic-difficulty \
+                 term — it does not affect overall.difficulty.",
                 ordinal_suffix(pct)
             )
         }

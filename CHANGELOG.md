@@ -38,6 +38,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`fragment_precedent` removed from `overall.difficulty` (round 21,
+  option C — implements round 20's recommendation).**
+  `fragment_precedent` **is an explanatory reference-corpus signal, not a
+  direct synthetic-difficulty term** — it no longer contributes to
+  `overall.difficulty` in any way, for any configured corpus.
+  **Migration from `0.1.0-alpha.2`/round-20 code:**
+  - `ComponentScores` no longer has a `fragment_precedent` field (it held
+    only difficulty-contributing components; `fragment_precedent` no
+    longer contributes).
+  - New `SynthesizabilityReport.fragment_precedent:
+    Option<FragmentPrecedentEvidence>` (top-level, not nested under
+    `components`) carries the same `signed_signal`/`precedent_penalty`/
+    `precedent_support`/`confidence`/`findings` data as before, now with
+    no cap and no aggregation role — pure evidence.
+  - `dominant_penalties`/`dominant_supports` never contain a
+    `fragment_precedent` entry anymore; `dominant_supports` is
+    consequently always empty in v0.1 (its only source was
+    `fragment_precedent`'s precedent-support case), kept in the schema
+    for a future support-flavored component.
+  - `SuggestionCode::IncreaseFragmentPrecedent` is retired (kept in the
+    `#[non_exhaustive]` enum for schema stability, never emitted) — "this
+    would lower this contribution to difficulty" is no longer a true
+    statement.
+  - `weak`/`strong` precedent `Finding`s (`FindingCode::
+    FragmentPrecedentWeak`/`FragmentPrecedentStrong`) are unchanged and
+    still produced — only their effect on scoring is gone.
+  No deprecated alias kept for any of the above (clean break, pre-`0.1.0`,
+  per established project policy). `schema_version` bumped `0.5.0` →
+  `0.6.0`. Verified end-to-end against real ChEMBL/ORD/SynRXN corpora:
+  `overall.difficulty` is now bit-for-bit identical across all three
+  corpora (and the no-corpus default) for every molecule in round 19/20's
+  15-molecule and 500-probe panels, while `fragment_precedent.signed_signal`
+  still genuinely differs per corpus for 499/500 probes — the signal is
+  untouched, only its influence on scoring is gone. Plain pyridine, which
+  round 20 found swinging between `LikelyAccessible` and
+  `HighlyChallenging` purely from corpus choice, now scores
+  `LikelyAccessible` unconditionally. **Tradeoff, not a free win:** this
+  reopens the `size_topology`/`functional_group_liability`
+  over-penalization of common building blocks (e.g. dodecane, aspirin)
+  that `fragment_precedent` used to correct through round 20 — round 21
+  trades that milder, corpus-invariant problem for removing the riskier,
+  corpus-dependent one. No formula, weight, or cap constant was changed.
+  Full verification data in `tasks/upstream_and_corpus_research.md`
+  Part 8 (gitignored); durable summary in `rules.rs`'s "Fragment
+  precedent" section and `docs/architecture.md`'s roadmap (item 5).
 - **`fragment_rarity` renamed to `fragment_precedent`** (round 18, API/
   schema semantic cleanup — no scoring formula change). The component
   argues difficulty both up (weakly precedented fragments) and down

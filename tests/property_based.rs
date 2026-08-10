@@ -123,12 +123,17 @@ proptest! {
             prop_assert!(score.raw.is_finite(), "component raw is not finite: {}", score.raw);
             assert_probability_like(score.normalized.value(), "component normalized");
             assert_probability_like(score.confidence.value(), "component confidence");
-            // `contribution` is a signed f64, not `ProbabilityLikeScore`
-            // (fragment_precedent's precedent-support case can be negative
-            // — see report.rs's doc comment) — none of the five components
-            // tested here (fragment_precedent is opt-in, excluded from this
-            // default-config property test) ever produce a negative one,
-            // so 0.0..=1.0 is still the right contract for this list.
+            // `ComponentScore.contribution` is a plain signed f64, not
+            // `ProbabilityLikeScore` (through round 20 this accommodated
+            // fragment_precedent's precedent-support case, which could be
+            // negative — see report.rs's doc comment history). Since round
+            // 21, fragment_precedent isn't part of `ComponentScores` at all
+            // (option C moved it to a separate, non-scoring
+            // `SynthesizabilityReport.fragment_precedent` field), so none
+            // of the five components checked here can ever produce a
+            // negative contribution — 0.0..=1.0 is still the right
+            // contract for this list, just no longer for the
+            // negative-support reason the type was originally chosen for.
             prop_assert!(
                 score.contribution.is_finite(),
                 "component contribution is not finite: {}",

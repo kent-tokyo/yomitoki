@@ -120,8 +120,12 @@ fn fragment_corpus_flag_with_a_real_corpus_populates_fragment_precedent() {
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).expect("utf8");
     let report: serde_json::Value = serde_json::from_str(&stdout).expect("valid json");
+    // Top-level since round 21 (option C) -- fragment_precedent no longer
+    // participates in overall.difficulty, so it moved out of "components"
+    // (which now only holds difficulty-contributing scores).
+    assert!(!report["fragment_precedent"].is_null(), "{stdout}");
     assert!(
-        !report["components"]["fragment_precedent"].is_null(),
+        report["components"]["fragment_precedent"].is_null(),
         "{stdout}"
     );
     assert!(

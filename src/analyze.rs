@@ -13,7 +13,7 @@ use crate::components::{
 use crate::config::{AnalysisConfig, Strictness};
 use crate::error::YomitokiError;
 use crate::report::{
-    ComponentScore, ComponentScores, ConfidenceScore, Contribution, Finding, FindingRef,
+    ComponentScores, ConfidenceScore, Contribution, Finding, FindingRef, FragmentPrecedentEvidence,
     OverallAssessment, ProbabilityLikeScore, SynthesizabilityReport, Verdict,
 };
 use crate::rules::{
@@ -38,9 +38,11 @@ pub fn analyze(
     let fg_outcome = functional_group_liability::compute(molecule);
     // Only runs when a corpus is configured — no corpus ships with
     // yomitoki itself (AGENTS.md §5.4), so this is `None` by default and
-    // every result below (`ComponentScores.fragment_precedent`,
-    // `difficulty`, `dominant_penalties`, `Provenance.fragment_corpus`) is
-    // unaffected, matching today's behavior exactly when unconfigured.
+    // every result below (`SynthesizabilityReport.fragment_precedent`,
+    // `Provenance.fragment_corpus`) is unaffected when unconfigured.
+    // `difficulty`/`dominant_penalties` were affected by this in rounds
+    // 17-19; since round 21 (option C) they never are, configured or not
+    // — see the comment where `difficulty_value` is computed below.
     let fragment_outcome = config
         .fragment_model
         .corpus
@@ -89,69 +91,38 @@ pub fn analyze(
         finding_ref.0 += fg_findings_offset;
     }
 
-    let base_difficulty = AGGREGATE_WEIGHT_RING_TOPOLOGY * ring_score.normalized.value()
+    // overall.difficulty is exactly the weighted sum of these four
+    // always-on components — fragment_precedent does NOT contribute here
+    // (round 21 / option C). Rounds 17-19 wired it in as a capped
+    // correction term; round 20's cross-corpus robustness test found that
+    // unsafe (two honestly-labeled synthesis-focused corpora disagreed
+    // with each other on its direction 34.6% of the time over 500 probe
+    // molecules, and its uncapped penalty side alone could swing a
+    // structurally trivial molecule, e.g. plain pyridine, between
+    // LikelyAccessible and HighlyChallenging depending purely on which
+    // corpus was configured). See rules.rs's "Fragment precedent" section
+    // for the full history; the signal itself is still computed and
+    // reported below as explanatory-only evidence.
+    let difficulty_value = AGGREGATE_WEIGHT_RING_TOPOLOGY * ring_score.normalized.value()
         + AGGREGATE_WEIGHT_SIZE_TOPOLOGY * size_score.normalized.value()
         + AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN * stereo_score.normalized.value()
         + AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY * fg_score.normalized.value();
 
-    // fragment_precedent is a *correction term* on top of the four
-    // always-on components, not a fifth peer weighted-summed term — round
-    // 16 found the peer-weighted-sum model structurally couldn't let
-    // common-fragment evidence reduce difficulty at all (see rules.rs's
-    // "Fragment precedent" section). `precedent_support` is capped at
-    // size_topology + functional_group_liability's own contribution:
-    // strong fragment precedent can offset "this looks like an unusual
-    // substituent pattern" burden, but must never zero out
-    // ring_topology/stereochemical_burden burden just because a
-    // molecule's fragments are individually common.
-    let mut difficulty_value = base_difficulty;
-    let mut fragment_score: Option<ComponentScore> = None;
-    let mut fragment_penalty_contribution: Option<Contribution> = None;
-    let mut fragment_support_contribution: Option<Contribution> = None;
-
-    if let Some(outcome) = &fragment_outcome {
-        let support_cap = AGGREGATE_WEIGHT_SIZE_TOPOLOGY * size_score.normalized.value()
-            + AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY * fg_score.normalized.value();
-        let applied_support = outcome.precedent_support.min(support_cap);
-        let net = outcome.precedent_penalty - applied_support;
-        difficulty_value += net;
-
-        let signed_signal = outcome.precedent_penalty - outcome.precedent_support;
-        fragment_score = Some(ComponentScore {
-            raw: signed_signal,
-            normalized: ProbabilityLikeScore::new(signed_signal.abs()),
-            // Deterministic given a fixed corpus — no sampling-uncertainty
-            // model exists yet for how corpus size/coverage should
-            // discount a percentile estimate (a real gap, not modeled in
-            // v0.1; see docs/architecture.md).
-            confidence: ProbabilityLikeScore::new(1.0),
-            contribution: net,
-            findings: fragment_finding_ref.into_iter().collect(),
-        });
-
-        if let Some(finding) = &outcome.finding {
-            let contribution = Contribution {
-                code: finding.code,
-                name: finding.explanation.clone(),
-                // The penalty side is never capped (see comment above);
-                // the support side reports the *applied* (capped)
-                // magnitude, not the raw one, so this stays consistent
-                // with `net`'s actual effect on `difficulty` — a reader
-                // of `dominant_supports` sees what the support really did,
-                // not what it could have done uncapped.
-                contribution: ProbabilityLikeScore::new(if outcome.precedent_penalty > 0.0 {
-                    outcome.precedent_penalty
-                } else {
-                    applied_support
-                }),
-            };
-            if outcome.precedent_penalty > 0.0 {
-                fragment_penalty_contribution = Some(contribution);
-            } else {
-                fragment_support_contribution = Some(contribution);
+    let fragment_precedent_evidence: Option<FragmentPrecedentEvidence> =
+        fragment_outcome.as_ref().map(|outcome| {
+            let signed_signal = outcome.precedent_penalty - outcome.precedent_support;
+            FragmentPrecedentEvidence {
+                signed_signal,
+                precedent_penalty: outcome.precedent_penalty,
+                precedent_support: outcome.precedent_support,
+                // Deterministic given a fixed corpus — no sampling
+                // -uncertainty model exists yet for how corpus size/
+                // coverage should discount a percentile estimate (a real
+                // gap, not modeled in v0.1; see docs/architecture.md).
+                confidence: ProbabilityLikeScore::new(1.0),
+                findings: fragment_finding_ref.into_iter().collect(),
             }
-        }
-    }
+        });
 
     let difficulty = ProbabilityLikeScore::new(difficulty_value);
     let synthesizability = ProbabilityLikeScore::new(1.0 - difficulty.value());
@@ -164,12 +135,14 @@ pub fn analyze(
         config.strictness,
     );
 
-    // Ranked by each finding's actual contribution weight across both
+    // Ranked by each finding's actual contribution weight across the four
     // difficulty-contributing components (not applicability/data-quality
     // findings — AGENTS.md §5.6 forbids conflating score with input
-    // quality). Deliberately independent of `Finding.severity`: severity is
-    // a per-finding chemistry judgment, contribution is what actually fed
-    // `difficulty`. A `Severity::Low` finding can rank above a
+    // quality; not fragment_precedent either, since round 21 — this list
+    // means "actually moved `overall.difficulty`," and fragment_precedent
+    // no longer does). Deliberately independent of `Finding.severity`:
+    // severity is a per-finding chemistry judgment, contribution is what
+    // actually fed `difficulty`. A `Severity::Low` finding can rank above a
     // `Severity::High` one here if its weight is larger (e.g. a very high
     // rotatable-bond count outweighing a bridged ring) — that's the two
     // axes working as designed, not a bug.
@@ -178,9 +151,6 @@ pub fn analyze(
     dominant_penalties.extend(size_outcome.contributions);
     dominant_penalties.extend(stereo_outcome.contributions);
     dominant_penalties.extend(fg_outcome.contributions);
-    if let Some(c) = fragment_penalty_contribution {
-        dominant_penalties.push(c);
-    }
     dominant_penalties.sort_by(|a, b| {
         b.contribution
             .value()
@@ -189,20 +159,13 @@ pub fn analyze(
     });
 
     // Same ranking discipline as `dominant_penalties`, mirrored for
-    // difficulty-*reducing* evidence — today only `fragment_precedent`'s
-    // precedent-support case can produce one, but this isn't
-    // fragment_precedent-specific machinery (any future component with
-    // support-flavored evidence would extend this the same way).
-    let mut dominant_supports: Vec<Contribution> = Vec::new();
-    if let Some(c) = fragment_support_contribution {
-        dominant_supports.push(c);
-    }
-    dominant_supports.sort_by(|a, b| {
-        b.contribution
-            .value()
-            .partial_cmp(&a.contribution.value())
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    // difficulty-*reducing* evidence. Always empty in v0.1 as of round 21
+    // (fragment_precedent's precedent-support case was its only source,
+    // and no longer feeds difficulty) — kept in the schema, not removed,
+    // since this was never fragment_precedent-specific machinery: any
+    // future component with support-flavored evidence would populate it
+    // the same way.
+    let dominant_supports: Vec<Contribution> = Vec::new();
 
     let overall = OverallAssessment {
         synthesizability,
@@ -215,7 +178,6 @@ pub fn analyze(
         size_topology: Some(size_score),
         ring_topology: Some(ring_score),
         stereochemical_burden: Some(stereo_score),
-        fragment_precedent: fragment_score,
         functional_group_liability: Some(fg_score),
         input_quality: Some(applicability_outcome.score),
     };
@@ -228,6 +190,7 @@ pub fn analyze(
         findings,
         dominant_penalties,
         dominant_supports,
+        fragment_precedent: fragment_precedent_evidence,
         suggestions,
         applicability: applicability_outcome.report,
         provenance: crate::provenance::build(config),

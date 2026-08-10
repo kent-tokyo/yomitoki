@@ -21,12 +21,17 @@
 //! weak-precedent penalty (below the corpus median) or precedent support
 //! (above it).
 //!
-//! This module deliberately does **not** apply `precedent_support`'s cap
-//! or build the final `ComponentScore`/`Contribution` — the cap needs
-//! `size_topology`/`functional_group_liability`'s own contributions,
-//! which aren't available here (each component is computed independently
-//! of its siblings). `analyze::analyze` applies the cap and assembles the
-//! final report pieces from this module's raw, uncapped numbers.
+//! `analyze::analyze` builds the final `FragmentPrecedentEvidence` from
+//! this module's raw numbers. Round 21 (option C): no cap is applied
+//! anymore, and neither `precedent_penalty` nor `precedent_support`
+//! contributes to `overall.difficulty` — round 20's cross-corpus
+//! robustness test found the signal too corpus-sensitive to trust as a
+//! scoring input (two honestly-labeled synthesis-focused corpora
+//! disagreed with each other on its direction 34.6% of the time over 500
+//! probe molecules; see `rules.rs`'s "Fragment precedent" section for the
+//! full history). This module's own formula is unchanged since round 17 —
+//! the finding was about the *contract* (should this feed a score at
+//! all), not this computation.
 
 use chematic::core::Molecule;
 
@@ -35,16 +40,16 @@ use crate::report::{Finding, FindingCode, FindingEvidence, ProbabilityLikeScore,
 use crate::rules::FRAGMENT_PRECEDENT_FINDING_THRESHOLD;
 
 pub(crate) struct FragmentPrecedentOutcome {
-    /// `max(signed_signal, 0.0)` — always applied to `overall.difficulty`
-    /// in full, never capped (unlike `precedent_support`): AGENTS.md §5.4
-    /// gives no reason a *penalty* should ever be limited by other
-    /// components' contributions the way a *support* is.
+    /// `max(signed_signal, 0.0)`. Reported as explanatory evidence only
+    /// since round 21 — never applied to `overall.difficulty` (rounds
+    /// 17-19 applied it in full, uncapped; see `rules.rs`'s "Fragment
+    /// precedent" section for why that was found unsafe).
     pub(crate) precedent_penalty: f64,
-    /// `max(-signed_signal, 0.0)` — the *uncapped* support magnitude.
-    /// `analyze::analyze` caps this at `size_topology`'s +
-    /// `functional_group_liability`'s combined contribution before
-    /// applying it, so strong fragment precedent can't zero out
-    /// `ring_topology`/`stereochemical_burden` burden.
+    /// `max(-signed_signal, 0.0)`. Reported as explanatory evidence only
+    /// since round 21 — never applied to `overall.difficulty` (rounds
+    /// 17-19 capped and applied it; the cap existed only to bound this
+    /// signal's effect on difficulty, which it no longer has, so there is
+    /// no cap to apply anymore).
     pub(crate) precedent_support: f64,
     /// At most one — `FragmentPrecedentWeak` (penalty) or
     /// `FragmentPrecedentStrong` (support), only when `|signed_signal|`

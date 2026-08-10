@@ -490,13 +490,52 @@ pub(crate) const AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY: f64 = 0.4;
 // -corpus` workflow — which limits blast radius without changing the
 // verdict, since that workflow is exactly what the READMEs and
 // `docs/architecture.md` recommend.
+//
+// Round 21 implements option C, closing the blocker above. Removed
+// `fragment_precedent` from `overall.difficulty`'s aggregation entirely
+// (`analyze::analyze`'s `difficulty_value` is now exactly the weighted
+// sum of `ring_topology`/`size_topology`/`stereochemical_burden`/
+// `functional_group_liability` — no correction term, no support cap,
+// since there's nothing left to cap). The component itself, its formula,
+// the percentile transform, and every corpus-build mechanism are
+// UNCHANGED (explicitly out of scope for this round, and not the thing
+// that was found broken — round 20's finding was about the *contract*,
+// not this computation). What changed is where the signal's output goes:
+// `weak`/`strong` precedent findings are still computed and still
+// explained (`explain.rs`), but now surface only via the new
+// `SynthesizabilityReport.fragment_precedent: Option<FragmentPrecedentEvidence>`
+// top-level field — explanatory evidence, structurally incapable of
+// reaching `overall.difficulty`, `dominant_penalties`, or
+// `dominant_supports` (dominant_supports is consequently always empty in
+// v0.1, since fragment_precedent's precedent-support case was its only
+// source — kept in the schema for a future support-flavored component,
+// not removed). `SuggestionCode::IncreaseFragmentPrecedent` is retired
+// (unreachable, kept for schema stability) since "this would lower this
+// contribution to difficulty" is no longer a true statement about
+// anything. **Public contract, stated plainly rather than left implicit:
+// fragment_precedent is an explanatory reference-corpus signal, not a
+// direct synthetic-difficulty term.** "Rare in the configured reference
+// corpus" and "difficult to synthesize" are different claims — this was
+// always true in principle (rounds 17-20 said so in every doc comment
+// touching this component) but was not, until now, true *structurally*:
+// a reader no longer has to trust that the aggregation respects the
+// distinction, because there is no code path left by which it could fail
+// to. `schema_version` bumped `0.5.0` -> `0.6.0` for the breaking
+// `ComponentScores`/`SynthesizabilityReport` shape change; no deprecated
+// alias kept (clean break, pre-`0.1.0`, per established project policy).
+// Corpus provenance (`Provenance.fragment_corpus`,
+// `FragmentCorpusProvenance`) is unchanged — a report can still be traced
+// to which corpus, and which declared domain, produced its
+// `fragment_precedent` signal, even though that signal no longer feeds a
+// score.
 
 /// Minimum `|signed_signal|` for `fragment_precedent` to emit a
-/// `Finding`/`Contribution` at all — purely a *display* threshold ("is
-/// this worth surfacing as evidence"), not a scoring dead-band:
-/// `signed_signal` still applies to `overall.difficulty` continuously
-/// regardless of this constant. `0.1` (roughly `p` outside `[0.45,
-/// 0.55]`) is a first-pass round number for keeping near-median molecules
+/// `Finding` at all — purely a *display* threshold ("is this worth
+/// surfacing as evidence"), unrelated to scoring since round 21:
+/// `signed_signal` no longer applies to `overall.difficulty` at all, at
+/// any magnitude (see the round-21 note above). `0.1` (roughly `p`
+/// outside `[0.45, 0.55]`) is a first-pass round number for keeping
+/// near-median molecules
 /// finding-free rather than a tuned value — revisit with more real-corpus
 /// validation data than round 16/17's if it turns out too
 /// noisy/insensitive in practice.

@@ -39,7 +39,6 @@ fn sample_report() -> SynthesizabilityReport {
             size_topology: None,
             ring_topology: Some(ring_topology),
             stereochemical_burden: None,
-            fragment_precedent: None,
             functional_group_liability: None,
             input_quality: None,
         },
@@ -57,6 +56,7 @@ fn sample_report() -> SynthesizabilityReport {
             contribution: ProbabilityLikeScore::new(0.33),
         }],
         dominant_supports: Vec::new(),
+        fragment_precedent: None,
         suggestions: vec![SimplificationSuggestion {
             code: SuggestionCode::ReplaceBridgedRingWithMonocyclicAnalog,
             target_atoms: vec![AtomIndex(0), AtomIndex(1)],
@@ -132,7 +132,7 @@ fn unimplemented_components_are_none_not_fabricated_zero() {
     assert!(report.components.stereochemical_burden.is_some());
     assert!(report.components.functional_group_liability.is_some());
     assert!(report.components.input_quality.is_some());
-    assert!(report.components.fragment_precedent.is_none());
+    assert!(report.fragment_precedent.is_none());
 }
 
 #[test]

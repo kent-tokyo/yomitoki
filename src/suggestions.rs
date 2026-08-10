@@ -9,18 +9,22 @@
 //! against real synthesis outcomes, so claiming higher certainty than that
 //! would overstate what this crate actually knows.
 //!
-//! 4 of [`crate::report::SuggestionCode`]'s 6 variants are reachable in
+//! 3 of [`crate::report::SuggestionCode`]'s 6 variants are reachable in
 //! v0.1, one per finding this module knows how to translate into an
 //! actionable suggestion: `RingBridgedComplexity` -> replace-with-monocyclic,
 //! `RingMacrocycle` -> simplify-closure, `StereoDensityHigh` -> reduce
-//! density, `FragmentPrecedentWeak` -> increase-fragment-precedent (only
-//! reachable when a fragment corpus is configured — `FragmentPrecedentWeak`
-//! itself is never produced otherwise). The other 2
-//! (`ReduceAdjacentQuaternaryCenters`, `RemoveSimilarReactiveGroup`) have no
+//! density. The other 3 are unreachable, each for a different reason (see
+//! `docs/architecture.md`):
+//! `IncreaseFragmentPrecedent` — reachable through round 20, removed round
+//! 21 (option C): once `fragment_precedent` stopped contributing to
+//! `overall.difficulty`, "this would lower this contribution to
+//! difficulty" became a false claim, so the suggestion was retired rather
+//! than kept and made misleading.
+//! `ReduceAdjacentQuaternaryCenters`/`RemoveSimilarReactiveGroup` have no
 //! underlying signal to derive from yet: quaternary-carbon adjacency isn't
 //! computed anywhere, and `brenk_matches_detailed` unions atoms per pattern
 //! rather than reporting per-occurrence matches (so "remove one of several"
-//! can't identify which occurrence to point at). See `docs/architecture.md`.
+//! can't identify which occurrence to point at).
 
 use crate::report::{
     ExpectedEffect, Finding, FindingCode, ProbabilityLikeScore, SimplificationSuggestion,
@@ -61,16 +65,14 @@ fn suggestion_for(finding: &Finding) -> Option<SimplificationSuggestion> {
              not a guarantee."
                 .to_string(),
         ),
-        FindingCode::FragmentPrecedentWeak => (
-            SuggestionCode::IncreaseFragmentPrecedent,
-            "This molecule's structural fragments are, on average, uncommon relative \
-             to the configured reference corpus. A more precedented analog covering \
-             the same functional role — if the target application allows one — would \
-             lower this contribution to difficulty; this is a structural heuristic \
-             against one corpus's coverage, not a guarantee no route exists for the \
-             fragments as-is."
-                .to_string(),
-        ),
+        // FindingCode::FragmentPrecedentWeak intentionally has no arm here
+        // since round 21 (option C): fragment_precedent no longer
+        // contributes to overall.difficulty, so "a more precedented analog
+        // would lower this contribution to difficulty" would be false --
+        // SuggestionCode::IncreaseFragmentPrecedent is kept in the schema
+        // (non_exhaustive) but is permanently unreachable, same treatment
+        // as ReduceAdjacentQuaternaryCenters/RemoveSimilarReactiveGroup
+        // below.
         _ => return None,
     };
 
@@ -156,19 +158,13 @@ mod tests {
     }
 
     #[test]
-    fn fragment_precedent_weak_finding_produces_an_increase_precedent_suggestion_with_no_atoms() {
-        // FragmentPrecedentWeak findings never carry atoms either (see
-        // components/fragment_precedent.rs -- fragment hashes aren't atom
-        // -mapped) -- same "don't fabricate atoms" discipline as
-        // StereoDensityHigh above.
+    fn fragment_precedent_weak_finding_produces_no_suggestion() {
+        // Round 21 (option C): IncreaseFragmentPrecedent was retired --
+        // fragment_precedent no longer contributes to overall.difficulty,
+        // so "this would lower this contribution to difficulty" would be
+        // a false claim. See suggestions.rs's module doc.
         let findings = vec![finding(FindingCode::FragmentPrecedentWeak, Vec::new())];
-        let suggestions = derive(&findings);
-        assert_eq!(suggestions.len(), 1);
-        assert_eq!(
-            suggestions[0].code,
-            SuggestionCode::IncreaseFragmentPrecedent
-        );
-        assert!(suggestions[0].target_atoms.is_empty());
+        assert!(derive(&findings).is_empty());
     }
 
     #[test]

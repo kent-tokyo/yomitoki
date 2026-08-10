@@ -184,20 +184,20 @@ outrank a bridged-ring finding once enough of them pile up — see
 `dominant_penalties_rank_across_components_by_contribution_not_by_component_identity`
 for a fixture pinning down a specific case of this.
 
-`ComponentScores` has all six report fields
-(`size_topology`, `ring_topology`, `stereochemical_burden`, `fragment_precedent`,
-`functional_group_liability`, `input_quality`), each typed
-`Option<ComponentScore>`. `ring_topology`, `size_topology`,
-`stereochemical_burden`, `functional_group_liability`, and `input_quality`
-are always `Some` in v0.1. `fragment_precedent` is implemented but opt-in: it's
-`Some` only when `AnalysisConfig.fragment_model` has a `FragmentCorpus`
-configured, `None` otherwise (the default — no corpus ships with yomitoki
-itself; §5.4 below). This is a deliberate choice over populating
-unimplemented/unconfigured components with dummy zero scores — `None` says
-"not evaluated," a zero score would falsely say "evaluated, found no
-burden." Going from `Option` to always-`Some` later is additive; the
-reverse would be a breaking schema change, so starting with `Option` is
-also the safer long-term default.
+`ComponentScores` has five fields (`size_topology`, `ring_topology`,
+`stereochemical_burden`, `functional_group_liability`, `input_quality`),
+each typed `Option<ComponentScore>`, all always `Some` in v0.1 — every
+field in this struct is a difficulty *contributor*, and (round 21) every
+one of them always runs. `fragment_precedent` is **not** a field here
+— it's implemented and opt-in (`Some` only when
+`AnalysisConfig.fragment_model` has a `FragmentCorpus` configured, `None`
+otherwise — no corpus ships with yomitoki itself; §5.4 below), but since
+round 21 (option C) it no longer contributes to `overall.difficulty`, so
+it lives in its own top-level `SynthesizabilityReport.fragment_precedent:
+Option<FragmentPrecedentEvidence>` field instead — see "Scoring
+direction"'s fourth caveat. `None`-vs-populated is a deliberate choice
+over dummy zero scores throughout this crate — `None` says "not
+evaluated," a zero score would falsely say "evaluated, found no burden."
 
 `Verdict` defines all six variants (`LikelyAccessible`,
 `ModeratelyAccessible`, `Challenging`, `HighlyChallenging`, `Indeterminate`,
@@ -288,9 +288,11 @@ data would imply a precision this crate doesn't have.
 * `synthesizability`: 1.0 = easy to make.
 * `difficulty`: 1.0 = hard to make.
 
-`difficulty` is a **weighted sum**, not a weighted average, of the four
-difficulty-contributing components' normalized scores — an unnormalized sum
-of `weight * normalized` terms, not a divide-by-weight-total average:
+`difficulty` is a **weighted sum**, not a weighted average, of exactly these
+four components' normalized scores — an unnormalized sum of `weight *
+normalized` terms, not a divide-by-weight-total average, and (since round
+21 — see the fourth caveat below) not a partial description with a
+correction term bolted on elsewhere in the code:
 
 ```text
 difficulty = AGGREGATE_WEIGHT_RING_TOPOLOGY * ring_topology.normalized
@@ -309,6 +311,11 @@ without diluting a strong ring-topology signal when it itself is small. See
 `rules.rs` for the exact weights and the reasoning against a normalized
 (divide-by-total) average.
 
+`fragment_precedent` is a fifth, always-computed signal (when a corpus is
+configured) that is **not** part of this sum — see the fourth caveat below
+for why, and `SynthesizabilityReport.fragment_precedent`/
+`FragmentPrecedentEvidence` for where it actually appears in a report.
+
 `synthesizability = 1.0 - difficulty`. This complementary relationship is a
 v0.1 implementation detail, not a permanent API guarantee — the two fields
 may decouple once calibration is introduced.
@@ -317,28 +324,34 @@ may decouple once calibration is introduced.
 rotatable-bond term over-penalizes simple, commercially available long
 unbranched chains (many rotatable bonds, essentially no synthetic
 difficulty) — the same "structural complexity vs. actual difficulty"
-conflation that existing SA-scoring tools are prone to. `fragment_precedent`
-is meant to correct for this by recognizing such fragments as
-common/precedented. Round 16 found the original naive-document-frequency
-formula made this specific case *worse* (dodecane `0.068 → 0.227`); round
-17's corpus-relative percentile redesign confirms it fixed, end-to-end
-against a real 200k-molecule corpus: dodecane's `overall.difficulty` now
-measures `0.068 → 0.000`. Not a general calibration claim — see the fourth
-caveat below and `rules.rs`'s "Fragment precedent" section for the formula
-and its corpus-domain-bias discussion.
+conflation that existing SA-scoring tools are prone to. Rounds 17-20 had
+`fragment_precedent` correct for this by recognizing such fragments as
+common/precedented and feeding a capped adjustment into `overall.difficulty`
+(dodecane's difficulty measured `0.068 → 0.000` against a real 200k
+-molecule ChEMBL corpus). **Round 21 removed that correction mechanism
+entirely** (option C — see the fourth caveat below): `fragment_precedent`
+no longer adjusts `overall.difficulty` at all, so dodecane's difficulty is
+back to the uncorrected `0.068` regardless of which corpus is configured.
+This over-penalization is therefore an **acknowledged, currently
+-unaddressed limitation** of `size_topology`'s rotatable-bond term, not a
+solved problem — `fragment_precedent` still reports (as explanatory
+evidence) that such chains are strongly precedented, so a report reader
+can see the mismatch, but the score itself no longer reflects it. See
+`rules.rs`'s "Fragment precedent" section for the full round 16-21
+history.
 
 **Second known caveat, same shape:** `functional_group_liability` wraps
 Brenk et al. (2008) directly, which was validated as a med-chem
 screening-library *desirability* filter, not a synthetic-difficulty
 signal. Several of its alerts fire on common, cheaply-precedented groups —
 aspirin trips `phenol`/`phenolic_aldehyde`/`active_ester`/`acetal_ketal`
-and, without a corpus configured, lands at `ModeratelyAccessible`
-(synthesizability 0.74) despite being one of the most trivially
-synthesizable molecules there is; paracetamol similarly trips
-`phenol`/`aniline`/`secondary_amine`. `fragment_precedent` corrects for this
-the same way once a corpus is configured — round 17 confirms it
-end-to-end: aspirin's `overall.difficulty` measures `0.273 → 0.095`,
-paracetamol's `0.243 → 0.095`.
+and lands at `ModeratelyAccessible` (synthesizability 0.74) despite being
+one of the most trivially synthesizable molecules there is — the same
+score with or without a corpus configured, since round 21;
+paracetamol similarly trips `phenol`/`aniline`/`secondary_amine`. Through
+round 20, `fragment_precedent` corrected this the same way as the
+rotatable-bond case above (aspirin `0.273 → 0.095`); since round 21 it no
+longer does, for the same reason — see the fourth caveat.
 
 **Fourth known caveat, discovered by round 17's validation panel, extended
 by round 19's cross-corpus validation:** `fragment_precedent`'s
@@ -393,8 +406,34 @@ driven entirely by `fragment_precedent`'s uncapped penalty term (the other
 four components sum to `0.119`). This caveat is no longer "documented and
 monitored" — it's now the reason `fragment_precedent` is recommended for
 removal from `overall.difficulty` (see the roadmap's item 4 and `rules.rs`
-for the full reasoning); not implemented yet, tracked as the actual
-blocker.
+for the full reasoning).
+
+**Round 21 implements that removal (option C), resolving this caveat
+structurally rather than by further correction.** `fragment_precedent` no
+longer contributes to `overall.difficulty` in any way — confirmed
+end-to-end, not just by code inspection: re-ran the same 15-molecule panel
+and the round-20 500-probe panel against ChEMBL/ORD/SynRXN with the new
+code, and `overall.difficulty` is bit-for-bit identical across all three
+corpora (and the no-corpus default) for every one of the 515 molecules
+tested, while `fragment_precedent.signed_signal` still genuinely differs
+per corpus for 499/500 probes — the signal is untouched, only its
+influence on scoring is gone. Pyridine now scores `LikelyAccessible`
+(`difficulty=0.1045`) identically regardless of which corpus is
+configured. The corpus-domain-bias caveat itself doesn't disappear —
+`fragment_precedent` is still exactly as corpus-sensitive as rounds 19-20
+found it to be — but it can no longer reach `overall.difficulty`, so it's
+no longer a scoring risk, only an explanatory-evidence characteristic (see
+`SynthesizabilityReport.fragment_precedent`). The tradeoff, stated
+plainly: this reopens the first two known caveats above (aspirin/
+dodecane-shaped over-penalization by `size_topology`/
+`functional_group_liability`) rather than solving them — round 21
+resolves the *riskier* problem (a corpus-dependent, unbounded scoring
+adjustment that could swing a verdict) at the cost of reintroducing the
+*milder* one (a bounded, always-consistent over-penalization that
+doesn't depend on which corpus happens to be configured). See `rules.rs`'s
+"Fragment precedent" section for the implementation and
+`tasks/upstream_and_corpus_research.md` Part 7/8 (gitignored) for the full
+round 20/21 data.
 
 **Third known caveat, different shape:** `functional_group_liability`'s
 "dense functionalization" term (`identify_functional_groups`) counts
@@ -443,12 +482,14 @@ selection.
 
 `fragment_precedent` is exactly the kind of component whose rule coverage
 genuinely varies (with which corpus is configured, and how well it covers
-a given molecule), but its `ComponentScore.confidence` is still a flat
-`1.0` in v0.1 — deliberately: there's no sampling-uncertainty model yet for
-"how much should an unseen fragment's rarity be discounted by corpus size"
-(see `components/fragment_precedent.rs`). Confidence will stop being
-effectively-constant once that gap is closed, not merely once the
-component exists.
+a given molecule), but its `FragmentPrecedentEvidence.confidence` (not a
+`ComponentScore` since round 21 — see "Scoring direction"'s fourth
+caveat) is still a flat `1.0` in v0.1 — deliberately: there's no
+sampling-uncertainty model yet for "how much should an unseen fragment's
+rarity be discounted by corpus size" (see `components/fragment_precedent.rs`).
+Moot for `overall.confidence` either way — that field comes entirely from
+`input_quality`, never from `fragment_precedent`, before or after round
+21.
 
 ## Negatively charged atoms (a chematic bug, worked around)
 
@@ -558,10 +599,11 @@ scales (SAscore `1`..`10`, easy..hard; yomitoki `difficulty` `0.0`..`1.0`,
 easy..hard) that the example deliberately does not rescale onto a shared
 axis. The value of the comparison is in where the two diverge, not where
 they agree — e.g. acyl halide (SAscore `6.62`, yomitoki `0.09`
-`LikelyAccessible`) and aspirin, no fragment corpus configured (SAscore
-`4.67`, yomitoki `0.27` `ModeratelyAccessible`, the same Brenk-validity gap
-documented in "Scoring direction" above — with a corpus configured,
-yomitoki's aspirin score drops to `0.095`, see the fourth caveat there).
+`LikelyAccessible`) and aspirin (SAscore `4.67`, yomitoki `0.27`
+`ModeratelyAccessible`, the same Brenk-validity gap documented in "Scoring
+direction" above — through round 20 a configured corpus dropped this to
+`0.095`; since round 21 (option C) `overall.difficulty` no longer changes
+with corpus configuration at all, see the fourth caveat there).
 Reused the 14-fixture corpus already in
 `tests/property_based.rs`'s fixed-molecule arm rather than inventing a
 second one.
@@ -574,7 +616,7 @@ the time, pending corpus-*semantics* work (items 1–3 below); round 20's
 item 4 found that judgment was premature — the design has a real gap
 (the uncapped penalty side) that only surfaced once tested against a
 second corpus and a broad probe panel, not a corpus-semantics question at
-all. Four items, in order:
+all. Round 21's item 5 resolved it. Five items, in order:
 
 1. ~~**Rename `fragment_rarity` to `fragment_precedent`**~~ — **done,
    round 18.** Component module (`components/fragment_precedent.rs`),
@@ -656,20 +698,59 @@ all. Four items, in order:
    **Recommended contract: C** — remove `fragment_precedent` from
    `overall.difficulty`, keep it as explanatory-only evidence. Not
    implemented this round (evaluation round, formula/cap changes
-   explicitly out of scope); this is now **the remaining blocker** for a
-   non-alpha `0.1.0`. Full methodology, the SynRXN corpus build, the
+   explicitly out of scope); tracked as item 5's blocker.
+   Full methodology, the SynRXN corpus build, the
    overlap audit, and the pyridine mechanism check are in
    `tasks/upstream_and_corpus_research.md` Part 7 (gitignored); the
    durable summary is in `rules.rs`'s "Fragment precedent" section.
+5. ~~**Implement option C**~~ — **done, round 21.** `fragment_precedent`
+   removed from `overall.difficulty`'s aggregation entirely
+   (`analyze::analyze`'s `difficulty_value` is now exactly the four-term
+   weighted sum in "Scoring direction" above, unconditionally — no
+   correction term, no cap, configured corpus or not). The signal itself
+   is unchanged and still fully reported, moved to a new top-level
+   `SynthesizabilityReport.fragment_precedent: Option<FragmentPrecedentEvidence>`
+   field, structurally incapable of reaching `dominant_penalties`/
+   `dominant_supports` (`dominant_supports` is consequently always empty
+   in v0.1 now, kept in the schema for a future support-flavored
+   component). `SuggestionCode::IncreaseFragmentPrecedent` retired
+   (unreachable — "would lower this contribution to difficulty" stopped
+   being true). Verified end-to-end against real ChEMBL/ORD/SynRXN
+   corpora, not just unit-tested: `overall.difficulty` is bit-for-bit
+   identical across all three corpora (and the no-corpus default) for
+   every one of the round-19/20 15-molecule panel and 500-probe panel
+   molecules, while `fragment_precedent.signed_signal` still genuinely
+   differs per corpus for 499/500 probes — pyridine now scores
+   `LikelyAccessible` regardless of configured corpus. `schema_version`
+   bumped `0.5.0` → `0.6.0`; no deprecated alias (clean break,
+   pre-`0.1.0`). **Tradeoff, not a free win:** this reopens the first two
+   known caveats in "Scoring direction" above (`size_topology`/
+   `functional_group_liability` over-penalizing common building blocks
+   like dodecane/aspirin) rather than solving them — round 21 trades the
+   *riskier* problem (a corpus-dependent, unbounded scoring adjustment
+   that could swing a verdict) for the *milder*, corpus-invariant one.
+   See `rules.rs`'s "Fragment precedent" section and
+   `tasks/upstream_and_corpus_research.md` Part 8 (gitignored) for the
+   full verification data and the resulting v0.1.0 verdict.
 
 Items 1–3 didn't change the underlying formula or cap logic itself, which
 round 17 validated end-to-end for the cases it tested. Item 4 found that
 validation incomplete, not wrong: the formula behaves exactly as
 specified in every case checked, but "behaves as specified" and "safe to
 score with" turned out to be different claims once the penalty side's
-lack of a cap was stress-tested against corpus-breadth variation — see
-item 4 and `rules.rs`'s "Fragment precedent" section. No formula/cap
-change has been made yet; that is blocker 1 in item 4.
+lack of a cap was stress-tested against corpus-breadth variation. Item 5
+resolved this by removing the correction mechanism rather than further
+tuning it — see `rules.rs`'s "Fragment precedent" section for the full
+reasoning and tradeoff.
+
+**All five roadmap items are done as of round 21 — v0.1.0 verdict: GO.**
+No further corpus-semantics or scoring-contract work is a stated blocker;
+what remains before actually cutting `0.1.0` (version bump, CHANGELOG
+finalization, tag, `cargo publish`) is release mechanics, not open design
+questions, and none of it was performed this round (explicitly out of
+scope — see the round-21 completion record in
+`tasks/upstream_and_corpus_research.md` Part 8, gitignored, for the full
+verification this verdict is based on).
 
 Not implemented in v0.1 so far (tracked, not stubbed with fake data):
 

@@ -117,18 +117,22 @@ pub enum FindingCode {
     /// mean-document-frequency distribution — i.e. this molecule's
     /// fragments are, relative to the reference corpus, weakly precedented
     /// (unusually rare). Only ever produced when a corpus is configured.
-    /// Contributes a difficulty *penalty* — see
-    /// `components::fragment_precedent`'s module doc; the opposite
+    /// **Explanatory only since round 21 (option C)** — does not
+    /// contribute to `overall.difficulty` and never appears in
+    /// `dominant_penalties`/`dominant_supports`; see
+    /// [`FragmentPrecedentEvidence`] and `rules.rs`'s "Fragment precedent"
+    /// section for why (round 20 found the corpus-relative signal too
+    /// corpus-sensitive to trust as a scoring input). The opposite
     /// -direction case is [`FindingCode::FragmentPrecedentStrong`].
     FragmentPrecedentWeak,
     /// This molecule's fragments sit at a high percentile of the
     /// configured [`crate::FragmentCorpus`]'s own mean-document-frequency
     /// distribution — unusually strong precedent relative to the
     /// reference corpus. Only ever produced when a corpus is configured.
-    /// Contributes a difficulty *support* (a reduction, capped — see
-    /// `components::fragment_precedent`'s module doc), appearing in
-    /// `SynthesizabilityReport::dominant_supports`, not
-    /// `dominant_penalties`.
+    /// **Explanatory only since round 21 (option C)** — same as
+    /// [`FindingCode::FragmentPrecedentWeak`], does not contribute to
+    /// `overall.difficulty` and never appears in `dominant_penalties`/
+    /// `dominant_supports`.
     FragmentPrecedentStrong,
     /// The molecule contains an element outside yomitoki's supported set.
     InputUnsupportedElement,
@@ -222,26 +226,29 @@ pub struct ComponentScore {
     /// molecule's overall `confidence` (which today comes entirely from
     /// `input_quality` — see `docs/architecture.md`'s Confidence contract).
     pub confidence: ProbabilityLikeScore,
-    /// This component's actual contribution to `overall.difficulty` —
-    /// signed, unlike `normalized`/most other fields here: always
-    /// non-negative for the five components whose evidence only ever
-    /// argues difficulty should be *higher*, but `fragment_precedent` can
-    /// contribute a negative value (a molecule with unusually strong
-    /// corpus precedent lowers difficulty, capped — see
-    /// `components::fragment_precedent`'s module doc). A plain `f64`, not
-    /// `ProbabilityLikeScore`, specifically so a negative value is
-    /// preserved rather than silently clamped to `0.0`.
+    /// This component's actual contribution to `overall.difficulty` — a
+    /// plain signed `f64`, not `ProbabilityLikeScore`. Always non-negative
+    /// for every component in `ComponentScores` today (each argues
+    /// difficulty should only be *higher*); kept signed rather than
+    /// re-typed to `ProbabilityLikeScore` because it was originally sized
+    /// for `fragment_precedent`'s precedent-support case, which *could*
+    /// contribute a negative value before round 21 moved that component
+    /// out of `ComponentScores` entirely (option C — see `rules.rs`'s
+    /// "Fragment precedent" section) — a future component with genuine
+    /// support-flavored evidence would need this signedness again.
     pub contribution: f64,
     /// References into `SynthesizabilityReport.findings` for the findings
     /// that justify this component's score.
     pub findings: Vec<FindingRef>,
 }
 
-/// Per-component scores. Each field is `Option` — `None` means "not
-/// evaluated in this version," not "evaluated, found nothing" (a fabricated
-/// zero would be dishonest). `fragment_precedent` is `None` unless a corpus
-/// is configured (`AnalysisConfig.fragment_model`); every other field is
-/// always `Some`; see `docs/architecture.md`.
+/// Per-component scores that feed `overall.difficulty`. Each field is
+/// `Option` — `None` means "not evaluated in this version," not "evaluated,
+/// found nothing" (a fabricated zero would be dishonest); every field here
+/// is always `Some`. `fragment_precedent` does **not** appear in this
+/// struct (round 21 / option C) — its signal doesn't contribute to
+/// `overall.difficulty`, so it doesn't belong among components that do; see
+/// [`SynthesizabilityReport::fragment_precedent`] for where it now lives.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ComponentScores {
     /// The `size_topology` component's score (molecular weight, rotatable
@@ -252,14 +259,6 @@ pub struct ComponentScores {
     /// The `stereochemical_burden` component's score (tetrahedral
     /// stereocenter count and density).
     pub stereochemical_burden: Option<ComponentScore>,
-    /// The `fragment_precedent` component's score (round 18 rename from
-    /// `fragment_rarity` — it argues difficulty both up, for weakly
-    /// precedented fragments, and down, for strongly precedented ones, so
-    /// "rarity" alone undersold what it measures). `None` unless
-    /// `AnalysisConfig.fragment_model` has a corpus configured — no corpus
-    /// ships with yomitoki itself (AGENTS.md §5.4; see
-    /// `docs/architecture.md`), so this is `None` by default.
-    pub fragment_precedent: Option<ComponentScore>,
     /// The `functional_group_liability` component's score (reactive/
     /// unstable functional groups, dense functionalization).
     pub functional_group_liability: Option<ComponentScore>,
@@ -359,9 +358,13 @@ pub enum SuggestionCode {
     /// reachable in v0.1 (`brenk_matches_detailed` unions atoms per
     /// pattern, not per occurrence; see `docs/architecture.md`).
     RemoveSimilarReactiveGroup,
-    /// Favor a more precedented/common fragment — only reachable when a
-    /// fragment corpus is configured (`fragment_precedent` is opt-in; see
-    /// `docs/architecture.md`).
+    /// Favor a more precedented/common fragment. **Not reachable since
+    /// round 21** — kept for schema stability (`SuggestionCode` is
+    /// `#[non_exhaustive]`), not emitted: once `fragment_precedent` no
+    /// longer contributes to `overall.difficulty` (option C), "increase
+    /// precedent" can no longer be truthfully described as
+    /// `MayReduceDifficulty` the way this suggestion type requires — see
+    /// `suggestions.rs` and `rules.rs`'s "Fragment precedent" section.
     IncreaseFragmentPrecedent,
     /// Simplify a macrocyclic ring closure.
     SimplifyMacrocyclicClosure,
@@ -473,29 +476,89 @@ pub struct FragmentCorpusProvenance {
     pub reference_distribution_version: String,
 }
 
+/// How well-precedented this molecule's fragments are relative to the
+/// configured reference corpus (`AnalysisConfig.fragment_model`) — **an
+/// explanatory reference-corpus signal, not a direct synthetic-difficulty
+/// term.** `None` unless a corpus is configured, same as before round 21.
+///
+/// Round 17–19 wired this signal into `overall.difficulty` as a capped
+/// correction term (option A). Round 20's cross-corpus robustness test
+/// (`tasks/upstream_and_corpus_research.md` Part 7) found that unsafe: two
+/// honestly-labeled, real, synthesis-focused reference corpora (ORD,
+/// SynRXN) disagreed with each other on this signal's penalty/support
+/// direction 34.6% of the time over 500 probe molecules — worse agreement
+/// than either had with a bioactivity-focused corpus (ChEMBL) — and plain
+/// pyridine (no plausible synthetic-difficulty story) swung between
+/// `LikelyAccessible` and `HighlyChallenging` purely from which corpus was
+/// configured, driven entirely by this signal's own uncapped penalty term.
+/// "Rare in the configured reference corpus" and "difficult to synthesize"
+/// are different claims — round 21 (option C) makes that distinction
+/// structural rather than a caveat a reader has to remember: this type
+/// exists specifically so `fragment_precedent` can never again silently
+/// move `overall.difficulty`. See `rules.rs`'s "Fragment precedent"
+/// section for the full history and reasoning.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FragmentPrecedentEvidence {
+    /// `precedent_penalty - precedent_support`, in `-1.0..=1.0`. Negative =
+    /// this molecule's fragments are strongly precedented (support side) in
+    /// the configured corpus; positive = weakly precedented (penalty side).
+    /// Purely descriptive — never added to or subtracted from
+    /// `overall.difficulty`.
+    pub signed_signal: f64,
+    /// `max(signed_signal, 0.0)` — how weakly precedented this molecule's
+    /// fragments are, uncapped.
+    pub precedent_penalty: f64,
+    /// `max(-signed_signal, 0.0)` — how strongly precedented this
+    /// molecule's fragments are, uncapped. No support cap applies (round
+    /// 21) — the cap existed only to bound this signal's effect on
+    /// `overall.difficulty`, which it no longer has.
+    pub precedent_support: f64,
+    /// How reliable this specific signal is — flat `1.0` in v0.1, same
+    /// caveat as before round 21: no sampling-uncertainty model yet for
+    /// how corpus size/coverage should discount a percentile estimate.
+    pub confidence: ProbabilityLikeScore,
+    /// References into `SynthesizabilityReport.findings` for the
+    /// `FragmentPrecedentWeak`/`FragmentPrecedentStrong` finding, if the
+    /// signal cleared the display threshold — at most one entry.
+    pub findings: Vec<FindingRef>,
+}
+
 /// The top-level report returned by `analyze`/`analyze_smiles`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SynthesizabilityReport {
     /// The bucketed verdict, difficulty/synthesizability scores, and
     /// overall confidence.
     pub overall: OverallAssessment,
-    /// Each implemented component's own score, in isolation.
+    /// Each implemented difficulty-contributing component's own score, in
+    /// isolation. `fragment_precedent` is **not** here — see
+    /// [`SynthesizabilityReport::fragment_precedent`] below.
     pub components: ComponentScores,
     /// Every finding raised by every component, in a single flat list.
     pub findings: Vec<Finding>,
     /// Findings ranked by contribution magnitude, highest first — the
     /// "Dominant penalties" list in AGENTS.md §4.1/§15. Access via
-    /// [`SynthesizabilityReport::dominant_penalties`].
+    /// [`SynthesizabilityReport::dominant_penalties`]. Never contains a
+    /// `fragment_precedent` entry (round 21) — this list means "actually
+    /// moved `overall.difficulty`," and `fragment_precedent` no longer
+    /// does.
     pub dominant_penalties: Vec<Contribution>,
     /// Factors that *reduce* difficulty, ranked by magnitude, highest
-    /// first — populated only by `fragment_precedent`'s precedent-support
-    /// case (`FindingCode::FragmentPrecedentStrong`), only when a corpus
-    /// is configured; empty otherwise, same as every prior version.
+    /// first. Empty in v0.1 (round 21 removed `fragment_precedent`'s
+    /// precedent-support case, its only source) — kept in the schema for
+    /// forward compatibility with a future difficulty-reducing component,
+    /// not fragment_precedent-specific machinery.
     pub dominant_supports: Vec<Contribution>,
+    /// How well-precedented this molecule's fragments are relative to the
+    /// configured reference corpus (`AnalysisConfig.fragment_model`) —
+    /// explanatory evidence, **not** a contributor to `overall.difficulty`
+    /// (round 21 / option C; see [`FragmentPrecedentEvidence`]'s own doc
+    /// for the full reasoning). `None` unless a corpus is configured — no
+    /// corpus ships with yomitoki itself (AGENTS.md §5.4).
+    pub fragment_precedent: Option<FragmentPrecedentEvidence>,
     /// Derived from `findings` regardless of `overall.verdict` — a finding
     /// is real whether or not the molecule is also `OutOfDomain`/
     /// `Indeterminate` for an unrelated reason, so a suggestion can appear
-    /// alongside either verdict. Only 4 of `SuggestionCode`'s 6 variants
+    /// alongside either verdict. Only 3 of `SuggestionCode`'s 6 variants
     /// are reachable in v0.1; see `suggestions.rs`/`docs/architecture.md`.
     pub suggestions: Vec<SimplificationSuggestion>,
     /// Input-quality/domain-applicability signals, kept separate from

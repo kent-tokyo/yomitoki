@@ -28,24 +28,29 @@ to read it and explain what it finds.
 
 > **Status: `0.1.0-alpha.2` is published; this checkout is ahead of it.**
 > All six planned components are implemented, including
-> `fragment_precedent` (renamed from `fragment_rarity` in round 18, after
-> `0.1.0-alpha.2` shipped — it now argues difficulty both up *and* down,
-> not just up, so "rarity detector" undersold what it does) — but it's
-> opt-in: no fragment-frequency corpus ships with yomitoki itself
-> (AGENTS.md §5.4 forbids embedding one directly as a huge binary), so it
-> stays inactive unless you build one (`tools/build-fragment-corpus/`) and
-> configure it (`AnalysisConfig.fragment_model`). **If you do configure
-> one:** a corpus-relative percentile signal, fixing the documented
-> over-penalty on its target cases — aspirin's `overall.difficulty`
-> measures `0.273 → 0.095` and dodecane's `0.068 → 0.000` against a real
-> 200k-molecule corpus. It also has a known caveat: some
-> structurally-legitimate molecules (caffeine, bridged/spiro ring systems,
-> stereocenter-dense cores) score *harder* once a corpus is configured,
-> because ChEMBL is a bioactivity corpus, not a synthesis-focused one —
-> now traceable per-report via `Provenance.fragment_corpus`, see
-> Limitations for the honest before/after data. See
-> [`CHANGELOG.md`](CHANGELOG.md) for the full version history. This is a
-> pre-release: the public API may still change before a non-alpha `0.1.0`.
+> `fragment_precedent` (renamed from `fragment_rarity` in round 18, since
+> it argues difficulty both up *and* down, not just up) — opt-in: no
+> fragment-frequency corpus ships with yomitoki itself (AGENTS.md §5.4
+> forbids embedding one directly as a huge binary), so it stays inactive
+> unless you build one (`tools/build-fragment-corpus/`) and configure it
+> (`AnalysisConfig.fragment_model`). **`fragment_precedent` is an
+> explanatory reference-corpus signal, not a direct synthetic-difficulty
+> term** — round 20 found the corpus-relative signal too corpus-sensitive
+> to trust as a scoring input (two honestly-labeled synthesis-focused
+> corpora disagreed with each other on its direction 34.6% of the time
+> over 500 probe molecules; plain pyridine swung between
+> `LikelyAccessible` and `HighlyChallenging` purely from which corpus was
+> configured), so round 21 removed it from `overall.difficulty` entirely
+> (option C). **If you configure a corpus:** `fragment_precedent` is still
+> computed and still reported (`SynthesizabilityReport.fragment_precedent`)
+> as explanatory evidence, but it can no longer change
+> `overall.difficulty`, `dominant_penalties`, or `dominant_supports` —
+> configuring a corpus (or switching which one) never changes the score,
+> only the evidence available alongside it. See Limitations for the full
+> before/after data and `rules.rs`'s "Fragment precedent" section for the
+> complete round 16–21 history. See [`CHANGELOG.md`](CHANGELOG.md) for the
+> full version history. This is a pre-release: the public API may still
+> change before a non-alpha `0.1.0`.
 > See [`docs/architecture.md`](docs/architecture.md) for the current scope
 > and what's still missing.
 
@@ -255,16 +260,25 @@ config hash) so results are comparable across versions — see
 | `size_topology` | implemented |
 | `stereochemical_burden` | implemented (tetrahedral centers only — see Limitations) |
 | `functional_group_liability` | implemented (reactive/unstable groups + dense functionalization — see Limitations) |
-| `fragment_precedent` | implemented, opt-in — `None` unless `AnalysisConfig.fragment_model` has a corpus configured; corpus-relative percentile signal with a known corpus-domain-bias caveat, see Limitations |
 
-Components stay `None` in `ComponentScores` when genuinely not evaluated
-(unconfigured `fragment_precedent`), never as fabricated zero scores.
+`fragment_precedent` is implemented and opt-in (`None` unless
+`AnalysisConfig.fragment_model` has a corpus configured), but is **not** a
+`ComponentScores` field — since round 21 it doesn't contribute to
+`overall.difficulty`, so it lives in its own top-level
+`SynthesizabilityReport.fragment_precedent: Option<FragmentPrecedentEvidence>`
+field: a corpus-relative percentile signal reported as explanatory
+evidence only, see Limitations.
 
-`suggestions: Vec<SimplificationSuggestion>` is populated for 4 of its 6
+Components stay `None` in `ComponentScores`/`fragment_precedent` when
+genuinely not evaluated, never as fabricated zero scores.
+
+`suggestions: Vec<SimplificationSuggestion>` is populated for 3 of its 6
 possible codes (`ReplaceBridgedRingWithMonocyclicAnalog`,
-`SimplifyMacrocyclicClosure`, `ReduceStereocenterDensity`,
-`IncreaseFragmentPrecedent`) — see Limitations. Every suggestion is
-diagnostic-only, heuristic, and never
+`SimplifyMacrocyclicClosure`, `ReduceStereocenterDensity`) — see
+Limitations. `IncreaseFragmentPrecedent` is retired (unreachable since
+round 21 — kept in the enum for schema stability, never emitted, since
+"this would lower this contribution to difficulty" is no longer a true
+statement). Every suggestion is diagnostic-only, heuristic, and never
 claims certainty (`expected_effect` is always `MayReduceDifficulty`, never
 `LikelyReducesDifficulty`).
 
@@ -325,11 +339,13 @@ has been validated against real synthesis outcomes yet.
 ## Limitations
 
 * All six planned components are implemented (see table above), but
-  `fragment_precedent` only contributes to `overall.difficulty`/
-  `overall.synthesizability` when a corpus is configured
-  (`AnalysisConfig.fragment_model`) — no corpus ships with yomitoki itself
-  (AGENTS.md §5.4). Without one, both fields reflect the other five
-  components only, same as before.
+  `fragment_precedent` **never** contributes to `overall.difficulty`/
+  `overall.synthesizability` — since round 21 (option C), configuring a
+  corpus (`AnalysisConfig.fragment_model`; no corpus ships with yomitoki
+  itself, AGENTS.md §5.4) changes what `fragment_precedent` reports, not
+  what `overall.difficulty` measures. `overall.difficulty` always reflects
+  exactly `ring_topology`/`size_topology`/`stereochemical_burden`/
+  `functional_group_liability`, corpus configured or not.
 * Stereo analysis (both `stereo_complete` and all of `stereochemical_burden`)
   cannot run at all for a molecule containing a negatively charged atom
   (any carboxylate, sulfonate, phosphate, or other anion) — a real
@@ -340,42 +356,39 @@ has been validated against real synthesis outcomes yet.
   such molecules until it's fixed upstream.
 * `size_topology`'s rotatable-bond term over-penalizes simple, commercially
   available long unbranched chains (many rotatable bonds, essentially no
-  synthetic difficulty) — `fragment_precedent` is meant to correct this by
-  recognizing such fragments as common/precedented. Round 17 redesigned it
-  as a corpus-relative percentile signal (rather than a naive
-  `1 - document_frequency` term, which round 16 found made the problem
-  worse, not better) and confirmed the fix end-to-end against a real
-  200k-molecule ChEMBL corpus: dodecane's `overall.difficulty` measures
-  `0.068` (no corpus) → `0.000` (corpus configured), and aspirin's
-  `0.273` → `0.095`. This is not a general calibration claim, and it has a
-  known caveat — see the next point and `rules.rs`'s "Fragment precedent"
-  section for the full formula and its corpus-domain-bias discussion.
-* `fragment_precedent`'s corpus-relative signal is only as good as the
-  corpus it's given. Configured against ChEMBL (a bioactivity-screening
-  corpus, not a synthesis-focused one — traceable per-report since round 18
-  via `Provenance.fragment_corpus.synthesis_focused`), some
-  structurally-legitimate molecules score *harder*, not easier, once the
-  corpus is on — reported honestly, not tuned away, since these numbers
-  are real measurements, not a formula bug (independently re-derived from
-  the corpus's own frequency table and reproduced exactly):
-  caffeine `0.287 → 0.516`, a bridged bicyclic (norbornane) `0.341 →
-  0.985`, a spiro ring system `0.199 → 1.000`, and a stereocenter-dense
-  molecule `0.275 → 1.000`. The likely cause is that ChEMBL's
-  fragment-frequency table reflects what shows up in bioassay-tested
-  compounds, not what's a common synthetic building block — "rare in
-  ChEMBL" and "hard to synthesize" are not the same claim.
-  **Update (round 20):** a synthesis-focused reference corpus was tried
-  (two of them, in fact) and did **not** resolve this — the two
-  synthesis-focused corpora tested disagree with *each other* on
-  precedent direction more often than either disagrees with ChEMBL, and
-  plain pyridine (no plausible synthetic-difficulty story) scored
-  `HighlyChallenging` against one of them purely from this component's
-  own uncapped penalty term. **Recommendation is now to remove
-  `fragment_precedent` from `overall.difficulty` entirely** (report it
-  only as explanatory evidence) — not yet implemented; see `rules.rs`'s
-  "Fragment precedent" section for the full reasoning. Until that lands,
-  treat any `overall.difficulty`/verdict computed with a fragment corpus
-  configured as provisional, not a validated production behavior.
+  synthetic difficulty) — e.g. dodecane's `overall.difficulty` is `0.068`,
+  aspirin's (tripping several Brenk alerts in `functional_group_liability`)
+  is `0.273`, `ModeratelyAccessible`, despite being one of the most
+  trivially synthesizable molecules there is. Through round 20,
+  `fragment_precedent` corrected this once a corpus was configured
+  (dodecane `→ 0.000`, aspirin `→ 0.095`); **round 21 removed that
+  correction** (see the next point for why), so this over-penalization is
+  now an acknowledged, currently-unaddressed limitation regardless of
+  corpus configuration. `fragment_precedent` still reports (as explanatory
+  evidence, not a score adjustment) that such fragments are strongly
+  precedented, so a report reader can see the mismatch even though the
+  score no longer reflects it.
+* **`fragment_precedent` is an explanatory reference-corpus signal, not a
+  direct synthetic-difficulty term** — this is the public contract, not
+  just a caveat. It used to feed `overall.difficulty` (rounds 17–20); round
+  20's cross-corpus validation found that unsafe: configured against
+  ChEMBL vs. two different real, honestly-labeled synthesis-focused
+  corpora (Open Reaction Database, SynRXN), several structurally
+  -legitimate molecules (caffeine, norbornane, spiro/stereocenter-dense
+  systems) scored *harder* under one corpus and *not* under another, with
+  no way to predict which in advance — worst case, plain pyridine (no
+  plausible synthetic-difficulty story at all) swung between
+  `LikelyAccessible` and `HighlyChallenging` purely from which corpus was
+  configured, driven entirely by this component's own uncapped penalty
+  term. **Round 21 (option C) removed `fragment_precedent` from
+  `overall.difficulty` entirely** — the signal is still computed exactly
+  the same way and still fully reported
+  (`SynthesizabilityReport.fragment_precedent`), but it can no longer
+  change a score, a verdict, `dominant_penalties`, or `dominant_supports`.
+  Verified end-to-end: `overall.difficulty` is now bit-for-bit identical
+  regardless of which corpus (ChEMBL/ORD/SynRXN/none) is configured, for
+  every molecule tested. See `rules.rs`'s "Fragment precedent" section for
+  the full round 16–21 history and reasoning.
 * `stereochemical_burden` only covers tetrahedral stereocenter count and
   density. Investigated and still not implemented, each for a different
   reason (see `docs/architecture.md` for the full evidence):
@@ -418,13 +431,14 @@ has been validated against real synthesis outcomes yet.
   one on. Brenk's set was validated as a med-chem screening-library
   desirability filter, not a synthetic-difficulty signal, so several of its
   alerts fire on common, cheaply-precedented groups — aspirin, for example,
-  trips four Brenk alerts and, without a corpus configured, lands at
-  `ModeratelyAccessible` despite being trivially synthesizable. This is a
-  known gap with the same shape and intended fix as the rotatable-bond one
-  above: `fragment_precedent`'s round-17 redesign confirms it end-to-end —
-  aspirin's `overall.difficulty` measures `0.273` → `0.095` once a corpus
-  is configured, `LikelyAccessible`. See the corpus-domain-bias caveat two
-  points above; the same caveat applies here. Dense functionalization has
+  trips four Brenk alerts and lands at `ModeratelyAccessible` despite being
+  trivially synthesizable, the same score regardless of corpus
+  configuration since round 21. This is a known gap with the same shape as
+  the rotatable-bond one above — through round 20, `fragment_precedent`
+  corrected it once a corpus was configured (aspirin `0.273 → 0.095`);
+  round 21 removed that correction (see the fragment_precedent contract
+  point above) rather than continue tuning a signal round 20 found too
+  corpus-sensitive to trust for scoring. Dense functionalization has
   its own known gap: it counts
   topologically *disconnected* functional-group clusters, so a single
   densely interconnected polyfunctional system (e.g. glucose's ring of
@@ -436,11 +450,12 @@ has been validated against real synthesis outcomes yet.
   it. No decision has been made yet about shipping one by default (the
   `yomitoki-core`/`yomitoki-models`/`yomitoki-data` split §5.4 sketches, or
   a feature-flagged external file).
-* Simplification suggestions cover 4 of `SuggestionCode`'s 6 variants
-  (bridged ring, macrocycle, stereocenter density, and — when a fragment
-  corpus is configured — increase fragment precedent) — the other 2 need
-  signals that don't exist yet: quaternary-carbon adjacency isn't computed
-  anywhere, and `brenk_matches_detailed` unions atoms per pattern rather
+* Simplification suggestions cover 3 of `SuggestionCode`'s 6 variants
+  (bridged ring, macrocycle, stereocenter density) — the other 3 are
+  unreachable, each for a different reason: `IncreaseFragmentPrecedent`
+  was retired in round 21 (it can no longer be truthfully described as
+  reducing difficulty); quaternary-carbon adjacency isn't computed
+  anywhere; and `brenk_matches_detailed` unions atoms per pattern rather
   than per occurrence (so "remove one of several similar reactive groups"
   can't identify which occurrence to point at). Every suggestion's
   confidence is a flat, named constant (0.5), not per-suggestion-code,

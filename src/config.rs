@@ -34,11 +34,13 @@ pub enum Strictness {
 
 /// Fragment model configuration (AGENTS.md §12's `fragment_model` field).
 /// `corpus: None` (the default) disables the `fragment_precedent`
-/// component entirely — `ComponentScores.fragment_precedent` stays `None`,
-/// the same as every other v0.1 default. No corpus ships with yomitoki
-/// itself (AGENTS.md §5.4 forbids embedding one directly in the library);
-/// load one with [`FragmentCorpus::load_dir`] and attach it here to enable
-/// the component.
+/// component entirely — `SynthesizabilityReport.fragment_precedent` stays
+/// `None` (round 21 moved this field out of `ComponentScores`, since the
+/// signal no longer contributes to `overall.difficulty` — see `rules.rs`'s
+/// "Fragment precedent" section), the same default-off behavior as every
+/// v0.1 release. No corpus ships with yomitoki itself (AGENTS.md §5.4
+/// forbids embedding one directly in the library); load one with
+/// [`FragmentCorpus::load_dir`] and attach it here to enable the component.
 ///
 /// Named `FragmentModelConfig`/`fragment_model`, not
 /// `FragmentPrecedentConfig`/`fragment_precedent` (considered and rejected

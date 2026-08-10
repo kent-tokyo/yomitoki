@@ -7,8 +7,12 @@ use crate::report::{FragmentCorpusProvenance, Provenance};
 use crate::rules::RULESET_VERSION;
 
 /// Bumped whenever the shape of `SynthesizabilityReport` changes in a way
-/// that could affect existing consumers.
-const SCHEMA_VERSION: &str = "0.5.0";
+/// that could affect existing consumers. `0.6.0` (round 21): `fragment_
+/// precedent` moved out of `ComponentScores` (which now only holds
+/// difficulty-contributing components) to a new top-level
+/// `SynthesizabilityReport.fragment_precedent: Option<FragmentPrecedentEvidence>`
+/// field — option C, see `rules.rs`'s "Fragment precedent" section.
+const SCHEMA_VERSION: &str = "0.6.0";
 
 /// The chematic version requirement yomitoki is built against (AGENTS.md
 /// §4.6). Not read from chematic itself — chematic doesn't expose a

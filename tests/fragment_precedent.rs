@@ -3,7 +3,11 @@
 //! `rules.rs`'s "Fragment precedent" section for the formula, and round
 //! 16's finding that the original absolute-scale formula was confirmed
 //! broken), plus round 18's rename from `fragment_rarity` and
-//! corpus-domain provenance contract.
+//! corpus-domain provenance contract, plus round 21's option-C decoupling
+//! (`fragment_precedent` no longer contributes to `overall.difficulty` —
+//! see `SynthesizabilityReport.fragment_precedent`/
+//! `FragmentPrecedentEvidence`; this component's own formula is
+//! unchanged since round 17).
 //!
 //! Corpora are built from real `chematic::fp::morgan_fp_counts` output for
 //! chosen fixture molecules (not hand-computed hashes) so the fragment
@@ -121,13 +125,13 @@ fn config_with_corpus(dir: &Path) -> AnalysisConfig {
 fn no_corpus_configured_leaves_fragment_precedent_none() {
     let config = AnalysisConfig::default();
     let report = analyze_smiles("CCO", &config).expect("valid SMILES");
-    assert!(report.components.fragment_precedent.is_none());
+    assert!(report.fragment_precedent.is_none());
     assert!(report.provenance.fragment_corpus.is_none());
     assert!(report.dominant_supports().is_empty());
 }
 
 #[test]
-fn molecule_at_the_corpus_median_gets_no_finding_and_near_zero_contribution() {
+fn molecule_at_the_corpus_median_gets_no_finding_and_near_zero_signal() {
     // occurrence/TOTAL = 0.5 -> (identity grid) percentile 0.5 ->
     // signed_signal = 1 - 2*0.5 = 0.0 -- exactly neutral.
     let dir = tempfile::tempdir().expect("tempdir");
@@ -135,14 +139,11 @@ fn molecule_at_the_corpus_median_gets_no_finding_and_near_zero_contribution() {
     let config = config_with_corpus(dir.path());
 
     let report = analyze_smiles("CCO", &config).expect("valid SMILES");
-    let score = report
-        .components
-        .fragment_precedent
-        .expect("corpus is configured");
+    let evidence = report.fragment_precedent.expect("corpus is configured");
     assert!(
-        score.contribution.abs() < 1e-9,
-        "contribution={}",
-        score.contribution
+        evidence.signed_signal.abs() < 1e-9,
+        "signed_signal={}",
+        evidence.signed_signal
     );
     assert!(
         !report
@@ -154,9 +155,10 @@ fn molecule_at_the_corpus_median_gets_no_finding_and_near_zero_contribution() {
 }
 
 #[test]
-fn molecule_at_a_low_percentile_gets_a_weak_precedent_penalty_and_a_positive_contribution() {
-    // occurrence/TOTAL = 0.05 -> percentile 0.05 -> signed_signal = 0.9 ->
-    // a penalty (positive contribution to difficulty).
+fn molecule_at_a_low_percentile_gets_a_weak_precedent_penalty_reported_only_as_evidence() {
+    // occurrence/TOTAL = 0.05 -> percentile 0.05 -> signed_signal = 0.9 --
+    // a weak-precedent penalty, but (round 21 / option C) never a
+    // difficulty contribution: it must not appear in dominant_penalties.
     let dir = tempfile::tempdir().expect("tempdir");
     write_corpus(dir.path(), "CCO", 50);
     let config = config_with_corpus(dir.path());
@@ -169,27 +171,27 @@ fn molecule_at_a_low_percentile_gets_a_weak_precedent_penalty_and_a_positive_con
             .any(|f| f.code == FindingCode::FragmentPrecedentWeak)
     );
     assert!(
-        report
+        !report
             .dominant_penalties()
             .iter()
-            .any(|c| c.code == FindingCode::FragmentPrecedentWeak)
+            .any(|c| c.code == FindingCode::FragmentPrecedentWeak),
+        "fragment_precedent must never appear in dominant_penalties (round 21)"
     );
     assert!(report.dominant_supports().is_empty());
-    let score = report
-        .components
-        .fragment_precedent
-        .expect("corpus is configured");
+    let evidence = report.fragment_precedent.expect("corpus is configured");
     assert!(
-        score.contribution > 0.0,
-        "contribution={}",
-        score.contribution
+        evidence.precedent_penalty > 0.0,
+        "precedent_penalty={}",
+        evidence.precedent_penalty
     );
+    assert!(evidence.signed_signal > 0.0);
 }
 
 #[test]
-fn molecule_at_a_high_percentile_gets_precedent_support_and_a_negative_contribution() {
-    // occurrence/TOTAL = 0.95 -> percentile 0.95 -> signed_signal = -0.9 ->
-    // support (negative contribution to difficulty, before any cap).
+fn molecule_at_a_high_percentile_gets_precedent_support_reported_only_as_evidence() {
+    // occurrence/TOTAL = 0.95 -> percentile 0.95 -> signed_signal = -0.9 --
+    // strong precedent support, but (round 21 / option C) never a
+    // difficulty contribution: it must not appear in dominant_supports.
     let dir = tempfile::tempdir().expect("tempdir");
     write_corpus(dir.path(), "CCO", 950);
     let config = config_with_corpus(dir.path());
@@ -202,10 +204,9 @@ fn molecule_at_a_high_percentile_gets_precedent_support_and_a_negative_contribut
             .any(|f| f.code == FindingCode::FragmentPrecedentStrong)
     );
     assert!(
-        report
-            .dominant_supports()
-            .iter()
-            .any(|c| c.code == FindingCode::FragmentPrecedentStrong)
+        report.dominant_supports().is_empty(),
+        "fragment_precedent must never appear in dominant_supports (round 21) -- \
+         dominant_supports is always empty in v0.1 now"
     );
     assert!(
         !report
@@ -213,26 +214,27 @@ fn molecule_at_a_high_percentile_gets_precedent_support_and_a_negative_contribut
             .iter()
             .any(|c| c.code == FindingCode::FragmentPrecedentStrong)
     );
-    let score = report
-        .components
-        .fragment_precedent
-        .expect("corpus is configured");
+    let evidence = report.fragment_precedent.expect("corpus is configured");
     assert!(
-        score.contribution < 0.0,
-        "contribution={}",
-        score.contribution
+        evidence.precedent_support > 0.0,
+        "precedent_support={}",
+        evidence.precedent_support
     );
+    assert!(evidence.signed_signal < 0.0);
 }
 
 #[test]
-fn molecule_at_a_low_percentile_gets_an_increase_precedent_suggestion() {
+fn fragment_precedent_weak_finding_no_longer_produces_a_suggestion() {
+    // SuggestionCode::IncreaseFragmentPrecedent is unreachable since round
+    // 21: once fragment_precedent doesn't affect overall.difficulty,
+    // "increase precedent" can't be truthfully labeled MayReduceDifficulty.
     let dir = tempfile::tempdir().expect("tempdir");
     write_corpus(dir.path(), "CCO", 10);
     let config = config_with_corpus(dir.path());
 
     let report = analyze_smiles("CCO", &config).expect("valid SMILES");
     assert!(
-        report
+        !report
             .suggestions
             .iter()
             .any(|s| s.code == SuggestionCode::IncreaseFragmentPrecedent)
@@ -240,51 +242,50 @@ fn molecule_at_a_low_percentile_gets_an_increase_precedent_suggestion() {
 }
 
 #[test]
-fn strong_precedent_support_never_erases_ring_topology_burden() {
-    // Norbornane (bridged bicyclic, C1CC2CCC1C2) has real ring_topology
-    // burden and near-zero size_topology/functional_group_liability
-    // burden -- exactly the shape AGENTS.md §5.4's cap requirement is
-    // about: strong fragment precedent must offset "unusual substituent
-    // pattern" burden (size/FG) but never "this ring system is
-    // structurally hard" burden (ring/stereo).
-    let dir = tempfile::tempdir().expect("tempdir");
-    // occurrence/TOTAL = 0.999 -> percentile ~0.999 -> signed_signal
-    // ~ -0.998, close to maximal precedent_support.
-    write_corpus(dir.path(), "C1CC2CCC1C2", 999);
-    let config_without = AnalysisConfig::default();
-    let config_with = config_with_corpus(dir.path());
+fn corpus_choice_never_changes_overall_difficulty() {
+    // The round-21 core guarantee (option C): overall.difficulty is
+    // computed from ring/size/stereo/functional-group evidence only, so
+    // swapping the configured corpus -- or configuring one at all --
+    // cannot change it, for any molecule, ever. This replaces round
+    // 17-19's weaker "support is capped so it can't erase ring burden"
+    // guarantee with an exact-equality one.
+    let dir_low = tempfile::tempdir().expect("tempdir");
+    write_corpus(dir_low.path(), "C1CC2CCC1C2", 1); // near-minimal precedent
+    let dir_high = tempfile::tempdir().expect("tempdir");
+    write_corpus(dir_high.path(), "C1CC2CCC1C2", 999); // near-maximal precedent
 
-    let without_corpus = analyze_smiles("C1CC2CCC1C2", &config_without).expect("valid SMILES");
-    let with_corpus = analyze_smiles("C1CC2CCC1C2", &config_with).expect("valid SMILES");
+    let config_none = AnalysisConfig::default();
+    let config_low = config_with_corpus(dir_low.path());
+    let config_high = config_with_corpus(dir_high.path());
 
-    let ring_burden = without_corpus
-        .components
-        .ring_topology
-        .expect("ring_topology always runs")
-        .normalized
-        .value();
+    let no_corpus = analyze_smiles("C1CC2CCC1C2", &config_none).expect("valid SMILES");
+    let low_precedent = analyze_smiles("C1CC2CCC1C2", &config_low).expect("valid SMILES");
+    let high_precedent = analyze_smiles("C1CC2CCC1C2", &config_high).expect("valid SMILES");
+
+    // The signal itself really does differ (sanity check the fixtures
+    // actually exercise opposite ends of the range) -- if this fails, the
+    // test below would trivially pass for the wrong reason.
+    let low_signal = low_precedent.fragment_precedent.unwrap().signed_signal;
+    let high_signal = high_precedent.fragment_precedent.unwrap().signed_signal;
     assert!(
-        ring_burden > 0.05,
-        "expected real ring burden: {ring_burden}"
+        low_signal > 0.5 && high_signal < -0.5,
+        "fixtures didn't exercise opposite ends: low={low_signal} high={high_signal}"
     );
 
-    // The support is real (contribution is negative)...
-    let fragment_score = with_corpus
-        .components
-        .fragment_precedent
-        .expect("corpus is configured");
-    assert!(fragment_score.contribution < 0.0);
-    // ...but capped: it can only offset size_topology's +
-    // functional_group_liability's own contribution, which is small for
-    // this molecule, so overall.difficulty stays well above zero --
-    // nowhere near erasing the ring-topology-driven floor.
-    assert!(
-        with_corpus.overall.difficulty.value() > ring_burden * 0.5,
-        "difficulty={} ring_burden={} -- strong precedent should not have \
-         erased ring-topology burden",
-        with_corpus.overall.difficulty.value(),
-        ring_burden
+    assert_eq!(
+        no_corpus.overall.difficulty, low_precedent.overall.difficulty,
+        "difficulty changed when a corpus was configured"
     );
+    assert_eq!(
+        no_corpus.overall.difficulty, high_precedent.overall.difficulty,
+        "difficulty changed when a corpus was configured"
+    );
+    assert_eq!(
+        low_precedent.overall.difficulty, high_precedent.overall.difficulty,
+        "difficulty changed purely from which corpus was configured"
+    );
+    assert_eq!(no_corpus.overall.verdict, low_precedent.overall.verdict);
+    assert_eq!(no_corpus.overall.verdict, high_precedent.overall.verdict);
 }
 
 #[test]

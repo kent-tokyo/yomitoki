@@ -23,8 +23,8 @@ pub use fragment_corpus::FragmentCorpus;
 pub use report::{
     ApplicabilityReport, AtomIndex, ComponentScore, ComponentScores, ConfidenceScore, Contribution,
     ExpectedEffect, Finding, FindingCode, FindingEvidence, FindingRef, FragmentCorpusProvenance,
-    OverallAssessment, ProbabilityLikeScore, Provenance, Severity, SimplificationSuggestion,
-    SuggestionCode, SynthesizabilityReport, Verdict,
+    FragmentPrecedentEvidence, OverallAssessment, ProbabilityLikeScore, Provenance, Severity,
+    SimplificationSuggestion, SuggestionCode, SynthesizabilityReport, Verdict,
 };
 
 /// Re-exported only so `tools/build-fragment-corpus` can filter its input

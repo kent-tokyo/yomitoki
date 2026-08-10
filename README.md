@@ -26,7 +26,8 @@ to read it and explain what it finds.
 > yomitoki does not merely estimate synthesizability; it exposes
 > the evidence and reasoning behind the estimate.
 
-> **Status: `0.1.0` — first non-alpha release.**
+> **Status: `0.1.1` — correctness/dependency/infrastructure patch on
+> `0.1.0`, the first non-alpha release.**
 > All six planned components are implemented, including
 > `fragment_precedent` (renamed from `fragment_rarity` in round 18, since
 > it argues difficulty both up *and* down, not just up) — opt-in: no

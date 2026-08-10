@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-11
+
+Correctness/dependency/infrastructure patch on `0.1.0`. Deliberately
+excludes any TS2/TS3 scoring-model work (the false-negative-dominance
+root cause `docs/benchmark.md`/`DEVELOPMENT_SET.md` found) — that is
+`0.2.x` territory, kept out of this release on purpose.
+
 ### Added
 
 - `docs/benchmark.md`: first external accuracy/selective-prediction/
@@ -53,11 +60,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   synthesizability 0.92 → 0.86, the latter now correctly reflecting its
   real stereocenter instead of a fabricated zero).
 
+- CI: fixed the `benchmark-smoke` job, red since it was added — a
+  `working-directory: benchmarks/synthesizability/scripts` step combined
+  with a `run:` command that *also* included that same relative path
+  doubled it (`.../scripts/benchmarks/synthesizability/scripts/
+  test_metrics.py`), 0 tests collected. Fixed by using a bare filename
+  in `run:` when `working-directory` is already set.
+- Docs: `docs/architecture.md` had two stale claims, both corrected.
+  (1) The E/Z, atropisomerism, and stereocenter-adjacency notes under
+  "Candidate `stereochemical_burden` indicators" still described
+  chematic 0.12's API gaps as current, though chematic 0.13.0 closed
+  most of them (see "Changed" below). (2) The "Simplification
+  suggestions" section still said `IncreaseFragmentPrecedent` was
+  reachable, which stopped being true when `fragment_precedent` was
+  removed from `overall.difficulty` — `suggestions.rs` itself was
+  already correct, only this prose had drifted.
+
 ### Changed
 
 - `chematic` dependency bumped `0.12` → `0.13`. No breaking changes for
   yomitoki's actual usage (yomitoki doesn't enable the `3d`/`ff`
-  features chematic 0.13's other breaking changes affect).
+  features chematic 0.13's other breaking changes affect). Besides the
+  `#267` fix above, this also fixes an independent stereocenter
+  -undercounting bug (an implicit-hydrogen rank-0 sentinel could collide
+  with a real atom's own rank 0) — two documented README examples
+  changed as a result (a "4 stereocenter" fragment is actually 5;
+  two SAscore-comparison rows moved), and re-verifies
+  `chematic::chem::detect_atropisomers` against this project's own
+  round-12 disqualifying cases (notation-dependence, position-blindness)
+  — both defects are now resolved, though the function still isn't
+  wrapped as a yomitoki component. No new component or scoring signal
+  added by this bump; `chematic_perception::stereo_centers` and
+  `chematic_chem::ez_completeness` are now available but not yet wired
+  in (tracked as future work, not part of this release).
 
 ### Known consequence, investigated and decided (not changed)
 

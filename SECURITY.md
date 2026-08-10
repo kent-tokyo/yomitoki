@@ -2,8 +2,10 @@
 
 ## Supported versions
 
-`yomitoki` is pre-1.0 (`0.1.0-alpha.1`). Only the latest published version
-is supported — there are no backported security fixes to older versions.
+`yomitoki` is pre-1.0. Only the latest published version (see
+[crates.io](https://crates.io/crates/yomitoki) or `CHANGELOG.md` for the
+current one) is supported — there are no backported security fixes to
+older versions.
 
 ## Reporting a vulnerability
 

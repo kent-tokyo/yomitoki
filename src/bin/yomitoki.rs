@@ -1,8 +1,8 @@
 //! `yomitoki` CLI (AGENTS.md §15).
 //!
 //! ```text
-//! yomitoki analyze "<SMILES>" [--format human|json|jsonl]
-//! yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>]
+//! yomitoki analyze "<SMILES>" [--format human|json|jsonl] [--fragment-corpus <dir>]
+//! yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>] [--fragment-corpus <dir>]
 //! ```
 //!
 //! `jsonl` output uses the same `{"input", "report"|"error"}` shape in both
@@ -17,13 +17,21 @@
 //! 停止しないモードを設ける") — a failed record becomes an error entry, not a
 //! skipped one, and the process exits non-zero only after every record has
 //! been attempted.
+//!
+//! `--fragment-corpus <dir>` loads a `tools/build-fragment-corpus` output
+//! directory (via `FragmentCorpus::load_dir`) and enables the
+//! `fragment_rarity` component for this run — omitted, `fragment_rarity`
+//! stays `None`, the same as every prior CLI release (no corpus ships with
+//! yomitoki itself; AGENTS.md §5.4). Loaded once, before any molecule is
+//! analyzed, not per-record.
 
 use std::fs::File;
 use std::io::{BufReader, Write};
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use serde::Serialize;
-use yomitoki::{AnalysisConfig, SynthesizabilityReport, analyze, analyze_smiles};
+use yomitoki::{AnalysisConfig, FragmentCorpus, SynthesizabilityReport, analyze, analyze_smiles};
 
 #[derive(Clone, Copy, PartialEq)]
 enum Format {
@@ -37,6 +45,7 @@ struct Args {
     input: Option<String>,
     output: Option<String>,
     format: Format,
+    fragment_corpus: Option<String>,
 }
 
 fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
@@ -44,11 +53,15 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
     let mut input = None;
     let mut output = None;
     let mut format = None;
+    let mut fragment_corpus = None;
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--input" => input = Some(args.next().ok_or("--input requires a value")?),
             "--output" => output = Some(args.next().ok_or("--output requires a value")?),
+            "--fragment-corpus" => {
+                fragment_corpus = Some(args.next().ok_or("--fragment-corpus requires a value")?)
+            }
             "--format" => {
                 let value = args.next().ok_or("--format requires a value")?;
                 format = Some(match value.as_str() {
@@ -81,16 +94,21 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
         input,
         output,
         format: format.unwrap_or(Format::Human),
+        fragment_corpus,
     })
 }
 
 const USAGE: &str = "\
 Usage:
-  yomitoki analyze \"<SMILES>\" [--format human|json|jsonl]
-  yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>]
+  yomitoki analyze \"<SMILES>\" [--format human|json|jsonl] [--fragment-corpus <dir>]
+  yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>] [--fragment-corpus <dir>]
 
 <file> may be a .sdf file or a SMILES-per-line file (optionally with a
-whitespace-separated name column).";
+whitespace-separated name column).
+
+<dir> for --fragment-corpus is a tools/build-fragment-corpus output
+directory (containing fragment_frequencies.json and manifest.json).
+Enables the fragment_rarity component; omitted, it stays None.";
 
 #[derive(Serialize)]
 struct BatchItem<'a> {
@@ -134,7 +152,16 @@ fn main() -> ExitCode {
         None => Box::new(std::io::stdout()),
     };
 
-    let config = AnalysisConfig::default();
+    let mut config = AnalysisConfig::default();
+    if let Some(dir) = &args.fragment_corpus {
+        match FragmentCorpus::load_dir(dir) {
+            Ok(corpus) => config.fragment_model.corpus = Some(Arc::new(corpus)),
+            Err(e) => {
+                eprintln!("error: could not load --fragment-corpus {dir:?}: {e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
 
     if let Some(smiles) = &args.smiles {
         return run_single(smiles, &config, args.format, writer.as_mut());
@@ -384,6 +411,16 @@ mod tests {
         assert!(parse_args(args(&["CCO", "--format"])).is_err());
         assert!(parse_args(args(&["--input"])).is_err());
         assert!(parse_args(args(&["--output"])).is_err());
+        assert!(parse_args(args(&["CCO", "--fragment-corpus"])).is_err());
+    }
+
+    #[test]
+    fn fragment_corpus_flag_is_parsed_and_defaults_to_none() {
+        let without = parse_args(args(&["CCO"])).expect("valid");
+        assert!(without.fragment_corpus.is_none());
+
+        let with = parse_args(args(&["CCO", "--fragment-corpus", "corpus_dir"])).expect("valid");
+        assert_eq!(with.fragment_corpus.as_deref(), Some("corpus_dir"));
     }
 
     #[test]

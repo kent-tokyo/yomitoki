@@ -107,10 +107,15 @@ pub(crate) const SIZE_WEIGHT_PER_MOLECULAR_WEIGHT_UNIT: f64 = 0.0006;
 /// commercially available long unbranched chains, which have many
 /// rotatable bonds but essentially no synthetic difficulty — exactly the
 /// "structural complexity vs. actual difficulty" conflation AGENTS.md §2
-/// names as a problem with existing tools. Fragment rarity (§5.4, not yet
-/// implemented) is what's supposed to correct for this by recognizing such
-/// fragments as common/precedented; until it exists, this component alone
-/// will overstate difficulty for that specific case.
+/// names as a problem with existing tools. `fragment_rarity` (§5.4) was
+/// supposed to correct this by recognizing such fragments as
+/// common/precedented, and is now implemented — but round 16 found it
+/// currently does the *opposite* when tested end-to-end against a real
+/// corpus (dodecane's `overall.difficulty` went from `0.068` to `0.227`
+/// once a corpus was configured, not down). See `FRAGMENT_RARITY_WEIGHT`'s
+/// doc for the root cause (a formula defect, not a tuning one) — until
+/// it's redesigned, this component alone still overstates difficulty for
+/// this case, and configuring a corpus makes it worse, not better.
 pub(crate) const SIZE_WEIGHT_PER_ROTATABLE_BOND: f64 = 0.03;
 
 /// Scale in the `normalized = 1 - exp(-raw / scale)` burden transform
@@ -186,10 +191,13 @@ pub(crate) const STEREO_DENSITY_FINDING_THRESHOLD: f64 = 0.25;
 /// aspirin (`CC(=O)Oc1ccccc1C(=O)O`) trips `phenol`, `phenolic_aldehyde`,
 /// `active_ester`, and `acetal_ketal`; paracetamol trips `phenol`,
 /// `aniline`, and `secondary_amine`. Neither molecule is remotely
-/// difficult to make. Fragment rarity (§5.4, not yet implemented) is
-/// expected to correct for this the same way it's expected to correct the
-/// rotatable-bond term, by recognizing such fragments as common/
-/// precedented.
+/// difficult to make. `fragment_rarity` (§5.4) was expected to correct for
+/// this the same way it was expected to correct the rotatable-bond term
+/// (`SIZE_WEIGHT_PER_ROTATABLE_BOND`) by recognizing such fragments as
+/// common/precedented — round 16 found it currently does the opposite for
+/// aspirin end-to-end (`overall.difficulty` `0.273` → `0.428` once a
+/// corpus is configured). See `FRAGMENT_RARITY_WEIGHT`'s doc for why (a
+/// formula defect, not a tuning one).
 pub(crate) const FG_WEIGHT_PER_REACTIVE_GROUP: f64 = 0.12;
 
 /// Scale in the `normalized = 1 - exp(-raw / scale)` burden transform
@@ -303,6 +311,32 @@ pub(crate) const FRAGMENT_RARITY_DF_THRESHOLD: f64 = 0.05;
 /// molecule as a whole being unusual. Mean document frequency across *all*
 /// of a molecule's fragments was the statistic that actually separated the
 /// tested cases.
+///
+/// **Round 16, run end-to-end against a real 200k-molecule ChEMBL corpus:
+/// this formula does not correct the false positives it was built to
+/// correct — it makes both of them worse.** Aspirin's `overall.difficulty`
+/// went from `0.273` (no corpus) to `0.428` (corpus configured); dodecane's
+/// went from `0.068` to `0.227`. Round 14 confirmed *relative* ranking is
+/// right (rare-control > aspirin/dodecane, e.g. a perfluorooctyl chain's
+/// `fragment_rarity.normalized` of `0.475` versus aspirin's `0.386`), but
+/// there is no baseline "common enough, contribute ~0" case: real
+/// molecules' mean document frequency in a diverse corpus rarely exceeds
+/// ~0.3–0.4 even for genuinely ordinary fragments (round-14 data: known
+/// -common cases ~0.24–0.27), so `1.0 - mean_document_frequency` sits at
+/// `~0.7` for essentially every real molecule, common or not, and always
+/// adds positive burden. This is a formula defect, not a constant-tuning
+/// one — no value of `FRAGMENT_RARITY_WEIGHT` or `FRAGMENT_RARITY_BURDEN_
+/// SCALE` fixes it, since the problem is what `raw` is computed *from*, not
+/// how it's scaled afterward. A fix needs a formula with an actual
+/// "common enough → ~zero" reference point (e.g. relative to the corpus's
+/// own mean-document-frequency distribution, not an absolute `1.0`
+/// ceiling that real corpora never approach) — not attempted here; this is
+/// a real design decision, not a value to guess at. Until redesigned,
+/// don't present `fragment_rarity` as correcting the rotatable-bond/Brenk
+/// -alert over-penalization cases it was meant to (see `SIZE_WEIGHT_PER_
+/// ROTATABLE_BOND`'s and `FG_WEIGHT_PER_REACTIVE_GROUP`'s doc comments,
+/// and the READMEs' Limitations sections) — it currently does the
+/// opposite for both.
 pub(crate) const FRAGMENT_RARITY_WEIGHT: f64 = 1.0;
 
 /// Non-linear burden scale (AGENTS.md §5.1), same saturating-transform

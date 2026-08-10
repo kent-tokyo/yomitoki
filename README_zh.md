@@ -17,7 +17,7 @@ yomitoki 不仅仅返回一个单一的合成可及性分数,而是读取分子�
 
 > yomitoki 不仅仅是估算可合成性,它还揭示了该估算背后的证据与推理过程。
 
-> **状态:`0.1.0-alpha.1` 已发布到 crates.io,但本仓库当前内容领先于该版本。** 计划中的六个组件已全部实现(包括 `fragment_rarity`)。不过 `fragment_rarity` 是可选启用的 —— yomitoki 本身不附带 fragment-frequency 语料库(AGENTS.md §5.4 禁止将语料库作为巨型二进制文件直接嵌入库中),除非构建(`tools/build-fragment-corpus/`)并配置(`AnalysisConfig.fragment_model`)一个语料库,否则该组件保持未启用状态。已发布的 `0.1.0-alpha.1` 早于此变更 —— 变更内容请参见 [`CHANGELOG.md`](CHANGELOG.md)。这是一个预发布版本,在正式 `0.1.0` 之前公开 API 仍可能变化。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
+> **状态:`0.1.0-alpha.1` 已发布到 crates.io,但本仓库当前内容领先于该版本。** 计划中的六个组件已全部实现(包括 `fragment_rarity`)。不过 `fragment_rarity` 是可选启用的 —— yomitoki 本身不附带 fragment-frequency 语料库(AGENTS.md §5.4 禁止将语料库作为巨型二进制文件直接嵌入库中),除非构建(`tools/build-fragment-corpus/`)并配置(`AnalysisConfig.fragment_model`)一个语料库,否则该组件保持未启用状态。**如果你确实配置了语料库:`fragment_rarity` 的评分公式目前已确认存在缺陷** —— 端到端测试表明,它会让本应受益的目标案例(如阿司匹林这类常见分子)得分*更难*,而非更易。详见"局限性"。已发布的 `0.1.0-alpha.1` 早于以上所有变更 —— 变更内容请参见 [`CHANGELOG.md`](CHANGELOG.md)。这是一个预发布版本,在正式 `0.1.0` 之前公开 API 仍可能变化。当前范围及尚未实现的部分请参见 [`docs/architecture.md`](docs/architecture.md)。
 
 ## 生态定位
 
@@ -78,12 +78,12 @@ yomitoki analyze "C1CC2CCC1C2" --format json
 yomitoki analyze --input molecules.sdf --format jsonl --output reports.jsonl
 ```
 
-* `yomitoki analyze "<SMILES>" [--format human|json|jsonl]` — 分析作为参数传入的单个分子。
-* `yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>]` — 批处理模式。`<file>` 可以是 `.sdf` 文件,也可以是每行一个 SMILES 的文件(可选择带有以空白分隔的名称列,即标准的 `.smi` 约定)。
+* `yomitoki analyze "<SMILES>" [--format human|json|jsonl] [--fragment-corpus <dir>]` — 分析作为参数传入的单个分子。
+* `yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>] [--fragment-corpus <dir>]` — 批处理模式。`<file>` 可以是 `.sdf` 文件,也可以是每行一个 SMILES 的文件(可选择带有以空白分隔的名称列,即标准的 `.smi` 约定)。
 * 批处理模式保持输入顺序,且不会因单条记录失败而中止整体处理 — 失败的记录会成为一条错误条目(JSON 中的 `"error"` 字段,或 human 格式下的 `ERROR:` 区块),而不是被跳过。只有在所有记录都处理完毕后,若存在任何失败,进程退出码才会为非零。
 * `jsonl` 格式在单分子模式与批处理模式下使用相同的 `{"input", "report"|"error"}` 包装结构 — 无论以哪种方式调用,下游逐行解析器看到的都是同一套 schema。
 * 退出码:`0` 表示成功,`1` 表示分子解析/分析失败(单分子模式)或批处理中至少一条记录失败,`2` 表示用法错误(参数不正确)。
-* 命令行工具输出的报告同样是 `fragment_rarity: null` —— 因为 CLI 目前还没有配置语料库的方式。详见下方”局限性”。
+* `--fragment-corpus <dir>` 会加载一个 `tools/build-fragment-corpus` 输出目录,并为本次运行启用 `fragment_rarity`(在分析任何分子之前只加载一次)。不指定时,报告中的 `fragment_rarity` 仍为 `null`,与该参数出现之前一样 —— yomitoki 本身不附带语料库,详见下方"局限性"。
 
 ## 报告结构示例
 
@@ -172,7 +172,7 @@ Dominant penalties:
 | `size_topology` | 已实现 |
 | `stereochemical_burden` | 已实现(仅四面体立体中心 — 见"局限性") |
 | `functional_group_liability` | 已实现(反应性/不稳定官能团 + dense functionalization — 见"局限性") |
-| `fragment_rarity` | 已实现,可选启用 —— 除非 `AnalysisConfig.fragment_model` 配置了语料库,否则为 `None`(见"局限性") |
+| `fragment_rarity` | 已实现,可选启用 —— 除非 `AnalysisConfig.fragment_model` 配置了语料库,否则为 `None`。**评分公式已知存在缺陷,见"局限性"** |
 
 真正未被评估的组件在 `ComponentScores` 中显示为 `None`(例如未配置语料库时的 `fragment_rarity`),而不是伪造的零分。
 
@@ -216,13 +216,13 @@ spiro ring system                           5.52               0.20  LikelyAcces
 
 * 计划中的六个组件均已实现(见上表),但只有配置了语料库(`AnalysisConfig.fragment_model`)时,`fragment_rarity` 才会计入 `overall.difficulty`/`overall.synthesizability` —— yomitoki 本身不附带语料库(AGENTS.md §5.4)。未配置时,这两个字段仍和以前一样,只反映其余五个组件。
 * 对于含有带负电荷原子(羧酸根、磺酸根、磷酸根等阴离子)的分子,立体分析(`stereo_complete` 以及整个 `stereochemical_burden`)完全无法运行 — 这是 chematic 的真实 bug([#267](https://github.com/kent-tokyo/chematic/issues/267)),不是设计选择。yomitoki 对此绝不会崩溃或瞎猜(参见 `ApplicabilityReport.stereo_uncheckable` 与 `StereoAnalysisSkipped` finding),但在上游修复之前,对这类分子确实完全没有立体化学信号。
-* `size_topology` 中的可旋转键(rotatable bond)项会过度惩罚简单的、可商业购得的无支链长链分子(可旋转键很多,但合成难度几乎为零)— `fragment_rarity` 旨在通过将此类片段识别为常见/有先例的片段来纠正这一点,该组件现已实现,但它是否真的能对这一具体情况做出正确纠正,尚未在生产规模的语料库上得到实证确认(参见 `tools/build-fragment-corpus` 的现状)。详见 `docs/architecture.md` 的 "Scoring direction" 一节。
+* `size_topology` 中的可旋转键(rotatable bond)项会过度惩罚简单的、可商业购得的无支链长链分子(可旋转键很多,但合成难度几乎为零)— `fragment_rarity` 本应通过将此类片段识别为常见/有先例的片段来纠正这一点,但在真实的 20 万分子语料库上进行端到端测试后发现,它实际上会**让情况变得更糟**:配置语料库后,dodecane 的 `overall.difficulty` 从 `0.068` 上升到 `0.227`。这不是常量调优不足的问题,而是已确认的计算公式本身的缺陷 —— 详见 `rules::FRAGMENT_RARITY_WEIGHT` 的文档注释。另见 `docs/architecture.md` 的 "Scoring direction" 一节。
 * `stereochemical_burden` 仅覆盖四面体立体中心的数量与密度。以下各项经过调查后仍未实现,原因各不相同(完整依据见 `docs/architecture.md`):
   * E/Z 双键立体化学 — chematic 其实可以直接从 SMILES 的 `/`/`\` 键方向标记指定 E/Z(不需要 2D 坐标 — 此前这里的说法有误),但仅限于输入 SMILES 中实际标注过的键。目前没有类似四面体中心 `stereo_completeness` 那样的检测器,能识别"具有立体化学意义但未标注"的双键,因此仅统计已标注的双键,衡量的其实是 SMILES 书写得有多仔细,而非真实存在多少个 E/Z 中心 —— 这与下面 atropisomerism 被否决的原因属于同一类问题,只是以另一种方式出现。
   * Atropisomerism — 直接测试了 chematic 的 `detect_atropisomers` 后予以否决:同一个分子写作 `c1ccccc1-c2ccccc2` 会被判定为 atropisomer,写作 `c1ccccc1c2ccccc2` 则不会,并且它把 *para* 位取代的联苯与真正受阻的 *ortho* 位取代联苯判定为相同结果。若直接包装使用,将违反 yomitoki 自身关于原子顺序/表示形式不变性的保证。
   * 连续立体中心、季碳邻位效应 — 二者都需要一份原子级别的立体中心候选列表(包括已指定和未指定的),而 chematic 只公开了汇总计数。若在 yomitoki 内部自行实现,将使本 crate 从"使用已验证的 chematic primitive 的消费者"变为"立体中心感知本身的所有者"—— 这是迄今为止每一个已实现组件都未曾跨越的界线。
   * meso 化合物检测 — 需要图自同构 / 拓扑对称类。chematic 内部拥有此能力(`chematic-smiles::canonical_automorphism`),但并未对外公开。
-* `functional_group_liability` 覆盖反应性/不稳定官能团(直接使用 chematic 的 Brenk et al. 2008 结构警示集)以及 dense functionalization(通过 chematic 的 Ertl 2017 `identify_functional_groups`,统计彼此独立的官能团簇数量)。相互不兼容的官能团组合与保护基压力均未实现 — 与上述两项不同,这两者在 chematic 中都没有可引用、已验证的 primitive 可供依赖,手工整理其中任何一项都恰好是 AGENTS.md 所警示的"过度泛化的、化学上薄弱的规则"。化学选择性负担、多官能对称性破坏,以及难以处理的氧化态组合也均未实现 — chematic 未提供任何氧化态相关 API,因此最后一项无法实现。Brenk 的规则集最初是作为药物化学筛选库的"可取性"过滤器验证的,而非合成难度信号,因此其中一些警示会对常见、廉价且有先例的官能团产生反应 — 例如阿司匹林会触发 4 条 Brenk 警示,并被判定为 `ModeratelyAccessible`,尽管它是极易合成的分子之一。这是一个与上述可旋转键问题形状相同的已知缺口,预计通过同样的方式得到纠正 —— 同样地,`fragment_rarity` 现已实现,但这一具体情况是否真的能被纠正,尚未在没有生产规模语料库的情况下得到实证确认。dense functionalization 自身也有已知缺口:它统计的是拓扑上"互不相连"的官能团簇数量,因此一个紧密互联的多官能体系(例如葡萄糖成环的多个羟基,或稠环的 β-内酰胺)会收敛为单一簇 — 与只有一个普通官能团的分子计数相同。
+* `functional_group_liability` 覆盖反应性/不稳定官能团(直接使用 chematic 的 Brenk et al. 2008 结构警示集)以及 dense functionalization(通过 chematic 的 Ertl 2017 `identify_functional_groups`,统计彼此独立的官能团簇数量)。相互不兼容的官能团组合与保护基压力均未实现 — 与上述两项不同,这两者在 chematic 中都没有可引用、已验证的 primitive 可供依赖,手工整理其中任何一项都恰好是 AGENTS.md 所警示的"过度泛化的、化学上薄弱的规则"。化学选择性负担、多官能对称性破坏,以及难以处理的氧化态组合也均未实现 — chematic 未提供任何氧化态相关 API,因此最后一项无法实现。Brenk 的规则集最初是作为药物化学筛选库的"可取性"过滤器验证的,而非合成难度信号,因此其中一些警示会对常见、廉价且有先例的官能团产生反应 — 例如阿司匹林会触发 4 条 Brenk 警示,并被判定为 `ModeratelyAccessible`,尽管它是极易合成的分子之一。这是一个与上述可旋转键问题形状相同的已知缺口,原本预计通过同样的方式得到纠正 —— 结果也相同:端到端测试显示,配置语料库后阿司匹林的 `overall.difficulty` 从 `0.273` 恶化为 `0.428`,根源是上述同一个计算公式缺陷。dense functionalization 自身也有已知缺口:它统计的是拓扑上"互不相连"的官能团簇数量,因此一个紧密互联的多官能体系(例如葡萄糖成环的多个羟基,或稠环的 β-内酰胺)会收敛为单一簇 — 与只有一个普通官能团的分子计数相同。
 * yomitoki 本身不附带 fragment corpus(AGENTS.md §5.4),因此默认情况下无法检测新颖/稀有的子结构 —— 在构建(`tools/build-fragment-corpus`)并配置语料库之前,`fragment_rarity` 始终为 `None`。是否默认附带语料库尚未决定(AGENTS.md §5.4 提出的 `yomitoki-core`/`yomitoki-models`/`yomitoki-data` 拆分,或带 feature flag 的外部文件)。
 * 简化建议目前覆盖 `SuggestionCode` 6 种代码中的 4 种(桥环、macrocycle、立体中心密度,以及配置了语料库时的增加片段先例)。其余 2 种缺少可用信号:季碳邻位关系尚未在任何地方计算;`brenk_matches_detailed` 按模式而非按出现次数合并原子,因此"移除多个相似反应性基团中的一个"无法定位具体是哪一次出现。所有建议的置信度都是一个统一的固定常数(0.5),而非按建议代码区分 — 因为目前没有针对真实合成结果的校准数据。
 * 在校准语料库出现之前(Phase 2 及以后),`ApplicabilityReport.domain_distance` 始终为 `None`。

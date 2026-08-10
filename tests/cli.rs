@@ -51,6 +51,71 @@ fn missing_smiles_or_input_is_a_usage_error() {
 }
 
 #[test]
+fn fragment_corpus_flag_with_a_missing_directory_fails_cleanly() {
+    let output = yomitoki()
+        .args([
+            "analyze",
+            "CCO",
+            "--fragment-corpus",
+            "/nonexistent/path/that/does/not/exist",
+        ])
+        .output()
+        .expect("run yomitoki");
+    assert!(!output.status.success());
+    let stderr = String::from_utf8(output.stderr).expect("utf8");
+    assert!(stderr.contains("--fragment-corpus"), "{stderr}");
+}
+
+#[test]
+fn fragment_corpus_flag_with_a_real_corpus_populates_fragment_rarity() {
+    // Same fixture-building approach as tests/fragment_rarity.rs: hashes
+    // come from the real chematic::fp::morgan_fp_counts output for "CCO",
+    // not hand-computed, so they're guaranteed to match what the running
+    // binary itself will compute.
+    let dir = tempfile::tempdir().expect("tempdir");
+    let mol = chematic::smiles::parse("CCO").expect("valid fixture SMILES");
+    let counts = chematic::fp::morgan_fp_counts(&mol, 2);
+    let fragments: Vec<serde_json::Value> = counts
+        .keys()
+        .map(|hash| serde_json::json!({"radius": 2, "fragment_hash": hash, "occurrence_count": 1}))
+        .collect();
+    let table = serde_json::json!({
+        "total_molecules_processed": 1,
+        "distinct_fragment_count": fragments.len(),
+        "fragments": fragments,
+    });
+    std::fs::write(
+        dir.path().join("fragment_frequencies.json"),
+        serde_json::to_vec(&table).unwrap(),
+    )
+    .unwrap();
+    std::fs::write(
+        dir.path().join("manifest.json"),
+        serde_json::to_vec(&serde_json::json!({"artifact_sha256": "sha256:cli-test-fixture"}))
+            .unwrap(),
+    )
+    .unwrap();
+
+    let output = yomitoki()
+        .args(["analyze", "CCO", "--format", "json"])
+        .arg("--fragment-corpus")
+        .arg(dir.path())
+        .output()
+        .expect("run yomitoki");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("utf8");
+    let report: serde_json::Value = serde_json::from_str(&stdout).expect("valid json");
+    assert!(
+        !report["components"]["fragment_rarity"].is_null(),
+        "{stdout}"
+    );
+    assert_eq!(
+        report["provenance"]["model_version"],
+        "sha256:cli-test-fixture"
+    );
+}
+
+#[test]
 fn batch_mode_preserves_order_and_continues_past_a_bad_record() {
     let mut input = NamedTempFile::new().expect("create temp input");
     write!(

@@ -317,10 +317,13 @@ may decouple once calibration is introduced.
 rotatable-bond term over-penalizes simple, commercially available long
 unbranched chains (many rotatable bonds, essentially no synthetic
 difficulty) — the same "structural complexity vs. actual difficulty"
-conflation that existing SA-scoring tools are prone to. Fragment rarity
-(not yet implemented) is what's meant to correct for this by recognizing
-such fragments as common/precedented; until it exists, this is a known,
-accepted gap, not an oversight.
+conflation that existing SA-scoring tools are prone to. `fragment_rarity`
+was meant to correct for this by recognizing such fragments as
+common/precedented, and is now implemented — but round 16 found it
+currently makes this specific case *worse*: dodecane's `overall.
+difficulty` goes from `0.068` to `0.227` once a corpus is configured, not
+down. Confirmed formula defect, not a missing feature — see "Non-goals /
+deferred" below and `rules::FRAGMENT_RARITY_WEIGHT`'s doc comment.
 
 **Second known caveat, same shape:** `functional_group_liability` wraps
 Brenk et al. (2008) directly, which was validated as a med-chem
@@ -329,8 +332,10 @@ signal. Several of its alerts fire on common, cheaply-precedented groups —
 aspirin trips `phenol`/`phenolic_aldehyde`/`active_ester`/`acetal_ketal`
 and lands at `ModeratelyAccessible` (synthesizability 0.74) despite being
 one of the most trivially synthesizable molecules there is; paracetamol
-similarly trips `phenol`/`aniline`/`secondary_amine`. Fragment rarity is
-expected to correct for this the same way, once it exists.
+similarly trips `phenol`/`aniline`/`secondary_amine`. `fragment_rarity`
+was expected to correct for this the same way — same result: aspirin's
+`overall.difficulty` goes from `0.273` to `0.428` once a corpus is
+configured, confirmed end-to-end, not merely predicted.
 
 **Third known caveat, different shape:** `functional_group_liability`'s
 "dense functionalization" term (`identify_functional_groups`) counts
@@ -515,13 +520,28 @@ Not implemented in v0.1 so far (tracked, not stubbed with fake data):
   `FragmentCorpus::load_dir` in the meantime. See
   `tasks/upstream_and_corpus_research.md` (gitignored) for the corpus-size
   -vs-signal measurements this was decided in view of.
-* `fragment_rarity`'s scoring formula is a first pass, not validated at
-  scale: `raw` is driven by *mean* document frequency across a molecule's
-  fragments (chosen over minimum — see `rules::FRAGMENT_RARITY_WEIGHT`'s
-  doc), and `FRAGMENT_RARITY_BURDEN_SCALE` has a known ceiling effect
-  (`normalized` can't exceed ~0.49 with the current constants — see that
-  constant's doc). Confidence is a flat `1.0`, with no model yet for how
-  corpus size/coverage should discount it.
+* **`fragment_rarity`'s scoring formula is confirmed broken, not merely
+  "unvalidated."** Run end-to-end against a real 200k-molecule ChEMBL
+  corpus (round 16): aspirin's `overall.difficulty` went from `0.273` (no
+  corpus) to `0.428` (corpus configured) — worse, not better, for exactly
+  the case (Brenk-alert over-firing) it exists to correct; dodecane's went
+  from `0.068` to `0.227` — same direction of failure for the
+  rotatable-bond case. Root cause: `raw = FRAGMENT_RARITY_WEIGHT * (1.0 -
+  mean_document_frequency)` has no "common enough → ~zero contribution"
+  reference point — real molecules' mean document frequency in a diverse
+  corpus rarely exceeds ~0.3–0.4 even for ordinary fragments, so `1.0 -
+  mean_document_frequency` sits around `0.7` and contributes positive
+  burden for essentially every molecule, common or not. This is a formula
+  defect, not a constant to retune — see `rules::FRAGMENT_RARITY_WEIGHT`'s
+  doc comment for the full analysis and what a fix would need (a
+  reference point relative to the corpus's own distribution, not an
+  absolute `1.0` ceiling). `FRAGMENT_RARITY_BURDEN_SCALE` also has a known
+  ceiling effect (`normalized` can't exceed ~0.49 with the current
+  constants) that's secondary to the formula problem. Confidence is a flat
+  `1.0`, with no model yet for how corpus size/coverage should discount
+  it. **Until redesigned, configuring a fragment corpus makes the two
+  documented false positives worse, not better — this is not currently a
+  usable correction mechanism.**
 * Candidate `stereochemical_burden` indicators, each investigated and
   rejected/deferred for a distinct, evidenced reason (round 12 — corrects
   an earlier, inaccurate blanket "E/Z needs 2D coordinates" note):

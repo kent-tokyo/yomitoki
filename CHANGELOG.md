@@ -32,6 +32,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `yomitoki-models`/`yomitoki-data` split §5.4 sketches, vs. a
   feature-flagged external file) — build one locally with
   `tools/build-fragment-corpus` in the meantime.
+  **Known-broken scoring formula, confirmed by testing end-to-end against
+  a real corpus, not merely untuned**: configuring a corpus currently
+  makes the two documented false positives it exists to correct *worse*
+  (aspirin's `overall.difficulty` `0.273` → `0.428`; dodecane's `0.068` →
+  `0.227`). See `rules::FRAGMENT_RARITY_WEIGHT`'s doc comment for the root
+  cause and what a fix needs. Do not treat `fragment_rarity` as a working
+  correction mechanism yet.
+- `--fragment-corpus <dir>` CLI flag (`yomitoki analyze`), loads a
+  `tools/build-fragment-corpus` output directory once before analyzing any
+  molecule and enables `fragment_rarity` for the run. Omitted, behavior is
+  unchanged from before this flag existed.
 
 ## [0.1.0-alpha.1] - 2026-08-10
 

@@ -31,12 +31,15 @@ to read it and explain what it finds.
 > — but it's opt-in: no fragment-frequency corpus ships with yomitoki
 > itself (AGENTS.md §5.4 forbids embedding one directly as a huge binary),
 > so it stays inactive unless you build one (`tools/build-fragment-corpus/`)
-> and configure it (`AnalysisConfig.fragment_model`). `0.1.0-alpha.1` on
-> crates.io predates this — see [`CHANGELOG.md`](CHANGELOG.md) for what's
-> changed since. This is a pre-release: the public API may still change
-> before a non-alpha `0.1.0`. See
-> [`docs/architecture.md`](docs/architecture.md) for the current scope and
-> what's still missing.
+> and configure it (`AnalysisConfig.fragment_model`). **If you do configure
+> one: `fragment_rarity`'s scoring formula is currently confirmed broken**
+> — tested end-to-end against a real corpus, it makes its own target cases
+> (common molecules like aspirin) score *harder*, not easier. See
+> Limitations. `0.1.0-alpha.1` on crates.io predates all of this — see
+> [`CHANGELOG.md`](CHANGELOG.md) for what's changed since. This is a
+> pre-release: the public API may still change before a non-alpha `0.1.0`.
+> See [`docs/architecture.md`](docs/architecture.md) for the current scope
+> and what's still missing.
 
 ## Where it sits
 
@@ -112,9 +115,9 @@ yomitoki analyze "C1CC2CCC1C2" --format json
 yomitoki analyze --input molecules.sdf --format jsonl --output reports.jsonl
 ```
 
-* `yomitoki analyze "<SMILES>" [--format human|json|jsonl]` — analyze one
-  molecule from an argument.
-* `yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>]`
+* `yomitoki analyze "<SMILES>" [--format human|json|jsonl] [--fragment-corpus <dir>]`
+  — analyze one molecule from an argument.
+* `yomitoki analyze --input <file> [--format human|json|jsonl] [--output <file>] [--fragment-corpus <dir>]`
   — batch mode. `<file>` may be a `.sdf` file or a SMILES-per-line file
   (optionally with a whitespace-separated name column, the standard `.smi`
   convention).
@@ -128,8 +131,11 @@ yomitoki analyze --input molecules.sdf --format jsonl --output reports.jsonl
 * Exit codes: `0` success, `1` a molecule failed to parse/analyze (single
   mode) or at least one batch record failed, `2` a usage error (bad
   arguments).
-* Reports emitted by the CLI have `fragment_rarity: null` too, since the
-  CLI has no way to configure a corpus yet — see Limitations below.
+* `--fragment-corpus <dir>` loads a `tools/build-fragment-corpus` output
+  directory and enables `fragment_rarity` for the run (loaded once, before
+  any molecule is analyzed). Without it, reports have `fragment_rarity:
+  null`, same as before this flag existed — no corpus ships with yomitoki
+  itself, see Limitations below.
 
 ## Report shape
 
@@ -239,7 +245,7 @@ config hash) so results are comparable across versions — see
 | `size_topology` | implemented |
 | `stereochemical_burden` | implemented (tetrahedral centers only — see Limitations) |
 | `functional_group_liability` | implemented (reactive/unstable groups + dense functionalization — see Limitations) |
-| `fragment_rarity` | implemented, opt-in — `None` unless `AnalysisConfig.fragment_model` has a corpus configured (see Limitations) |
+| `fragment_rarity` | implemented, opt-in — `None` unless `AnalysisConfig.fragment_model` has a corpus configured; **known-broken scoring formula, see Limitations** |
 
 Components stay `None` in `ComponentScores` when genuinely not evaluated
 (unconfigured `fragment_rarity`), never as fabricated zero scores.
@@ -324,12 +330,14 @@ has been validated against real synthesis outcomes yet.
   such molecules until it's fixed upstream.
 * `size_topology`'s rotatable-bond term over-penalizes simple, commercially
   available long unbranched chains (many rotatable bonds, essentially no
-  synthetic difficulty) — `fragment_rarity` is meant to correct this by
+  synthetic difficulty) — `fragment_rarity` was meant to correct this by
   recognizing such fragments as common/precedented, and is now implemented,
-  but whether it actually nets out correctly for real cases like this
-  hasn't been empirically confirmed against a production-scale corpus (see
-  `tools/build-fragment-corpus`'s status). See `docs/architecture.md`'s
-  "Scoring direction" section.
+  but tested end-to-end against a real 200k-molecule corpus, it currently
+  makes this *worse*, not better: dodecane's `overall.difficulty` went
+  from `0.068` (no corpus) to `0.227` (corpus configured). Real, confirmed
+  formula defect, not an untuned constant — see `rules::
+  FRAGMENT_RARITY_WEIGHT`'s doc comment for the root cause. See
+  `docs/architecture.md`'s "Scoring direction" section.
 * `stereochemical_burden` only covers tetrahedral stereocenter count and
   density. Investigated and still not implemented, each for a different
   reason (see `docs/architecture.md` for the full evidence):
@@ -374,10 +382,10 @@ has been validated against real synthesis outcomes yet.
   alerts fire on common, cheaply-precedented groups — aspirin, for example,
   trips four Brenk alerts and lands at `ModeratelyAccessible` despite being
   trivially synthesizable. This is a known gap with the same shape and
-  expected fix as the rotatable-bond one above — same caveat: `fragment_
-  rarity` exists now but isn't empirically confirmed to correct this
-  specific case without a production-scale corpus configured. Dense
-  functionalization has its own known gap: it counts
+  intended fix as the rotatable-bond one above — same result: configuring
+  a corpus makes aspirin's `overall.difficulty` *worse* (`0.273` → `0.428`
+  tested end-to-end), not better, for the same underlying formula defect.
+  Dense functionalization has its own known gap: it counts
   topologically *disconnected* functional-group clusters, so a single
   densely interconnected polyfunctional system (e.g. glucose's ring of
   hydroxyls, or a fused β-lactam) collapses to one cluster — identical in

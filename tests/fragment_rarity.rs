@@ -49,6 +49,44 @@ fn write_dominant_corpus(dir: &Path, dominant_smiles: &str, total: u64) {
     .unwrap();
 }
 
+/// Like [`write_dominant_corpus`], but every fragment of `smiles` is given
+/// document frequency `occurrence / total` instead of a maximal `1.0` —
+/// lets a test reproduce a *realistic* "common" document frequency (real
+/// corpus data: ordinary fragments rarely exceed ~0.3–0.4) rather than the
+/// degenerate all-or-nothing case.
+fn write_realistic_frequency_corpus(dir: &Path, smiles: &str, occurrence: u64, total: u64) {
+    let mol = chematic::smiles::parse(smiles).expect("valid fixture SMILES");
+    let counts = chematic::fp::morgan_fp_counts(&mol, RADIUS);
+
+    let fragments: Vec<serde_json::Value> = counts
+        .keys()
+        .map(|hash| {
+            serde_json::json!({
+                "radius": RADIUS,
+                "fragment_hash": hash,
+                "occurrence_count": occurrence,
+            })
+        })
+        .collect();
+    let table = serde_json::json!({
+        "total_molecules_processed": total,
+        "distinct_fragment_count": fragments.len(),
+        "fragments": fragments,
+    });
+    std::fs::write(
+        dir.join("fragment_frequencies.json"),
+        serde_json::to_vec_pretty(&table).unwrap(),
+    )
+    .unwrap();
+
+    let manifest = serde_json::json!({ "artifact_sha256": "sha256:realistic-fixture" });
+    std::fs::write(
+        dir.join("manifest.json"),
+        serde_json::to_vec_pretty(&manifest).unwrap(),
+    )
+    .unwrap();
+}
+
 fn config_with_corpus(dir: &Path) -> AnalysisConfig {
     // `AnalysisConfig`/`FragmentModelConfig` are `#[non_exhaustive]`, so
     // external callers (this test included, since integration tests only
@@ -202,4 +240,47 @@ fn fixture_helper_hashes_match_the_real_fingerprint_function() {
     let mol = chematic::smiles::parse("CCO").expect("valid SMILES");
     let real = chematic::fp::morgan_fp_counts(&mol, RADIUS);
     assert!(!real.is_empty());
+}
+
+/// **Known-bug characterization test — round 16.** Confirmed end-to-end
+/// against a real 200k-molecule ChEMBL corpus that `fragment_rarity`
+/// currently makes its own target cases (aspirin, dodecane) score
+/// *harder* when a corpus is configured, not easier — see
+/// `rules::FRAGMENT_RARITY_WEIGHT`'s doc comment for the full root-cause
+/// analysis (no "common enough, contribute ~zero" reference point in the
+/// formula). This test reproduces the qualitative bug with a small
+/// synthetic corpus (no 3.9 GB ChEMBL download needed in CI): a molecule
+/// whose fragments have a *realistic* "common" document frequency (~0.27,
+/// matching real measured aspirin data — not the degenerate `1.0` case
+/// [`molecule_dominating_the_corpus_has_low_rarity_and_no_finding`] above
+/// covers) still gets *more* difficult once the corpus is configured, the
+/// opposite of the intended correction.
+///
+/// **If you're fixing the formula: this test asserting `MORE difficult`
+/// is the bug, not the spec.** Once fixed, a molecule this common should
+/// score the same or easier with the corpus configured — invert this
+/// assertion (and rename the test) as part of confirming the fix, don't
+/// just delete it.
+#[test]
+fn known_bug_a_realistically_common_molecule_still_scores_harder_with_a_corpus() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    // Ethanol's fragments at ~27% document frequency, matching real
+    // measured aspirin data (tasks/upstream_and_corpus_research.md Part 5)
+    // -- this is what "common" actually looks like in a diverse corpus,
+    // not the unrealistic 100% case.
+    write_realistic_frequency_corpus(dir.path(), "CCO", 27, 100);
+    let config_without = AnalysisConfig::default();
+    let config_with = config_with_corpus(dir.path());
+
+    let without_corpus = analyze_smiles("CCO", &config_without).expect("valid SMILES");
+    let with_corpus = analyze_smiles("CCO", &config_with).expect("valid SMILES");
+
+    let difficulty_without = without_corpus.overall.difficulty.value();
+    let difficulty_with = with_corpus.overall.difficulty.value();
+    assert!(
+        difficulty_with > difficulty_without,
+        "expected the known bug (difficulty increases: {difficulty_without} -> \
+         {difficulty_with}) -- if this now fails, the formula may have been fixed; \
+         see this test's doc comment before just deleting it"
+    );
 }

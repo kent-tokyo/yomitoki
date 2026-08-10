@@ -186,7 +186,8 @@ pub struct Finding {
     /// overall `confidence` — see AGENTS.md §6).
     pub confidence: ProbabilityLikeScore,
     /// Atom indices this finding is about. Empty for molecule-level
-    /// findings not tied to one specific region (e.g. density-based ones).
+    /// findings not tied to one specific region (e.g. molecular weight or
+    /// rotatable bond count).
     pub atoms: Vec<AtomIndex>,
     /// Structured numeric evidence backing this finding.
     pub evidence: FindingEvidence,
@@ -403,7 +404,7 @@ pub struct SimplificationSuggestion {
     pub code: SuggestionCode,
     /// Atom indices this suggestion targets, copied from the source
     /// finding's own `atoms` — may be empty if that finding never carries
-    /// atom indices (e.g. density-based ones).
+    /// atom indices.
     pub target_atoms: Vec<AtomIndex>,
     /// Human-readable rationale, generated from the source finding.
     pub rationale: String,

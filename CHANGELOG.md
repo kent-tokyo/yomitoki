@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `fragment_rarity` component (AGENTS.md §5.4), implemented and opt-in.
+  `ComponentScores.fragment_rarity` is `Some` only when
+  `AnalysisConfig.fragment_model` has a `FragmentCorpus` configured —
+  `None` by default, since no corpus ships with yomitoki itself (§5.4
+  forbids embedding one directly in the library as a huge binary).
+  `FragmentCorpus::load_dir` loads a corpus built by
+  `tools/build-fragment-corpus` (a separate, explicitly fallible step from
+  `analyze` itself — parsing stays the only fallible step inside `analyze`,
+  per AGENTS.md §17). Scores from *mean* document frequency across a
+  molecule's `chematic::fp::morgan_fp_counts` fragments (chosen over
+  minimum; see `rules::FRAGMENT_RARITY_WEIGHT`'s doc). New
+  `FindingCode::FragmentRarityHigh`, new `SuggestionCode::
+  IncreaseFragmentPrecedent` derivation, new `YomitokiError::
+  ModelLoadError`, new `Provenance.model_version` field. New `chematic`
+  `fp` feature dependency. `AGGREGATE_WEIGHT_FRAGMENT_RARITY` and
+  `FRAGMENT_RARITY_*` constants are first-pass, undocumented-as-calibrated
+  values — see their doc comments in `rules.rs` for known limitations
+  (`FRAGMENT_RARITY_BURDEN_SCALE`'s ceiling effect in particular).
+  `ruleset_version` bumped to 0.8.0, `schema_version` to 0.3.0.
+  No corpus-distribution decision has been made yet (the `yomitoki-core`/
+  `yomitoki-models`/`yomitoki-data` split §5.4 sketches, vs. a
+  feature-flagged external file) — build one locally with
+  `tools/build-fragment-corpus` in the meantime.
+
 ## [0.1.0-alpha.1] - 2026-08-10
 
 Public preview — a pre-release, not the completed v0.1 scope. Five of six

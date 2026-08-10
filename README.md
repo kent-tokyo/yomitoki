@@ -26,13 +26,15 @@ to read it and explain what it finds.
 > yomitoki does not merely estimate synthesizability; it exposes
 > the evidence and reasoning behind the estimate.
 
-> **Status: `0.1.0-alpha.1`, a public preview.** Five of six planned
-> components are implemented: `input_quality`/`applicability`,
-> `ring_topology`, `size_topology`, `stereochemical_burden`, and
-> `functional_group_liability`. Only `fragment_rarity` remains — its
-> corpus-build pipeline exists (`tools/build-fragment-corpus/`) but the
-> scoring component that consumes it doesn't yet. This is a pre-release:
-> the public API may still change before a non-alpha `0.1.0`. See
+> **Status: `0.1.0-alpha.1` is published; this checkout is ahead of it.**
+> All six planned components are implemented, including `fragment_rarity`
+> — but it's opt-in: no fragment-frequency corpus ships with yomitoki
+> itself (AGENTS.md §5.4 forbids embedding one directly as a huge binary),
+> so it stays inactive unless you build one (`tools/build-fragment-corpus/`)
+> and configure it (`AnalysisConfig.fragment_model`). `0.1.0-alpha.1` on
+> crates.io predates this — see [`CHANGELOG.md`](CHANGELOG.md) for what's
+> changed since. This is a pre-release: the public API may still change
+> before a non-alpha `0.1.0`. See
 > [`docs/architecture.md`](docs/architecture.md) for the current scope and
 > what's still missing.
 
@@ -55,7 +57,8 @@ scoping choice. See "What it does not do" below.
   `SynthesizabilityReport`, not a single number.
 * Breaks the assessment down into independent components (ring topology,
   size/topology, stereochemical burden, functional-group liabilities, input
-  quality/applicability today; fragment rarity is planned).
+  quality/applicability, and fragment rarity — the last is opt-in, see
+  "Limitations" below).
 * Separates **score** (synthesizability/difficulty), **confidence** (how
   reliable the judgment is), and **applicability** (whether the molecule is
   even in the model's domain) into distinct fields — a hard-to-make molecule
@@ -125,8 +128,8 @@ yomitoki analyze --input molecules.sdf --format jsonl --output reports.jsonl
 * Exit codes: `0` success, `1` a molecule failed to parse/analyze (single
   mode) or at least one batch record failed, `2` a usage error (bad
   arguments).
-* Reports emitted by the CLI have the same `fragment_rarity: null` gap as
-  every other report — see Limitations below.
+* Reports emitted by the CLI have `fragment_rarity: null` too, since the
+  CLI has no way to configure a corpus yet — see Limitations below.
 
 ## Report shape
 
@@ -219,12 +222,13 @@ Dominant penalties:
 3. Stereo analysis could not be run for this molecule: it contains a negatively charged atom, which triggers an arithmetic-overflow bug in chematic's stereo perception (panics in debug builds, produces an unverified result in release builds — see chematic issue #267). Stereocenter count/density and stereo completeness are unavailable, not verified to be zero/complete.
 ```
 
-With fragment rarity still missing, scores overall remain lower than a
-full v0.1 would produce.
+With no fragment corpus configured (the default — see below), scores
+overall remain lower than a corpus-backed analysis would produce.
 
 Every report also carries a `Provenance` block (schema version, yomitoki
-version, chematic version, ruleset version, config hash) so results are
-comparable across versions — see `docs/architecture.md`.
+version, chematic version, ruleset version, fragment-corpus model version,
+config hash) so results are comparable across versions — see
+`docs/architecture.md`.
 
 ## Component status (v0.1)
 
@@ -235,15 +239,16 @@ comparable across versions — see `docs/architecture.md`.
 | `size_topology` | implemented |
 | `stereochemical_burden` | implemented (tetrahedral centers only — see Limitations) |
 | `functional_group_liability` | implemented (reactive/unstable groups + dense functionalization — see Limitations) |
-| `fragment_rarity` | not yet implemented |
+| `fragment_rarity` | implemented, opt-in — `None` unless `AnalysisConfig.fragment_model` has a corpus configured (see Limitations) |
 
-Unimplemented components appear as `None` in `ComponentScores`, not as
-fabricated zero scores.
+Components stay `None` in `ComponentScores` when genuinely not evaluated
+(unconfigured `fragment_rarity`), never as fabricated zero scores.
 
-`suggestions: Vec<SimplificationSuggestion>` is populated for 3 of its 6
+`suggestions: Vec<SimplificationSuggestion>` is populated for 4 of its 6
 possible codes (`ReplaceBridgedRingWithMonocyclicAnalog`,
-`SimplifyMacrocyclicClosure`, `ReduceStereocenterDensity`) — see
-Limitations. Every suggestion is diagnostic-only, heuristic, and never
+`SimplifyMacrocyclicClosure`, `ReduceStereocenterDensity`,
+`IncreaseFragmentPrecedent`) — see Limitations. Every suggestion is
+diagnostic-only, heuristic, and never
 claims certainty (`expected_effect` is always `MayReduceDifficulty`, never
 `LikelyReducesDifficulty`).
 
@@ -303,10 +308,12 @@ has been validated against real synthesis outcomes yet.
 
 ## Limitations
 
-* v0.1 only implements five of the six planned components (see table
-  above); `overall.difficulty`/`overall.synthesizability` currently reflect
-  ring topology, size/topology, stereochemical burden, and functional-group
-  liability only.
+* All six planned components are implemented (see table above), but
+  `fragment_rarity` only contributes to `overall.difficulty`/
+  `overall.synthesizability` when a corpus is configured
+  (`AnalysisConfig.fragment_model`) — no corpus ships with yomitoki itself
+  (AGENTS.md §5.4). Without one, both fields reflect the other five
+  components only, same as before.
 * Stereo analysis (both `stereo_complete` and all of `stereochemical_burden`)
   cannot run at all for a molecule containing a negatively charged atom
   (any carboxylate, sulfonate, phosphate, or other anion) — a real
@@ -317,10 +324,12 @@ has been validated against real synthesis outcomes yet.
   such molecules until it's fixed upstream.
 * `size_topology`'s rotatable-bond term over-penalizes simple, commercially
   available long unbranched chains (many rotatable bonds, essentially no
-  synthetic difficulty) — this is a known gap that fragment rarity (not yet
-  implemented) is meant to correct by recognizing such fragments as
-  common/precedented. See `docs/architecture.md`'s "Scoring direction"
-  section.
+  synthetic difficulty) — `fragment_rarity` is meant to correct this by
+  recognizing such fragments as common/precedented, and is now implemented,
+  but whether it actually nets out correctly for real cases like this
+  hasn't been empirically confirmed against a production-scale corpus (see
+  `tools/build-fragment-corpus`'s status). See `docs/architecture.md`'s
+  "Scoring direction" section.
 * `stereochemical_burden` only covers tetrahedral stereocenter count and
   density. Investigated and still not implemented, each for a different
   reason (see `docs/architecture.md` for the full evidence):
@@ -365,23 +374,29 @@ has been validated against real synthesis outcomes yet.
   alerts fire on common, cheaply-precedented groups — aspirin, for example,
   trips four Brenk alerts and lands at `ModeratelyAccessible` despite being
   trivially synthesizable. This is a known gap with the same shape and
-  expected fix as the rotatable-bond one above (fragment rarity, once
-  implemented). Dense functionalization has its own known gap: it counts
+  expected fix as the rotatable-bond one above — same caveat: `fragment_
+  rarity` exists now but isn't empirically confirmed to correct this
+  specific case without a production-scale corpus configured. Dense
+  functionalization has its own known gap: it counts
   topologically *disconnected* functional-group clusters, so a single
   densely interconnected polyfunctional system (e.g. glucose's ring of
   hydroxyls, or a fused β-lactam) collapses to one cluster — identical in
   count to a molecule with a single, ordinary functional group.
-* No fragment-rarity corpus exists yet, so novel/rare substructures are not
-  detected.
-* Simplification suggestions only cover 3 of `SuggestionCode`'s 6 variants
-  (bridged ring, macrocycle, stereocenter density) — the other 3 need
+* No fragment corpus ships with yomitoki (AGENTS.md §5.4), so out of the
+  box, novel/rare substructures are not detected — `fragment_rarity` stays
+  `None` until you build one (`tools/build-fragment-corpus`) and configure
+  it. No decision has been made yet about shipping one by default (the
+  `yomitoki-core`/`yomitoki-models`/`yomitoki-data` split §5.4 sketches, or
+  a feature-flagged external file).
+* Simplification suggestions cover 4 of `SuggestionCode`'s 6 variants
+  (bridged ring, macrocycle, stereocenter density, and — when a fragment
+  corpus is configured — increase fragment precedent) — the other 2 need
   signals that don't exist yet: quaternary-carbon adjacency isn't computed
-  anywhere, `brenk_matches_detailed` unions atoms per pattern rather than
-  per occurrence (so "remove one of several similar reactive groups" can't
-  identify which occurrence to point at), and "increase fragment precedent"
-  needs fragment rarity, which is deferred. Every suggestion's confidence
-  is a flat, named constant (0.5), not per-suggestion-code, since none are
-  calibrated against real synthesis outcomes.
+  anywhere, and `brenk_matches_detailed` unions atoms per pattern rather
+  than per occurrence (so "remove one of several similar reactive groups"
+  can't identify which occurrence to point at). Every suggestion's
+  confidence is a flat, named constant (0.5), not per-suggestion-code,
+  since none are calibrated against real synthesis outcomes.
 * `ApplicabilityReport.domain_distance` is always `None` until a calibration
   corpus exists (Phase 2+).
 * Coverage is limited to a curated organic-element subset — no attempt at
@@ -406,7 +421,8 @@ No paper or citable release exists yet.
 
 ## Roadmap
 
-Remaining planned work: fragment rarity, *calibration* against
+Remaining planned work: a shipped fragment corpus (`fragment_rarity` itself
+is implemented but opt-in — see Limitations), *calibration* against
 SAscore/RAscore/route-search outcomes (a minimum *comparison* against
 SAscore, not calibration, now exists — see above), and eventually Python
 bindings.

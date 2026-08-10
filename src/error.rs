@@ -4,9 +4,8 @@
 use std::fmt;
 
 /// Only the variants reachable by code that exists today. The rest of
-/// AGENTS.md §17's sketch (`UnsupportedMolecule`, `ModelLoadError`,
-/// `InternalInvariantViolation`) is added alongside the code that can
-/// actually raise them.
+/// AGENTS.md §17's sketch (`UnsupportedMolecule`, `InternalInvariantViolation`)
+/// is added alongside the code that can actually raise them.
 #[non_exhaustive]
 #[derive(Debug)]
 pub enum YomitokiError {
@@ -15,6 +14,11 @@ pub enum YomitokiError {
     /// `AnalysisConfig` itself was invalid (not currently reachable — no
     /// v0.1 config field has invalid states to detect yet).
     InvalidConfiguration(String),
+    /// A fragment corpus (`FragmentCorpus::load_dir`) could not be read or
+    /// parsed. Deliberately a separate, explicit step from `analyze` itself
+    /// (AGENTS.md §17: parsing is the only fallible step inside `analyze`)
+    /// — a corpus is loaded once, up front, not lazily on every call.
+    ModelLoadError(String),
 }
 
 impl fmt::Display for YomitokiError {
@@ -22,6 +26,7 @@ impl fmt::Display for YomitokiError {
         match self {
             YomitokiError::ParseError(e) => write!(f, "failed to parse molecule: {e}"),
             YomitokiError::InvalidConfiguration(msg) => write!(f, "invalid configuration: {msg}"),
+            YomitokiError::ModelLoadError(msg) => write!(f, "could not load model: {msg}"),
         }
     }
 }
@@ -31,6 +36,7 @@ impl std::error::Error for YomitokiError {
         match self {
             YomitokiError::ParseError(e) => Some(e),
             YomitokiError::InvalidConfiguration(_) => None,
+            YomitokiError::ModelLoadError(_) => None,
         }
     }
 }

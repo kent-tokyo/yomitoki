@@ -112,6 +112,12 @@ pub enum FindingCode {
     /// Distinct functional-group cluster count (Ertl 2017) above the
     /// threshold.
     FunctionalGroupDense,
+    /// This molecule's fragments have low mean document frequency against
+    /// the configured [`crate::FragmentCorpus`] (`AnalysisConfig.
+    /// fragment_model`) — only ever produced when a corpus is configured;
+    /// see `evidence` for the rare-fragment count and `explanation` for the
+    /// rarest fragments' identifiers and document frequencies.
+    FragmentRarityHigh,
     /// The molecule contains an element outside yomitoki's supported set.
     InputUnsupportedElement,
     /// The molecule consists of disconnected fragments.
@@ -214,8 +220,9 @@ pub struct ComponentScore {
 
 /// Per-component scores. Each field is `Option` — `None` means "not
 /// evaluated in this version," not "evaluated, found nothing" (a fabricated
-/// zero would be dishonest). Only `fragment_rarity` is `None` in v0.1; every
-/// other field is always `Some`; see `docs/architecture.md`.
+/// zero would be dishonest). `fragment_rarity` is `None` unless a corpus is
+/// configured (`AnalysisConfig.fragment_model`); every other field is
+/// always `Some`; see `docs/architecture.md`.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ComponentScores {
     /// The `size_topology` component's score (molecular weight, rotatable
@@ -226,8 +233,10 @@ pub struct ComponentScores {
     /// The `stereochemical_burden` component's score (tetrahedral
     /// stereocenter count and density).
     pub stereochemical_burden: Option<ComponentScore>,
-    /// The `fragment_rarity` component's score — always `None` in v0.1
-    /// (no fragment-frequency corpus exists yet; see `docs/architecture.md`).
+    /// The `fragment_rarity` component's score. `None` unless
+    /// `AnalysisConfig.fragment_model` has a corpus configured — no corpus
+    /// ships with yomitoki itself (AGENTS.md §5.4; see
+    /// `docs/architecture.md`), so this is `None` by default.
     pub fragment_rarity: Option<ComponentScore>,
     /// The `functional_group_liability` component's score (reactive/
     /// unstable functional groups, dense functionalization).
@@ -384,6 +393,15 @@ pub struct Provenance {
     /// Version of the named thresholds/weights in `rules.rs` — bumped
     /// whenever any scoring constant changes.
     pub ruleset_version: String,
+    /// The configured fragment corpus's identifier
+    /// (`FragmentCorpus::version`, currently its `artifact_sha256`), or
+    /// `None` if `AnalysisConfig.fragment_model` has no corpus configured
+    /// (the default — no corpus ships with yomitoki itself; AGENTS.md
+    /// §5.4). AGENTS.md §16's `Provenance` sketch names this field
+    /// `model_version` as always-populated; `Option` reflects that v0.1's
+    /// `fragment_rarity` is opt-in, not that the field means something
+    /// different.
+    pub model_version: Option<String>,
     /// SHA-256 of the `AnalysisConfig`'s canonical JSON serialization, so
     /// reports produced under different configs are distinguishable.
     pub config_hash: String,

@@ -10,14 +10,16 @@ mod components;
 mod config;
 mod error;
 mod explain;
+mod fragment_corpus;
 mod provenance;
 mod report;
 mod rules;
 mod suggestions;
 
 pub use analyze::{analyze, analyze_batch, analyze_smiles};
-pub use config::{AnalysisConfig, ScoringProfile, Strictness};
+pub use config::{AnalysisConfig, FragmentModelConfig, ScoringProfile, Strictness};
 pub use error::YomitokiError;
+pub use fragment_corpus::FragmentCorpus;
 pub use report::{
     ApplicabilityReport, AtomIndex, ComponentScore, ComponentScores, ConfidenceScore, Contribution,
     ExpectedEffect, Finding, FindingCode, FindingEvidence, FindingRef, OverallAssessment,

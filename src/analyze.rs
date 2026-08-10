@@ -7,7 +7,8 @@
 use chematic::core::Molecule;
 
 use crate::components::{
-    applicability, functional_group_liability, ring_topology, size_topology, stereochemical_burden,
+    applicability, fragment_rarity, functional_group_liability, ring_topology, size_topology,
+    stereochemical_burden,
 };
 use crate::config::{AnalysisConfig, Strictness};
 use crate::error::YomitokiError;
@@ -16,10 +17,10 @@ use crate::report::{
     ProbabilityLikeScore, SynthesizabilityReport, Verdict,
 };
 use crate::rules::{
-    AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY, AGGREGATE_WEIGHT_RING_TOPOLOGY,
-    AGGREGATE_WEIGHT_SIZE_TOPOLOGY, AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN,
-    DIFFICULTY_CHALLENGING_MAX, DIFFICULTY_LIKELY_ACCESSIBLE_MAX, DIFFICULTY_MODERATE_MAX,
-    indeterminate_confidence_threshold,
+    AGGREGATE_WEIGHT_FRAGMENT_RARITY, AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY,
+    AGGREGATE_WEIGHT_RING_TOPOLOGY, AGGREGATE_WEIGHT_SIZE_TOPOLOGY,
+    AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN, DIFFICULTY_CHALLENGING_MAX,
+    DIFFICULTY_LIKELY_ACCESSIBLE_MAX, DIFFICULTY_MODERATE_MAX, indeterminate_confidence_threshold,
 };
 
 /// Analyze an already-parsed molecule. Infallible in practice — `Result` is
@@ -35,6 +36,16 @@ pub fn analyze(
     let size_outcome = size_topology::compute(molecule);
     let stereo_outcome = stereochemical_burden::compute(molecule);
     let fg_outcome = functional_group_liability::compute(molecule);
+    // Only runs when a corpus is configured — no corpus ships with
+    // yomitoki itself (AGENTS.md §5.4), so this is `None` by default and
+    // every result below (`ComponentScores.fragment_rarity`, `difficulty`,
+    // `dominant_penalties`, `Provenance.model_version`) is unaffected,
+    // matching today's behavior exactly when unconfigured.
+    let fragment_outcome = config
+        .fragment_model
+        .corpus
+        .as_deref()
+        .map(|corpus| fragment_rarity::compute(molecule, corpus));
 
     let mut findings: Vec<Finding> = Vec::new();
     findings.extend(applicability_outcome.findings);
@@ -46,6 +57,10 @@ pub fn analyze(
     findings.extend(stereo_outcome.findings);
     let fg_findings_offset = findings.len();
     findings.extend(fg_outcome.findings);
+    let fragment_findings_offset = findings.len();
+    if let Some(outcome) = &fragment_outcome {
+        findings.extend(outcome.findings.clone());
+    }
 
     // `ComponentScore.findings` were built as offsets into each
     // component's own finding list; rebase each difficulty component's
@@ -66,12 +81,23 @@ pub fn analyze(
     for finding_ref in &mut fg_score.findings {
         finding_ref.0 += fg_findings_offset;
     }
+    let fragment_score = fragment_outcome.as_ref().map(|outcome| {
+        let mut score = outcome.score.clone();
+        for finding_ref in &mut score.findings {
+            finding_ref.0 += fragment_findings_offset;
+        }
+        score
+    });
 
     let difficulty = ProbabilityLikeScore::new(
         AGGREGATE_WEIGHT_RING_TOPOLOGY * ring_score.normalized.value()
             + AGGREGATE_WEIGHT_SIZE_TOPOLOGY * size_score.normalized.value()
             + AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN * stereo_score.normalized.value()
-            + AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY * fg_score.normalized.value(),
+            + AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY * fg_score.normalized.value()
+            + fragment_score
+                .as_ref()
+                .map(|s| AGGREGATE_WEIGHT_FRAGMENT_RARITY * s.normalized.value())
+                .unwrap_or(0.0),
     );
     let synthesizability = ProbabilityLikeScore::new(1.0 - difficulty.value());
     let confidence = ConfidenceScore::new(applicability_outcome.score.confidence.value());
@@ -97,6 +123,9 @@ pub fn analyze(
     dominant_penalties.extend(size_outcome.contributions);
     dominant_penalties.extend(stereo_outcome.contributions);
     dominant_penalties.extend(fg_outcome.contributions);
+    if let Some(outcome) = fragment_outcome {
+        dominant_penalties.extend(outcome.contributions);
+    }
     dominant_penalties.sort_by(|a, b| {
         b.contribution
             .value()
@@ -115,7 +144,7 @@ pub fn analyze(
         size_topology: Some(size_score),
         ring_topology: Some(ring_score),
         stereochemical_burden: Some(stereo_score),
-        fragment_rarity: None,
+        fragment_rarity: fragment_score,
         functional_group_liability: Some(fg_score),
         input_quality: Some(applicability_outcome.score),
     };

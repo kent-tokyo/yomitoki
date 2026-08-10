@@ -12,10 +12,14 @@ belongs to a different, unrelated project.
 
 ## Crate boundary
 
-Single crate, `yomitoki`, no workspace split — there is no large embedded
-model yet that would justify separate `yomitoki-core`/`yomitoki-models`/
-`yomitoki-cli` crates. That split is revisited when fragment-rarity model files
-exist.
+Single crate, `yomitoki`, no workspace split. `fragment_rarity` now exists
+and needs a `FragmentCorpus`, but that corpus is loaded at runtime from an
+external directory (`FragmentCorpus::load_dir`, built with
+`tools/build-fragment-corpus`) — no corpus is embedded in this crate, so
+there's still no large embedded model to justify splitting into
+`yomitoki-core`/`yomitoki-models`/`yomitoki-data`. That split is revisited
+if/when a corpus ships *with* yomitoki by default, not merely because the
+component that consumes one exists.
 
 yomitoki depends on `chematic` (registry dependency, not a path dependency) for
 all molecule representation, SMILES parsing, ring perception, and
@@ -121,11 +125,13 @@ change across yomitoki's own test suite before and after the bump.)
 | SAscore (comparison only, not used by any component) | `chematic::chem::sa_score(&Molecule) -> f64` (Ertl & Schuffenhauer 2009; `examples/sa_score_comparison.rs` only) |
 | SDF batch reading | `chematic::mol::SdfReader::new(&str) -> impl Iterator<Item = Result<(Molecule, MolMetadata), MolParseError>>` — CLI-only, gated on the `mol` feature |
 | SMILES-table batch reading | `chematic::mol::SmilesRecordReader::new(impl BufRead, SmilesReaderOptions) -> impl Iterator<Item = Result<MoleculeRecord, SmilesTableError>>` — CLI-only, gated on the `mol` feature |
+| Circular/ECFP-like fragment hashing | `chematic::fp::morgan_fp_counts(&Molecule, radius: u32) -> HashMap<u64, u32>` (`fragment_rarity`; cumulative over iterations `0..=radius`, gated on the `fp` feature) |
 
 Dependency declaration: `chematic = { version = "0.12", features = ["smiles",
-"perception", "chem", "mol"] }`. The `chematic` facade crate has
+"perception", "chem", "mol", "fp"] }`. The `chematic` facade crate has
 `default = []` — without explicit features it exposes nothing. `mol` is used
-only by the CLI binary (`src/bin/yomitoki.rs`), not by the library.
+only by the CLI binary (`src/bin/yomitoki.rs`), not by the library; `fp` is
+used only by `fragment_rarity`.
 
 Known gaps in chematic's public API (relevant to yomitoki, not filed upstream
 yet): no macrocycle predicate in `chematic-perception` (only
@@ -183,12 +189,15 @@ for a fixture pinning down a specific case of this.
 `functional_group_liability`, `input_quality`), each typed
 `Option<ComponentScore>`. `ring_topology`, `size_topology`,
 `stereochemical_burden`, `functional_group_liability`, and `input_quality`
-are `Some` in v0.1; only `fragment_rarity` is `None`. This is a deliberate
-choice over populating unimplemented ones
-with dummy zero scores — `None` says "not evaluated," a zero score would
-falsely say "evaluated, found no burden." Going from `Option` to always-`Some`
-later is additive; the reverse would be a breaking schema change, so starting
-with `Option` is also the safer long-term default.
+are always `Some` in v0.1. `fragment_rarity` is implemented but opt-in: it's
+`Some` only when `AnalysisConfig.fragment_model` has a `FragmentCorpus`
+configured, `None` otherwise (the default — no corpus ships with yomitoki
+itself; §5.4 below). This is a deliberate choice over populating
+unimplemented/unconfigured components with dummy zero scores — `None` says
+"not evaluated," a zero score would falsely say "evaluated, found no
+burden." Going from `Option` to always-`Some` later is additive; the
+reverse would be a breaking schema change, so starting with `Option` is
+also the safer long-term default.
 
 `Verdict` defines all six variants (`LikelyAccessible`,
 `ModeratelyAccessible`, `Challenging`, `HighlyChallenging`, `Indeterminate`,
@@ -242,16 +251,17 @@ alongside either verdict — this is a deliberate choice, matching how
 `dominant_penalties` already includes every difficulty-contributing finding
 regardless of verdict.
 
-Only 3 of `SuggestionCode`'s 6 variants are reachable in v0.1, one per
-finding code this module knows how to translate:
+4 of `SuggestionCode`'s 6 variants are reachable in v0.1, one per finding
+code this module knows how to translate:
 `RingBridgedComplexity` → `ReplaceBridgedRingWithMonocyclicAnalog`,
 `RingMacrocycle` → `SimplifyMacrocyclicClosure`,
-`StereoDensityHigh` → `ReduceStereocenterDensity`. The other 3 have no
-underlying signal to derive from yet: quaternary-carbon adjacency isn't
-computed anywhere; `brenk_matches_detailed` unions atoms per pattern rather
-than reporting per-occurrence matches, so `RemoveSimilarReactiveGroup` can't
-identify which specific occurrence to point at; `IncreaseFragmentPrecedent`
-needs `fragment_rarity`, which is deferred entirely.
+`StereoDensityHigh` → `ReduceStereocenterDensity`,
+`FragmentRarityHigh` → `IncreaseFragmentPrecedent` (only reachable when a
+fragment corpus is configured — see below). The other 2 have no underlying
+signal to derive from yet: quaternary-carbon adjacency isn't computed
+anywhere; `brenk_matches_detailed` unions atoms per pattern rather than
+reporting per-occurrence matches, so `RemoveSimilarReactiveGroup` can't
+identify which specific occurrence to point at.
 
 `target_atoms` is copied directly from the source finding's own `atoms`
 field — for `ReduceStereocenterDensity` this is always empty, because
@@ -367,9 +377,14 @@ into `overall.confidence` yet — only applicability's is — so this is
 informational in the schema today, not yet load-bearing for verdict
 selection.
 
-Confidence will stop being effectively-constant once a component with
-genuinely variable rule coverage (e.g. fragment rarity, which depends on
-corpus coverage) is added.
+`fragment_rarity` is exactly the kind of component whose rule coverage
+genuinely varies (with which corpus is configured, and how well it covers
+a given molecule), but its `ComponentScore.confidence` is still a flat
+`1.0` in v0.1 — deliberately: there's no sampling-uncertainty model yet for
+"how much should an unseen fragment's rarity be discounted by corpus size"
+(see `components/fragment_rarity.rs`). Confidence will stop being
+effectively-constant once that gap is closed, not merely once the
+component exists.
 
 ## Negatively charged atoms (a chematic bug, worked around)
 
@@ -488,7 +503,25 @@ second one.
 
 Not implemented in v0.1 so far (tracked, not stubbed with fake data):
 
-* `fragment_rarity` component.
+* A corpus shipped with (or alongside) yomitoki for `fragment_rarity` to
+  use by default. The component itself is implemented
+  (`components/fragment_rarity.rs`) and opt-in via
+  `AnalysisConfig.fragment_model`, but no corpus ships — AGENTS.md §5.4
+  forbids embedding one directly in the library as a huge binary, and no
+  decision has been made about the `yomitoki-core`/`yomitoki-models`/
+  `yomitoki-data` split (or a feature-flagged external file) §5.4 offers as
+  the two alternatives. Build one locally with
+  `tools/build-fragment-corpus` and load it with
+  `FragmentCorpus::load_dir` in the meantime. See
+  `tasks/upstream_and_corpus_research.md` (gitignored) for the corpus-size
+  -vs-signal measurements this was decided in view of.
+* `fragment_rarity`'s scoring formula is a first pass, not validated at
+  scale: `raw` is driven by *mean* document frequency across a molecule's
+  fragments (chosen over minimum — see `rules::FRAGMENT_RARITY_WEIGHT`'s
+  doc), and `FRAGMENT_RARITY_BURDEN_SCALE` has a known ceiling effect
+  (`normalized` can't exceed ~0.49 with the current constants — see that
+  constant's doc). Confidence is a flat `1.0`, with no model yet for how
+  corpus size/coverage should discount it.
 * Candidate `stereochemical_burden` indicators, each investigated and
   rejected/deferred for a distinct, evidenced reason (round 12 — corrects
   an earlier, inaccurate blanket "E/Z needs 2D coordinates" note):

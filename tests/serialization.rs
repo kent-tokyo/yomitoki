@@ -67,6 +67,7 @@ fn sample_report() -> SynthesizabilityReport {
             yomitoki_version: "0.1.0".to_string(),
             chematic_version: "0.11".to_string(),
             ruleset_version: "0.1.0".to_string(),
+            model_version: None,
             config_hash: "sha256:deadbeef".to_string(),
         },
     }

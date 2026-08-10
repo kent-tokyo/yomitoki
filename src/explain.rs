@@ -85,6 +85,15 @@ pub(crate) fn render(
             evidence.value.unwrap_or(0.0) as usize,
             evidence.threshold.unwrap_or(0.0) as usize
         ),
+        FindingCode::FragmentRarityHigh => format!(
+            "{} structural fragment(s) occur in fewer than {:.0}% of the configured \
+             reference corpus{} — unprecedented substructures may indicate genuine \
+             synthetic novelty, or simply a gap in this corpus's coverage; this is not \
+             a claim about which.",
+            evidence.value.unwrap_or(0.0) as usize,
+            evidence.threshold.unwrap_or(0.0) * 100.0,
+            label.map(|l| format!(" (rarest: {l})")).unwrap_or_default()
+        ),
         FindingCode::InputUnsupportedElement => format!(
             "Molecule contains {atom_count} atom(s) outside yomitoki's supported \
              element set."

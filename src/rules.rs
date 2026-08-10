@@ -6,7 +6,7 @@
 //! any constant below changes — it's recorded in every report's
 //! `Provenance`.
 
-pub const RULESET_VERSION: &str = "0.7.0";
+pub const RULESET_VERSION: &str = "0.8.0";
 
 // ---------------------------------------------------------------------------
 // Applicability
@@ -263,6 +263,71 @@ pub(crate) const AGGREGATE_WEIGHT_RING_TOPOLOGY: f64 = 1.0;
 pub(crate) const AGGREGATE_WEIGHT_SIZE_TOPOLOGY: f64 = 0.4;
 pub(crate) const AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN: f64 = 0.5;
 pub(crate) const AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY: f64 = 0.4;
+/// Only applied when a fragment corpus is configured
+/// (`AnalysisConfig.fragment_model`) — `fragment_rarity` is `None`
+/// otherwise and contributes nothing. `0.4` is a first-pass value matching
+/// `size_topology`/`functional_group_liability`'s weight class ("medium
+/// importance"), not a calibrated one — no real-molecule validation data
+/// exists yet to tune it against (same gap the other four weights have; see
+/// `docs/architecture.md`'s Non-goals). Does not itself rebalance the other
+/// four weights; whether aspirin/long-chain-alkane's known over
+/// -penalization (see `RING_WEIGHT_*`'s and `SIZE_WEIGHT_PER_ROTATABLE_
+/// BOND`'s doc comments) nets out correctly once this term is added is an
+/// empirical question for real molecules, not something this constant's
+/// value alone decides.
+pub(crate) const AGGREGATE_WEIGHT_FRAGMENT_RARITY: f64 = 0.4;
+
+// ---------------------------------------------------------------------------
+// Fragment rarity (AGENTS.md §5.4)
+// ---------------------------------------------------------------------------
+
+/// A fragment's document frequency (occurrence count / corpus size) below
+/// this counts as "rare" for the `rare fragment count` figure AGENTS.md
+/// §5.4 requires the component to report. Purely descriptive — it does not
+/// drive `raw`/`normalized` (see `FRAGMENT_RARITY_WEIGHT`'s doc for why
+/// mean document frequency, not a threshold count, is what's used there).
+/// `0.05`: a first-pass round number, not tuned — see
+/// `tasks/upstream_and_corpus_research.md` (gitignored) Part 5 for the
+/// real-corpus numbers this was picked in view of (aspirin/dodecane mean
+/// document frequency ~0.24–0.27 against a real 200k-molecule ChEMBL
+/// corpus; a structurally atypical control's mean was ~0.033).
+pub(crate) const FRAGMENT_RARITY_DF_THRESHOLD: f64 = 0.05;
+
+/// `raw = FRAGMENT_RARITY_WEIGHT * (1.0 - mean_document_frequency)` across
+/// a molecule's fragments. Mean, not minimum: round-14 corpus testing
+/// (`tasks/upstream_and_corpus_research.md` Part 5) found minimum document
+/// frequency alone doesn't separate known-common molecules from a
+/// known-atypical control — a common molecule can still contain one
+/// specific, narrowly-precedented fragment (aspirin's rarest measured
+/// fragment was seen in under 0.04% of a 200k-molecule corpus) without the
+/// molecule as a whole being unusual. Mean document frequency across *all*
+/// of a molecule's fragments was the statistic that actually separated the
+/// tested cases.
+pub(crate) const FRAGMENT_RARITY_WEIGHT: f64 = 1.0;
+
+/// Non-linear burden scale (AGENTS.md §5.1), same saturating-transform
+/// convention as every other component.
+///
+/// Known weak spot (documented, not hidden — same practice as `SIZE_WEIGHT_
+/// PER_ROTATABLE_BOND`'s): with `FRAGMENT_RARITY_WEIGHT = 1.0`, `raw` is
+/// bounded to `0.0..=1.0` (since `1.0 - mean_document_frequency` can't
+/// exceed 1.0), which caps `normalized` at `1.0 - exp(-1.0/1.5) ≈ 0.487` —
+/// even a molecule sharing *zero* fragments with the corpus never reaches
+/// the "severe burden" range other components can reach (e.g. a
+/// heavily-fused ring system's `ring_topology` score). Left as-is rather
+/// than re-tuned blindly: real molecules' mean document frequency rarely
+/// approaches either extreme (round-14 data: known-common cases ~0.24–0.27,
+/// an atypical control ~0.033 — none near 0.0 or 1.0), so which of
+/// `FRAGMENT_RARITY_WEIGHT`/this scale should move, and by how much, needs
+/// more real-corpus data than three data points provide, not a guess.
+pub(crate) const FRAGMENT_RARITY_BURDEN_SCALE: f64 = 1.5;
+
+/// How many of a molecule's rarest fragments to name in a
+/// `FindingCode::FragmentRarityHigh` finding's explanation text. Fragment
+/// hashes aren't chemically interpretable on their own (no reverse mapping
+/// from hash to substructure exists in chematic's API) — this exists so
+/// the explanation is concrete evidence, not just a count.
+pub(crate) const FRAGMENT_RARITY_REPORT_COUNT: usize = 3;
 
 /// Below this confidence (and absent a hard applicability failure), the
 /// verdict is `Indeterminate` rather than a difficulty-based bucket.

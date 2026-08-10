@@ -221,6 +221,8 @@ spiro ring system                           5.52               0.20  LikelyAcces
 
 不加修饰地说:yomitoki 在 TS1 上与 BR-SAScore 相当(ROC-AUC 0.952 对 0.983;在 yomitoki 自身阈值下的 balanced accuracy 和 MCC 实际上超过了 SAscore)。**在 TS2 上完全没有区分能力**(ROC-AUC 0.476 — 相当于随机猜测,已诊断为一个真实的结构性发现:在 yomitoki 模型所依据的 ring/size/stereo/functional-group 维度上,TS2 的 easy/hard 两类分子高度同质)。在 TS3 上弱于两个竞品(0.673 对 0.839 / 0.905)。这次基准测试原本要验证的、基于 confidence 的 selective prediction 差异化优势**未能得到证实** — 在 TS1 上,confidence 更高的预测反而明显不如 confidence 较低的预测准确,根源是 `overall.confidence` 实际上是数据集来源(stereo 标注完整性)的代理指标,而非预测正确性的代理指标。以上内容之所以完整记录在 `docs/benchmark.md` 中,是因为它是事实,而非因为它好看 —— 同一份文档也说明了这些数字要改善需要做什么,并且 yomitoki 按轮次推进的开发流程将这些结果视为确认性结果,而不是可据此重新调参的依据。
 
+**TS2 相当于随机猜测的结果,在一个无关的第二数据集上得到了验证 —— 结果重现了。** [`benchmarks/synthesizability/DEVELOPMENT_SET.md`](benchmarks/synthesizability/DEVELOPMENT_SET.md) 将冻结基线与 MPScore(一个已发表的专家化学家标注数据集,由三位化学家独立给出 easy/difficult 评级,在方法论上与 TS1/2/3 基于逆合成规划器的标签毫无关联,分子重合率约 0.03%)进行了对比:全集 ROC-AUC 为 0.513,95% 置信区间仍落在随机猜测的范围内。两个独立的 ground truth 来源 —— 一个基于算法,一个基于人类判断 —— 得出了一致的结论:yomitoki 的四个结构性组件遗漏了大量实际影响合成难度的因素(该数据集上假阴性率高达 72.6%)。同一份文档还运行了一个不带标签的 ablation panel,用于分离出组件到底响应哪些结构轴(以及在哪里饱和或方向颠倒),并记录了四项有证据支持的设计变更候选项,但均未实施 —— 这是刻意与上方 TS1/2/3 确认性结果分开的、仅用于开发阶段的成果。
+
 ## 局限性
 
 * 计划中的六个组件均已实现(见上表),但 `fragment_precedent` **永远不会**计入 `overall.difficulty`/`overall.synthesizability` —— 自第 21 轮(option C)起,配置语料库(`AnalysisConfig.fragment_model`)只会改变 `fragment_precedent` 报告的内容,不会改变 `overall.difficulty` 衡量的对象。无论是否配置语料库,`overall.difficulty` 始终只反映 `ring_topology`/`size_topology`/`stereochemical_burden`/`functional_group_liability`。

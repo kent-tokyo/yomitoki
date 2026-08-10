@@ -222,6 +222,8 @@ yomitoki v0.1.0の凍結デフォルト設定を、BR-SAScore自身のTS1/TS2/TS
 
 盛らずに率直に述べます: yomitokiはTS1でBR-SAScoreと拮抗しています(ROC-AUC 0.952 対 0.983。yomitoki自身の閾値におけるbalanced accuracyとMCCはSAscoreを上回ります)。**TS2では弁別力がゼロです**(ROC-AUC 0.476 — chanceレベル。これは真の構造的知見として診断済みです: TS2のeasy/hardクラスは、yomitokiのモデルが見るring/size/stereo/functional-groupの観点で均質です)。TS3では両競合よりも弱い結果でした(0.673 対 0.839 / 0.905)。このベンチマークが差別化要因として検証しようとしたconfidenceベースのselective prediction評価は**その仮説を裏付けませんでした** — TS1では、confidenceが高い予測の方が低い予測よりも明確に不正確でした。原因は`overall.confidence`が予測の正しさではなく、データセットの由来(stereoタグの完全性)の代理指標になっていたことにあります。これらはすべて`docs/benchmark.md`に、都合が良いからではなく事実だから報告されています — 同じ文書には、これらの数値が改善するために何が必要かも記されており、yomitokiのラウンド単位の開発プロセスはこの結果を再チューニングの材料としてではなく確認結果として扱います。
 
+**TS2のchanceレベルという結果を、無関係な第二のデータセットで検証したところ、再現しました。** [`benchmarks/synthesizability/DEVELOPMENT_SET.md`](benchmarks/synthesizability/DEVELOPMENT_SET.md)では、凍結済みbaselineをMPScore(3人の専門化学者が独立にeasy/difficultを評価した公開データセットで、TS1/2/3のretrosynthesis plannerベースのラベルとは手法的に無関係、分子重複は約0.03%)に対して検証しています: 全体でROC-AUC 0.513、95%信頼区間はchance水準を含みます。アルゴリズムベースと人間ベースという2つの独立したground truthが、yomitokiの4つの構造コンポーネントが実際の合成困難性の多くを見落としていることで一致しています(このデータセットではfalse negativeが72.6%)。同文書ではラベルなしのablation panelも実施しており、どの構造軸にコンポーネントが応答するか(どこで飽和・逆転するか)を切り分け、4つのdesign-change候補をエビデンスベースで記録していますが、まだ何も実装していません — TS1/2/3のconfirmatory numbersとは意図的に分離したdevelopment専用の成果です。
+
 ## 制限事項
 
 * 計画されている6コンポーネントすべてを実装しています(上の表を参照)が、`fragment_precedent`は**決して**`overall.difficulty`/`overall.synthesizability`に寄与しません — round 21(option C)以降、コーパスを設定(`AnalysisConfig.fragment_model`)しても`fragment_precedent`が報告する内容が変わるだけで、`overall.difficulty`が測るものは変わりません。`overall.difficulty`は常に`ring_topology`/`size_topology`/`stereochemical_burden`/`functional_group_liability`のみを反映します(コーパス設定の有無を問わず)。

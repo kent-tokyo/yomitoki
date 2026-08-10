@@ -372,6 +372,23 @@ flattering — the same document states what would need to change before
 these numbers improve, and yomitoki's per-round development process
 treats these results as confirmatory, not as something to retune against.
 
+**TS2's chance-level result was checked against a second, unrelated
+dataset — and it reproduced.** [`benchmarks/synthesizability/DEVELOPMENT_SET.md`](benchmarks/synthesizability/DEVELOPMENT_SET.md)
+validates the frozen baseline against MPScore, a published
+expert-chemist-labeled dataset (three chemists' independent
+easy/difficult ratings, methodologically unrelated to TS1/2/3's
+retrosynthesis-planner-derived labels, ~0.03% molecule overlap):
+ROC-AUC 0.513 on the full set, still inside the 95% CI for chance. Two
+independent ground-truth sources — one algorithmic, one human — now
+agree that yomitoki's four structural components miss a large share of
+what makes a molecule hard to synthesize in practice (72.6% false
+negatives on that set). That document also runs a controlled,
+unlabeled ablation panel isolating *which* structural axes the
+components respond to (and where they saturate or respond backwards),
+and records four evidence-based design-change candidates without
+implementing any of them yet — development-only, kept deliberately
+separate from the TS1/2/3 confirmatory numbers above.
+
 ## Limitations
 
 * All six planned components are implemented (see table above), but

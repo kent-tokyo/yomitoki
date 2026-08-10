@@ -881,11 +881,26 @@ Not implemented in v0.1 so far (tracked, not stubbed with fake data):
     check substitution position. Not a citable/validated primitive; not
     wrapped. **Update, chematic 0.13.0 (round 22 part 5, issues
     #262/#276):** `detect_atropisomers` was rewritten to be independent of
-    inter-ring bond notation — exactly the defect above. Not yet
-    re-verified against this project's own disqualifying case (needs a
-    fresh empirical re-test, not just trusting the changelog); the
-    ipso-carbon-degree/substitution-position gap is a separate concern
-    the rewrite doesn't claim to address either way.
+    inter-ring bond notation — exactly the defect above. **Re-verified
+    empirically** (standalone probe against chematic 0.13.0 directly, same
+    methodology as the #267 verification — not just trusting the
+    changelog), against this project's exact original disqualifying cases:
+    `c1ccccc1-c2ccccc2` and `c1ccccc1c2ccccc2` now both report 0 hits
+    (notation-invariance defect resolved — and arguably the more
+    chemically correct answer too, since unsubstituted biphenyl's rotation
+    barrier is low enough to freely rotate at room temperature).
+    2,2'-dimethylbiphenyl (*ortho*, sterically hindered) reports 1 hit
+    (`Biaryl`); 4,4'-dimethylbiphenyl (*para*, unhindered) reports 0 —
+    the position-blindness defect also appears resolved, not just the
+    notation one. **Both originally-documented defects are gone**, but
+    this was a targeted re-test of the two known failure cases, not a
+    full re-validation of the heuristic's accuracy across the space of
+    hindered/unhindered biaryls — and `detect_atropisomers` still isn't
+    wrapped as a yomitoki component: doing so would add a new burden
+    signal (weight, threshold, `FindingCode`), which is a scoring-formula
+    decision under the same root-cause-first discipline as the round 22
+    external-benchmark findings above, not a mechanical unblock. See
+    `ROADMAP.md`'s "Needs scoping" section (gitignored).
   * **Contiguous stereocenter runs, quaternary-carbon adjacency** —
     originally deferred as one item: both need an atom-level list of
     stereocenter candidates (specified and unspecified), which chematic

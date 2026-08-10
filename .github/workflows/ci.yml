@@ -62,5 +62,5 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install numpy==1.26.4 scipy==1.17.1 scikit-learn==1.8.0 pytest==9.1.1
-      - run: pytest benchmarks/synthesizability/scripts/test_metrics.py -v
+      - run: pytest test_metrics.py -v
         working-directory: benchmarks/synthesizability/scripts

@@ -187,6 +187,7 @@ fragment corpusが設定されていない場合(デフォルト — 下記参�
 * **SYBA**はeasy/hardの二値分類器です。yomitokiは診断と説明を主眼としたツールです。
 * **SCScore**は学習済みの合成複雑性スコアです。yomitokiは代わりに透明で化学的に名前の付いた要因へ分解します。
 * **RAscore**はretrosynthesisの成功確率を近似します。yomitokiはroute-freeであり、その評価の構造的理由を説明します。
+* **BR-SAScore**はSAscoreのフラグメント表をUSPTOの反応データ/eMoleculesのbuilding block情報で再学習し、単一のreaction/building-block-informedスコアを返します。yomitokiは5つの独立した構造コンポーネントに加え、applicability・confidence・機械可読なfinding/簡略化提案コードを返します — 単一の数値ではなく構造化された診断レポートであり、`overall.difficulty`を算出するのに反応コーパスを一切必要としません(コーパスの選択によって`overall.difficulty`が変化しないことはcontractとして保証されています — 両者が精度でどう比較されるかは下記[外部ベンチマーク](#外部ベンチマークv010)を参照)。
 * **AiZynthFinder、ASKCOS、RENKIN**はroute plannerです。yomitokiは経路を生成しません。
 
 ## SAscoreとの比較
@@ -214,6 +215,12 @@ spiro ring system                           5.52               0.20  LikelyAcces
 ```
 
 興味深いのは両者が一致する行ではなく、乖離する行です — 乖離は自動的にyomitokiのバグを意味しません。最も顕著なのはアシルクロリドです: SAscoreは`6.62`(フラグメントが珍しいと判定)、yomitokiは`0.09`(`LikelyAccessible`)— 安価でありふれたアシル化試薬で、yomitoki自身のモデルでは構造的負担がほぼありません。アスピリン(`4.67` 対 `0.27`)は、既に「制限事項」で説明したBrenk妥当性のギャップと同じ形です。両者がおおむね一致する場合(カフェイン、スピロ環、架橋環+立体中心)も、どちらかが「正しい」ことの証拠にはなりません — どちらも実際の合成結果に対してまだ検証されていません。
+
+## 外部ベンチマーク(v0.1.0)
+
+yomitoki v0.1.0の凍結デフォルト設定を、BR-SAScore自身のTS1/TS2/TS3テストセット上で、SAscore・BR-SAScoreと全く同じ分子集合を用いて測定しました。完全な手法・分子ごとの結果・正直な限界事項は**[docs/benchmark.md](docs/benchmark.md)**を参照してください。
+
+盛らずに率直に述べます: yomitokiはTS1でBR-SAScoreと拮抗しています(ROC-AUC 0.952 対 0.983。yomitoki自身の閾値におけるbalanced accuracyとMCCはSAscoreを上回ります)。**TS2では弁別力がゼロです**(ROC-AUC 0.476 — chanceレベル。これは真の構造的知見として診断済みです: TS2のeasy/hardクラスは、yomitokiのモデルが見るring/size/stereo/functional-groupの観点で均質です)。TS3では両競合よりも弱い結果でした(0.673 対 0.839 / 0.905)。このベンチマークが差別化要因として検証しようとしたconfidenceベースのselective prediction評価は**その仮説を裏付けませんでした** — TS1では、confidenceが高い予測の方が低い予測よりも明確に不正確でした。原因は`overall.confidence`が予測の正しさではなく、データセットの由来(stereoタグの完全性)の代理指標になっていたことにあります。これらはすべて`docs/benchmark.md`に、都合が良いからではなく事実だから報告されています — 同じ文書には、これらの数値が改善するために何が必要かも記されており、yomitokiのラウンド単位の開発プロセスはこの結果を再チューニングの材料としてではなく確認結果として扱います。
 
 ## 制限事項
 

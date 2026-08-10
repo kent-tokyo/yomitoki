@@ -186,6 +186,7 @@ Dominant penalties:
 * **SYBA** 是一个易/难二分类器。yomitoki 则以诊断与解释为核心。
 * **SCScore** 是一个学习得到的合成复杂度分数。yomitoki 则分解为透明的、具有化学意义命名的因素。
 * **RAscore** 近似逆合成成功率。yomitoki 是 route-free 的,并解释其评估背后的结构性原因。
+* **BR-SAScore** 用 USPTO 反应数据/eMolecules building block 数据重新训练了 SAscore 的片段表,返回单一的、具有反应/building-block 信息的分数。yomitoki 返回五个独立的结构性组件,外加 applicability、confidence,以及机器可读的 finding/简化建议代码 — 是一份结构化的诊断报告,而非单一数值,并且计算 `overall.difficulty` 完全不需要任何反应语料库(语料库的选择在契约上被保证不会改变它 — 两者在准确率上的实际比较见下文[外部基准测试](#外部基准测试v010))。
 * **AiZynthFinder、ASKCOS、RENKIN** 都是路线规划器。yomitoki 从不生成合成路线。
 
 ## 与 SAscore 的比较
@@ -213,6 +214,12 @@ spiro ring system                           5.52               0.20  LikelyAcces
 ```
 
 真正有意思的是两者出现分歧的行,而不是一致的行 — 分歧并不自动意味着 yomitoki 有 bug。最明显的例子是酰氯:SAscore 给出 `6.62`(片段少见),yomitoki 给出 `0.09`(`LikelyAccessible`)— 一种廉价、极为常见的酰化试剂,在 yomitoki 自身模型中几乎没有结构性负担。阿司匹林(`4.67` 对 `0.27`)与"局限性"中已经描述过的 Brenk 有效性缺口是同一种形状。两者大体一致的情况(咖啡因、螺环、桥环 + 多个立体中心)也不能证明其中任何一个是"正确的"— 二者都尚未针对真实合成结果进行过验证。
+
+## 外部基准测试(v0.1.0)
+
+我们在 BR-SAScore 自己的 TS1/TS2/TS3 测试集上,使用与 SAscore、BR-SAScore 完全相同的分子集合,测量了 yomitoki v0.1.0 的冻结默认配置。完整方法论、逐分子结果与如实披露的局限性见**[docs/benchmark.md](docs/benchmark.md)**。
+
+不加修饰地说:yomitoki 在 TS1 上与 BR-SAScore 相当(ROC-AUC 0.952 对 0.983;在 yomitoki 自身阈值下的 balanced accuracy 和 MCC 实际上超过了 SAscore)。**在 TS2 上完全没有区分能力**(ROC-AUC 0.476 — 相当于随机猜测,已诊断为一个真实的结构性发现:在 yomitoki 模型所依据的 ring/size/stereo/functional-group 维度上,TS2 的 easy/hard 两类分子高度同质)。在 TS3 上弱于两个竞品(0.673 对 0.839 / 0.905)。这次基准测试原本要验证的、基于 confidence 的 selective prediction 差异化优势**未能得到证实** — 在 TS1 上,confidence 更高的预测反而明显不如 confidence 较低的预测准确,根源是 `overall.confidence` 实际上是数据集来源(stereo 标注完整性)的代理指标,而非预测正确性的代理指标。以上内容之所以完整记录在 `docs/benchmark.md` 中,是因为它是事实,而非因为它好看 —— 同一份文档也说明了这些数字要改善需要做什么,并且 yomitoki 按轮次推进的开发流程将这些结果视为确认性结果,而不是可据此重新调参的依据。
 
 ## 局限性
 

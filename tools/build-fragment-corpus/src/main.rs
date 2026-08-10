@@ -7,7 +7,7 @@
 //!   --source "<name>|<license>|<url>|<path>" [--source ...] \
 //!   --corpus-domain-name <name> --corpus-domain <domain> \
 //!   --corpus-synthesis-focused true|false --corpus-domain-description <text> \
-//!   [--radius 2] [--limit N] \
+//!   [--radius 2] [--limit N] [--exclude-smiles-file <path>] \
 //!   [--delimiter whitespace|tab|comma] [--smiles-column N] \
 //!   [--name-column N|none] [--title-line]
 //! ```
@@ -77,6 +77,15 @@ struct Args {
     corpus_domain: String,
     corpus_synthesis_focused: bool,
     corpus_domain_description: String,
+    /// Round 19: path to a newline-delimited SMILES file (first
+    /// whitespace-delimited token per line, so a name/id column after the
+    /// SMILES is tolerated) whose canonical forms are excluded from this
+    /// corpus entirely -- before dedup, before `--limit`, before the
+    /// frequency table and `reference_distribution` are built from anything.
+    /// Exists for leave-one-out validation: a molecule under test must not
+    /// be able to inflate its own precedent score by being present in the
+    /// reference corpus it's scored against.
+    exclude_smiles_file: Option<String>,
 }
 
 const DEFAULT_RADIUS: u32 = 2;
@@ -90,7 +99,7 @@ Usage:
     --source \"<name>|<license>|<url>|<path>\" [--source ...] \\
     --corpus-domain-name <name> --corpus-domain <domain> \\
     --corpus-synthesis-focused true|false --corpus-domain-description <text> \\
-    [--radius 2] [--limit N] \\
+    [--radius 2] [--limit N] [--exclude-smiles-file <path>] \\
     [--delimiter whitespace|tab|comma] [--smiles-column N] \\
     [--name-column N|none] [--title-line]
 
@@ -109,7 +118,11 @@ chemical space this corpus represents (e.g. \"ChEMBL-37\" / \"bioactivity\" /
 false / \"Bioactive compound reference corpus; not a synthesis-focused
 precedent corpus.\") in the manifest, so a report can later distinguish
 \"rare in this corpus\" from \"hard to synthesize\" — no default is guessed,
-since guessing a domain would defeat the point.";
+since guessing a domain would defeat the point.
+--exclude-smiles-file (optional, round 19) takes a newline-delimited SMILES
+file; any molecule whose canonical form matches an entry is dropped before
+dedup/--limit/frequency counting, for leave-one-out validation-panel
+exclusion.";
 
 fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
     let mut output = None;
@@ -121,6 +134,7 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
     let mut corpus_domain = None;
     let mut corpus_synthesis_focused = None;
     let mut corpus_domain_description = None;
+    let mut exclude_smiles_file = None;
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -189,6 +203,12 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
                 };
             }
             "--title-line" => reader_options.title_line = true,
+            "--exclude-smiles-file" => {
+                exclude_smiles_file = Some(
+                    args.next()
+                        .ok_or("--exclude-smiles-file requires a value")?,
+                )
+            }
             "--corpus-domain-name" => {
                 corpus_domain_name =
                     Some(args.next().ok_or("--corpus-domain-name requires a value")?)
@@ -242,6 +262,7 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
         corpus_synthesis_focused,
         corpus_domain_description,
         reader_options,
+        exclude_smiles_file,
     })
 }
 
@@ -292,6 +313,11 @@ struct SourceRecord {
     records_read: usize,
     records_parse_error: usize,
     records_filtered_unsupported_element: usize,
+    /// Round 19: records dropped because their canonical SMILES matched an
+    /// entry in `--exclude-smiles-file`, checked before dedup so an
+    /// excluded molecule never reaches `seen_canonical` and can't be
+    /// double-counted as a "duplicate" instead.
+    records_excluded_by_list: usize,
     records_kept: usize,
     records_duplicate: usize,
 }
@@ -316,6 +342,10 @@ struct CorpusManifest {
     radius: u32,
     preprocessing: String,
     exclusion_criteria: String,
+    /// Round 19: path passed to `--exclude-smiles-file`, or `None` if it
+    /// wasn't used -- so a manifest self-documents whether/how leave-one-out
+    /// exclusion was applied, without needing the original build command.
+    exclude_smiles_file: Option<String>,
     generated_at_unix: u64,
     chematic_version: String,
     tool_version: String,
@@ -458,6 +488,28 @@ fn run(args: &Args) -> Result<(), String> {
     std::fs::create_dir_all(&args.output)
         .map_err(|e| format!("could not create output dir {:?}: {e}", args.output))?;
 
+    let excluded_canonical: HashSet<String> = match &args.exclude_smiles_file {
+        Some(path) => {
+            let content = std::fs::read_to_string(path)
+                .map_err(|e| format!("could not read --exclude-smiles-file {path:?}: {e}"))?;
+            content
+                .lines()
+                .map(str::trim)
+                .filter(|line| !line.is_empty())
+                .map(|line| {
+                    // Tolerate a trailing name/id column, same shape as a
+                    // plain .smi source file.
+                    let smiles = line.split_whitespace().next().unwrap_or(line);
+                    let mol = chematic::smiles::parse(smiles).map_err(|e| {
+                        format!("could not parse --exclude-smiles-file entry {smiles:?}: {e}")
+                    })?;
+                    Ok(chematic::smiles::canonical_smiles(&mol))
+                })
+                .collect::<Result<HashSet<String>, String>>()?
+        }
+        None => HashSet::new(),
+    };
+
     let mut seen_canonical: HashSet<String> = HashSet::new();
     // fragment_hash -> number of distinct molecules containing it.
     let mut frequency: HashMap<u64, u64> = HashMap::new();
@@ -485,6 +537,7 @@ fn run(args: &Args) -> Result<(), String> {
         let mut records_parse_error = 0usize;
         let mut records_filtered_unsupported_element = 0usize;
         let mut records_kept = 0usize;
+        let mut records_excluded_by_list = 0usize;
         let mut records_duplicate = 0usize;
 
         for record in records {
@@ -503,6 +556,14 @@ fn run(args: &Args) -> Result<(), String> {
                 continue;
             }
             let canonical = chematic::smiles::canonical_smiles(&mol);
+            // Checked before dedup/--limit and before this molecule can
+            // contribute to `frequency`/`molecule_fragment_hashes` at all --
+            // an excluded molecule must have zero influence on the
+            // resulting reference_distribution (leave-one-out, round 19).
+            if excluded_canonical.contains(&canonical) {
+                records_excluded_by_list += 1;
+                continue;
+            }
             if !seen_canonical.insert(canonical) {
                 records_duplicate += 1;
                 continue;
@@ -531,6 +592,7 @@ fn run(args: &Args) -> Result<(), String> {
             records_read,
             records_parse_error,
             records_filtered_unsupported_element,
+            records_excluded_by_list,
             records_kept,
             records_duplicate,
         });
@@ -609,9 +671,15 @@ fn run(args: &Args) -> Result<(), String> {
             args.reader_options.title_line,
             yomitoki::SUPPORTED_ELEMENTS.len()
         ),
-        exclusion_criteria:
+        exclusion_criteria: if args.exclude_smiles_file.is_some() {
+            "atoms outside yomitoki::SUPPORTED_ELEMENTS; exact canonical-SMILES duplicates; \
+             canonical-SMILES matches against --exclude-smiles-file"
+                .to_string()
+        } else {
             "atoms outside yomitoki::SUPPORTED_ELEMENTS; exact canonical-SMILES duplicates"
-                .to_string(),
+                .to_string()
+        },
+        exclude_smiles_file: args.exclude_smiles_file.clone(),
         generated_at_unix,
         chematic_version: "0.12".to_string(),
         tool_version: env!("CARGO_PKG_VERSION").to_string(),
@@ -804,5 +872,108 @@ mod tests {
         let b = hex_sha256(b"CCO");
         assert_eq!(a, b);
         assert_ne!(a, hex_sha256(b"CCN"));
+    }
+
+    #[test]
+    fn parses_exclude_smiles_file() {
+        let mut argv = vec!["--output", "out", "--source", "A|L|U|p"];
+        argv.extend_from_slice(DOMAIN_ARGS);
+        argv.extend_from_slice(&["--exclude-smiles-file", "panel.smi"]);
+        let parsed = parse_args(args(&argv)).unwrap();
+        assert_eq!(parsed.exclude_smiles_file, Some("panel.smi".to_string()));
+    }
+
+    #[test]
+    fn exclude_smiles_file_defaults_to_none() {
+        let mut argv = vec!["--output", "out", "--source", "A|L|U|p"];
+        argv.extend_from_slice(DOMAIN_ARGS);
+        let parsed = parse_args(args(&argv)).unwrap();
+        assert_eq!(parsed.exclude_smiles_file, None);
+    }
+
+    /// No `tempfile` dev-dependency in this standalone tool crate -- a
+    /// process-id + atomic-counter suffix under the OS temp dir is enough
+    /// to keep parallel `cargo test` runs from colliding.
+    fn temp_dir_for(label: &str) -> std::path::PathBuf {
+        static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let n = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        std::env::temp_dir().join(format!(
+            "build-fragment-corpus-test-{}-{label}-{n}",
+            std::process::id()
+        ))
+    }
+
+    #[test]
+    fn exclude_smiles_file_drops_molecules_before_dedup_and_frequency_counting() {
+        let dir = temp_dir_for("exclude");
+        std::fs::create_dir_all(&dir).unwrap();
+        let source_path = dir.join("molecules.smi");
+        std::fs::write(&source_path, "CCO ethanol\nCCN methylamine\nCCC propane\n").unwrap();
+        let exclude_path = dir.join("exclude.smi");
+        // Deliberately a different-but-equivalent SMILES spelling of
+        // ethanol than the source file uses, to prove exclusion matches on
+        // canonical form, not raw string equality.
+        std::fs::write(&exclude_path, "OCC\n").unwrap();
+        let output_dir = dir.join("out");
+
+        let source_flag = format!(
+            "Test|CC0-1.0|https://example.test|{}",
+            source_path.to_str().unwrap()
+        );
+        let mut argv = vec![
+            "--output",
+            output_dir.to_str().unwrap(),
+            "--source",
+            &source_flag,
+            "--exclude-smiles-file",
+            exclude_path.to_str().unwrap(),
+        ];
+        argv.extend_from_slice(DOMAIN_ARGS);
+        let parsed = parse_args(args(&argv)).unwrap();
+        run(&parsed).unwrap();
+
+        let manifest: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(output_dir.join("manifest.json")).unwrap())
+                .unwrap();
+        assert_eq!(manifest["sources"][0]["records_excluded_by_list"], 1);
+        assert_eq!(manifest["sources"][0]["records_kept"], 2);
+        assert_eq!(manifest["total_molecules_processed"], 2);
+        assert_eq!(
+            manifest["exclude_smiles_file"],
+            exclude_path.to_str().unwrap()
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn no_exclude_smiles_file_leaves_the_manifest_field_null() {
+        let dir = temp_dir_for("no-exclude");
+        std::fs::create_dir_all(&dir).unwrap();
+        let source_path = dir.join("molecules.smi");
+        std::fs::write(&source_path, "CCO ethanol\n").unwrap();
+        let output_dir = dir.join("out");
+
+        let source_flag = format!(
+            "Test|CC0-1.0|https://example.test|{}",
+            source_path.to_str().unwrap()
+        );
+        let mut argv = vec![
+            "--output",
+            output_dir.to_str().unwrap(),
+            "--source",
+            &source_flag,
+        ];
+        argv.extend_from_slice(DOMAIN_ARGS);
+        let parsed = parse_args(args(&argv)).unwrap();
+        run(&parsed).unwrap();
+
+        let manifest: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(output_dir.join("manifest.json")).unwrap())
+                .unwrap();
+        assert_eq!(manifest["sources"][0]["records_excluded_by_list"], 0);
+        assert!(manifest["exclude_smiles_file"].is_null());
+
+        std::fs::remove_dir_all(&dir).ok();
     }
 }

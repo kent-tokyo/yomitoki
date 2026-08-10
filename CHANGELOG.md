@@ -59,6 +59,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   treatment as round 17's `reference_distribution` requirement — rebuild
   with the current tool.
 
+### Added
+
+- `--exclude-smiles-file <path>` flag on `tools/build-fragment-corpus`
+  (round 19): excludes canonical-SMILES matches from a corpus before
+  dedup/`--limit`/frequency counting, for leave-one-out validation — a
+  molecule under test must not be able to inflate its own precedent score
+  by being present in the reference corpus it's scored against. Reported
+  per-source in the manifest (`records_excluded_by_list`) and at the
+  manifest level (`exclude_smiles_file`), so a corpus self-documents
+  whether/how exclusion was applied.
+
+### Validated
+
+- **Cross-corpus validation of `fragment_precedent` (round 19) — result:
+  CONDITIONAL GO, `GeneralOrganic` keeps the signal in `overall.difficulty`
+  unchanged.** Built a second, matched-size (200,000-molecule) reference
+  corpus from the Open Reaction Database (a genuinely synthesis-focused
+  source, unlike ChEMBL) and re-ran the validation panel leakage
+  -controlled against both. Confirmed: the common/simple panel never
+  regresses in either corpus; ring/stereo structural burden is provably
+  unaffected by which corpus is configured; no formula or weight was
+  retuned in response to this round's data. Also confirmed a real but
+  negligible-at-scale leakage issue in the existing ChEMBL corpus build
+  (8 of 15 panel molecules were present in it; leakage-free re-measurement
+  changed `overall.difficulty` by <0.0001 in every case — not a correction
+  to any shipped number). The corpus-domain-bias caveat first reported in
+  round 17 is now confirmed *heterogeneous* across structural motifs
+  (some cases improve sharply under a synthesis-focused corpus, some don't
+  move, one gets worse) rather than resolved by "use a better corpus" —
+  see `rules.rs`'s "Fragment precedent" section and
+  `tasks/upstream_and_corpus_research.md` Part 6 (gitignored) for the full
+  data. The ORD-derived corpus itself is CC-BY-SA-4.0 (ShareAlike) and is
+  not bundled with this crate — local validation artifact only this round.
+
 ## [0.1.0-alpha.2] - 2026-08-10
 
 Second public preview. Publishes the round-17 `fragment_rarity` redesign

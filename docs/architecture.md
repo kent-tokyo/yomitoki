@@ -340,11 +340,11 @@ the same way once a corpus is configured — round 17 confirms it
 end-to-end: aspirin's `overall.difficulty` measures `0.273 → 0.095`,
 paracetamol's `0.243 → 0.095`.
 
-**Fourth known caveat, discovered by round 17's validation panel:**
-`fragment_precedent`'s corpus-relative signal is only as good as the corpus
-it's given (round 18 makes this traceable per-report via
-`Provenance.fragment_corpus.synthesis_focused`, without yet changing
-scoring behavior based on it — see the roadmap above). Against the real
+**Fourth known caveat, discovered by round 17's validation panel, extended
+by round 19's cross-corpus validation:** `fragment_precedent`'s
+corpus-relative signal is only as good as the corpus it's given (round 18
+makes this traceable per-report via
+`Provenance.fragment_corpus.synthesis_focused`). Against the real
 200k-molecule ChEMBL-37 corpus, several
 structurally-legitimate molecules score *harder*, not easier, once the
 corpus is configured — caffeine (`0.287 → 0.516`), a bridged bicyclic /
@@ -357,9 +357,28 @@ numbers the formula uses. The likely cause is corpus-domain bias: ChEMBL
 is a bioactivity-screening corpus, so its fragment-frequency table
 reflects what shows up in bioassay-tested compounds, not what's a common
 synthetic building block — "rare in ChEMBL" and "hard to synthesize" are
-different claims. Reported honestly rather than tuned away; the natural
-fix is a synthesis-focused reference corpus, not a further formula
-change.
+different claims.
+
+Round 19 tested the natural fix — a synthesis-focused reference corpus
+(Open Reaction Database, matched to ChEMBL's 200k size, leakage-controlled)
+— and found the caveat only *partially* corpus-fixable: norbornane's
+penalty fell sharply (`p=0.178 → p=0.455`, verdict
+`HighlyChallenging → ModeratelyAccessible`), but spiro-decane and
+stereocenter-dense stayed almost maximally penalized in both corpora
+(`p=0.025 → p=0.061`, `p=0.008 → p=0.007`), and caffeine got *more*
+penalized under the synthesis-focused corpus, not less
+(`p=0.386 → p=0.048`, signal `+0.23 → +0.91`) — plausibly because caffeine
+is mostly obtained by extraction/purchase rather than reported as a
+documented reaction product, while it's ubiquitous as a *screened*
+bioactive compound in ChEMBL, but that is a per-molecule post-hoc
+explanation, not a predictive rule. Reported honestly rather than tuned
+away either time: no formula or weight change was made in response to
+either round's numbers, and the same corpus-relative framing
+("relative to the configured reference corpus," never "generally easy/hard
+to synthesize") stays the accurate description of what the signal actually
+answers. See `rules.rs`'s "Fragment precedent" section for the full
+numbers and `tasks/upstream_and_corpus_research.md` Part 6 (gitignored)
+for the corpus-build methodology.
 
 **Third known caveat, different shape:** `functional_group_liability`'s
 "dense functionalization" term (`identify_functional_groups`) counts
@@ -494,10 +513,11 @@ strictness. See `analyze::tests` for the regression tests covering this.
 
 | Field | Source |
 |---|---|
-| `schema_version` | literal constant in `provenance.rs` (currently `0.4.0`) |
+| `schema_version` | literal constant in `provenance.rs` (currently `0.5.0`) |
 | `yomitoki_version` | `env!("CARGO_PKG_VERSION")` |
 | `chematic_version` | chematic's declared version requirement |
 | `ruleset_version` | `rules::RULESET_VERSION` |
+| `fragment_corpus` | `Some(FragmentCorpusProvenance)` built from the configured corpus's own manifest (`corpus_domain`, `fragment_definition_version`, `reference_distribution_version`) when `AnalysisConfig.fragment_model.corpus` is set, `None` otherwise (round 18) |
 | `config_hash` | SHA-256 (via the `sha2` crate) of the config's canonical JSON serialization |
 
 `config_hash` deliberately does not use `std::hash::DefaultHasher` — that
@@ -573,12 +593,29 @@ in order:
    stereocenter-dense findings are exactly this mismatch surfacing, not a
    formula bug (see "Scoring direction" above); the local `out_200000_v4`
    corpus build declares `synthesis_focused: false` accordingly.
-3. **Validate against at least one synthesis-focused reference corpus**
-   (e.g. a reaction-precursor or building-block database) before settling
-   the `GeneralOrganic` profile's precedent-signal contract on ChEMBL
-   alone — a single bioactivity-biased corpus shouldn't define what
-   "precedented" means for the profile's official behavior. **The
-   remaining blocker** for a non-alpha `0.1.0`.
+3. ~~**Validate against at least one synthesis-focused reference corpus**~~
+   — **done, round 19. Result: CONDITIONAL GO.** Built a matched-size
+   (200,000-molecule) corpus from the Open Reaction Database (CC-BY-SA-4.0,
+   local-validation-only — its share-alike license means the generated
+   artifact must not be bundled into this MIT/Apache-licensed crate;
+   distributing an ORD-derived corpus is a separate, undecided question)
+   and re-ran the validation panel leakage-controlled against both it and
+   ChEMBL. The `GeneralOrganic` profile keeps `fragment_precedent` in
+   `overall.difficulty` (option A, unchanged) — the common/simple panel
+   never regressed, `ring_topology`/`stereochemical_burden` burden is
+   provably preserved regardless of which corpus is configured (confirmed
+   directly, not just argued: a molecule's `ring_topology.contribution` is
+   bit-for-bit identical across corpora), and no formula/weight was
+   retuned to produce this result. Conditional because the result wasn't
+   uniformly reassuring: swapping to a synthesis-focused corpus relieved
+   some divergent cases (norbornane) but not others (spiro-decane,
+   stereocenter-dense stayed near-maximally penalized; caffeine got
+   *more* penalized, not less) — see `rules.rs`'s "Fragment precedent"
+   section and `tasks/upstream_and_corpus_research.md` Part 6 (gitignored)
+   for the full numbers. The corpus-domain-bias caveat is now confirmed
+   empirically heterogeneous, not resolved by "use a better corpus" alone
+   — documented as an open, corpus-choice-sensitive property of the signal,
+   not a blocker to re-litigate before every release.
 
 None of the three change the underlying formula or cap logic itself, which
 round 17 already validated end-to-end.

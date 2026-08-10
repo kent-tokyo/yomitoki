@@ -73,6 +73,15 @@ Add `--limit N` to smoke-test on the first N kept molecules instead of the
 whole corpus (parsing is the expensive part — `--limit` still reads the
 whole input file first, see the `ponytail:` note in `src/main.rs`).
 
+Add `--exclude-smiles-file <path>` (round 19) to drop specific molecules
+from a corpus before dedup/`--limit`/frequency counting — a
+newline-delimited SMILES file (a trailing name/id column is tolerated,
+same shape as a plain `.smi` source). Exists for leave-one-out validation:
+a molecule under test must not be able to inflate its own precedent score
+by being present in the reference corpus it's scored against. Exclusion
+counts are reported per-source (`records_excluded_by_list`) and at the
+manifest level (`exclude_smiles_file`).
+
 `src/bin/query.rs` is a small diagnostic tool for checking whether a built
 corpus actually discriminates: `cargo run --release --bin query -- --corpus
 <dir> "<SMILES>" --radii 2` reports document-frequency stats (min/max/mean)

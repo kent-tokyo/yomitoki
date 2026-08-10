@@ -376,6 +376,64 @@ pub(crate) const AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY: f64 = 0.4;
 // behavior based on it — deciding whether/how `synthesis_focused: false`
 // should affect a score or its confidence is explicitly deferred to a
 // future round, once a synthesis-focused corpus exists to compare against.
+//
+// Round 19 cross-corpus validation (the "future round" above): built a
+// second, real, matched-size (200,000-molecule) corpus from the Open
+// Reaction Database (ord-data, CC-BY-SA-4.0, Hugging Face mirror revision
+// c914ca889a5d9c06cfc18ca1b0979846503dd6ba — a genuinely synthesis-focused
+// corpus, `corpus_domain.synthesis_focused: true`, products extracted from
+// `ReactionOutcome.products` with `reaction_role == PRODUCT`) and re-ran
+// the same validation panel against both, leakage-controlled (validation
+// -panel molecules excluded from whichever corpus scores them — see
+// `tools/build-fragment-corpus`'s `--exclude-smiles-file`). Full
+// methodology, funnel counts, and the extraction-rule correction this
+// required (`is_desired_product` turned out to be populated in only the
+// curated/ELN-sourced 11% of ord-data's files — 0.000% across all 489
+// USPTO-patent-mined files, confirmed exhaustively, not sampled — so
+// `reaction_role == PRODUCT` is the real selection criterion, not
+// `is_desired_product`) are in `tasks/upstream_and_corpus_research.md`
+// Part 6 (gitignored).
+//
+// Result: **not** a clean "synthesis-focused corpus resolves the caveat"
+// story. The four round-17 divergent cases respond heterogeneously to the
+// corpus swap, not uniformly toward "easier":
+//   caffeine              p=0.386 (signal +0.23) -> p=0.048 (signal +0.91)  WORSE
+//   norbornane (bridged)  p=0.178 (signal +0.64) -> p=0.455 (signal +0.09)  much better
+//   spiro-decane           p=0.025 (signal +0.95) -> p=0.061 (signal +0.88)  ~unchanged
+//   stereocenter-dense     p=0.008 (signal +0.98) -> p=0.007 (signal +0.99)  ~unchanged
+// Zero sign flips across the full 15-molecule panel (common/simple cases
+// stay strongly precedent-supported and capped-identical in both corpora;
+// no reversal on any of the nine). Caffeine's worsening has a plausible
+// explanation (it's a commodity feedstock rarely reported as a *documented
+// reaction product* in patent/ELN literature, unlike its ubiquity as a
+// *screened bioactive compound* in ChEMBL), but it's a post-hoc story per
+// molecule, not a predictive rule — "explainable after the fact" is weaker
+// than "predictable in advance," and is reported as such rather than
+// oversold. Confirmed directly (not just argued) that the support cap
+// still does its job regardless: norbornane's `ring_topology` contribution
+// is bit-for-bit identical between the two corpora (`0.3297` either way) —
+// only `fragment_precedent`'s own contribution changes (`0.644 -> 0.089`),
+// so the corpus swap never erases ring/stereo burden, it only changes the
+// size of the correction term sitting on top of it.
+//
+// Conclusion: `fragment_precedent`'s signal is corpus-relative *by
+// construction*, and this round's data confirms that relativity is real
+// and can point in surprising directions per molecule, not merely differ
+// in magnitude along one axis. This is exactly why every explanation
+// string says "relative to the configured reference corpus," never
+// "generally easy/hard to synthesize" (see `explain.rs`) — the signal
+// answers "how well-precedented is this against corpus X," never
+// "how synthetically difficult is this in general." Decision (see
+// `docs/architecture.md`'s roadmap): keep `fragment_precedent` in
+// `overall.difficulty` (option A) rather than further-cap it (option B) or
+// split it out as explanatory-only (option C) — the common/simple panel
+// never regresses, ring/stereo burden is provably preserved, and no
+// formula/weight was retuned to produce this result. But the domain
+// -relativity limitation is now empirically confirmed, not merely
+// theorized, and is documented as an open, corpus-choice-sensitive
+// property of the signal rather than a bug pending a fix — a different or
+// larger synthesis-focused corpus could still shift this conclusion, and
+// nothing here should be read as "ORD settles it permanently."
 
 /// Minimum `|signed_signal|` for `fragment_precedent` to emit a
 /// `Finding`/`Contribution` at all — purely a *display* threshold ("is

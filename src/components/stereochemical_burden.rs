@@ -34,10 +34,10 @@
 //! code in this project).
 
 use chematic::core::Molecule;
-use chematic::perception::stereo_validation::stereo_completeness;
+use chematic::perception::stereo_validation::stereo_centers;
 
 use crate::report::{
-    ComponentScore, Contribution, Finding, FindingCode, FindingEvidence, FindingRef,
+    AtomIndex, ComponentScore, Contribution, Finding, FindingCode, FindingEvidence, FindingRef,
     ProbabilityLikeScore, Severity, finite_or_zero,
 };
 use crate::rules::{
@@ -55,7 +55,18 @@ pub(crate) fn compute(mol: &Molecule) -> StereochemicalBurdenOutcome {
     let mut findings = Vec::new();
     let mut contributions = Vec::new();
 
-    let total_centers = stereo_completeness(mol).total_centers;
+    // `stereo_centers` reports specified *and* unspecified centers alike —
+    // matching this component's own policy above ("specified or
+    // unspecified burden equally"), unlike `assign_cip`/
+    // `tetrahedral_stereo_neighbors`, which only cover specified ones (see
+    // docs/architecture.md's "Simplification suggestions" section for why
+    // that distinction mattered before chematic 0.13.0 exposed this API).
+    let centers = stereo_centers(mol);
+    let atoms: Vec<AtomIndex> = centers
+        .iter()
+        .map(|&(idx, _)| AtomIndex::from(idx))
+        .collect();
+    let total_centers = centers.len();
     let atom_count = mol.atom_count();
     let density = if atom_count == 0 {
         0.0
@@ -72,6 +83,7 @@ pub(crate) fn compute(mol: &Molecule) -> StereochemicalBurdenOutcome {
             &mut contributions,
             FindingCode::StereoCenterCount,
             Severity::Low,
+            atoms.clone(),
             FindingEvidence {
                 value: Some(total_centers as f64),
                 threshold: None,
@@ -85,6 +97,7 @@ pub(crate) fn compute(mol: &Molecule) -> StereochemicalBurdenOutcome {
             &mut contributions,
             FindingCode::StereoDensityHigh,
             Severity::Medium,
+            atoms.clone(),
             FindingEvidence {
                 value: Some(density),
                 threshold: Some(STEREO_DENSITY_FINDING_THRESHOLD),
@@ -123,15 +136,21 @@ fn push(
     contributions: &mut Vec<Contribution>,
     code: FindingCode,
     severity: Severity,
+    atoms: Vec<AtomIndex>,
     evidence: FindingEvidence,
     weight: f64,
 ) {
-    let explanation = crate::explain::render(code, evidence, 0, None);
+    // `atom_count` was previously hardcoded to 0 here (atoms were always
+    // empty); StereoCenterCount/StereoDensityHigh's explanation templates
+    // use `evidence.value`/`evidence.threshold`, not `atom_count`, so
+    // passing the real count doesn't change rendered explanation text
+    // (verified against explain.rs).
+    let explanation = crate::explain::render(code, evidence, atoms.len(), None);
     findings.push(Finding {
         code,
         severity,
         confidence: ProbabilityLikeScore::new(1.0),
-        atoms: Vec::new(),
+        atoms,
         evidence,
         explanation: explanation.clone(),
     });

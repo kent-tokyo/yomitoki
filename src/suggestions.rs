@@ -79,13 +79,13 @@ fn suggestion_for(finding: &Finding) -> Option<SimplificationSuggestion> {
     Some(SimplificationSuggestion {
         code,
         // `finding.atoms` is already the honest atom set for the finding
-        // this suggestion is derived from — empty for StereoDensityHigh,
-        // since stereochemical_burden's own findings carry no atom indices
-        // (chematic's `stereo_completeness` reports only aggregate counts,
-        // not which atoms are centers; `assign_cip`/
-        // `tetrahedral_stereo_neighbors` only cover *specified* centers,
-        // which would under-count relative to the density this finding is
-        // actually about — see docs/architecture.md).
+        // this suggestion is derived from. For StereoDensityHigh this used
+        // to always be empty (chematic's `stereo_completeness` reported
+        // only aggregate counts, not which atoms are centers) -- chematic
+        // 0.13.0's `stereo_centers` API (issue #263) gives real per-atom
+        // indices instead, specified or unspecified alike, matching this
+        // component's own "burden equally" policy (see
+        // components/stereochemical_burden.rs and docs/architecture.md).
         target_atoms: finding.atoms.clone(),
         rationale,
         expected_effect: ExpectedEffect::MayReduceDifficulty,
@@ -143,17 +143,37 @@ mod tests {
     }
 
     #[test]
-    fn stereo_density_finding_produces_a_reduce_density_suggestion_with_no_atoms() {
-        // StereoDensityHigh findings never carry atoms in the first place
-        // (see components/stereochemical_burden.rs) -- the suggestion must
-        // not fabricate target atoms that the underlying finding doesn't have.
-        let findings = vec![finding(FindingCode::StereoDensityHigh, Vec::new())];
+    fn stereo_density_finding_produces_a_reduce_density_suggestion() {
+        // As of chematic 0.13.0's `stereo_centers` API (issue #263),
+        // StereoDensityHigh findings carry real atom indices (see
+        // components/stereochemical_burden.rs) -- `derive` must pass them
+        // through honestly rather than dropping them.
+        let findings = vec![finding(
+            FindingCode::StereoDensityHigh,
+            vec![AtomIndex(2), AtomIndex(5)],
+        )];
         let suggestions = derive(&findings);
         assert_eq!(suggestions.len(), 1);
         assert_eq!(
             suggestions[0].code,
             SuggestionCode::ReduceStereocenterDensity
         );
+        assert_eq!(
+            suggestions[0].target_atoms,
+            vec![AtomIndex(2), AtomIndex(5)]
+        );
+    }
+
+    #[test]
+    fn stereo_density_finding_with_no_atoms_does_not_fabricate_any() {
+        // Not a real case as of chematic 0.13.0 (stereo_centers always
+        // populates atoms when total_centers > 0, and StereoDensityHigh
+        // only fires when centers exist), but `derive` itself has no way
+        // to know that -- it must not invent atoms the input finding
+        // didn't have, whatever the source turns out to be.
+        let findings = vec![finding(FindingCode::StereoDensityHigh, Vec::new())];
+        let suggestions = derive(&findings);
+        assert_eq!(suggestions.len(), 1);
         assert!(suggestions[0].target_atoms.is_empty());
     }
 

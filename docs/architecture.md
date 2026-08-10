@@ -272,20 +272,25 @@ rather than reporting per-occurrence matches, so it still can't identify
 which specific occurrence to point at.
 
 `target_atoms` is copied directly from the source finding's own `atoms`
-field — for `ReduceStereocenterDensity` this is always empty, because
-`stereochemical_burden`'s findings never carry atom indices in the first
-place. Through chematic 0.12 this was a real API gap: `stereo_completeness`
-(used by `stereochemical_burden::compute`) reported only aggregate counts
-(`specified`/`unspecified`/`total_centers`), not which atoms are centers,
-and `chematic-chem`'s `assign_cip`/`tetrahedral_stereo_neighbors` only cover
-atoms with an explicit `@`/`@@` chirality annotation — they'd under-count
-relative to the density this finding is actually about (specified *and*
-unspecified centers together). **Update, chematic 0.13.0 (round 22 part 5,
-issue #263):** `chematic_perception::stereo_centers(&Molecule) ->
-Vec<(AtomIdx, bool)>` now reports exactly this, specified or not — the gap
-is closed, but `stereochemical_burden`'s findings haven't been updated to
-populate `atoms` from it yet (scoped, not implemented — see `ROADMAP.md`'s
-"Ready to implement" section, gitignored).
+field. For `ReduceStereocenterDensity` this used to always be empty,
+because `stereochemical_burden`'s findings never carried atom indices in
+the first place — through chematic 0.12 this was a real API gap:
+`stereo_completeness` (used by `stereochemical_burden::compute`) reported
+only aggregate counts (`specified`/`unspecified`/`total_centers`), not
+which atoms are centers, and `chematic-chem`'s `assign_cip`/
+`tetrahedral_stereo_neighbors` only cover atoms with an explicit `@`/`@@`
+chirality annotation — they'd under-count relative to the density this
+finding is actually about (specified *and* unspecified centers
+together). **Update, chematic 0.13.0 (round 22 part 6):**
+`chematic_perception::stereo_centers(&Molecule) -> Vec<(AtomIdx, bool)>`
+reports exactly this, specified or not — `stereochemical_burden::compute`
+now populates `StereoCenterCount`/`StereoDensityHigh` findings' `atoms`
+from it directly, so `ReduceStereocenterDensity`'s `target_atoms` carries
+real atom indices. Purely additive: no scoring, weight, or threshold
+changed — only previously-empty `atoms`/`target_atoms` fields are now
+populated. See `tests/stereochemical_burden.rs`'s
+`stereo_findings_now_carry_real_atom_indices`/
+`reduce_stereocenter_density_suggestion_now_targets_real_atoms`.
 
 `ExpectedEffect` is always `MayReduceDifficulty`, never
 `LikelyReducesDifficulty` — nothing in v0.1 is calibrated against real
@@ -928,11 +933,10 @@ Not implemented in v0.1 so far (tracked, not stubbed with fake data):
     issue #263):** `chematic_perception::stereo_centers(&Molecule) ->
     Vec<(AtomIdx, bool)>` now exposes exactly this atom-level list — the
     two items no longer share a single blocker:
-    - `ReduceStereocenterDensity`'s `target_atoms` (currently always an
-      empty `Vec`, see "Simplification suggestions" below) is now purely
-      a wiring task — `stereo_centers` gives real atom indices directly,
-      no new design question. Scoped and ready; not yet implemented (see
-      `ROADMAP.md`'s "Ready to implement" section, gitignored).
+    - `ReduceStereocenterDensity`'s `target_atoms` — used to always be an
+      empty `Vec` (see "Simplification suggestions" below); **implemented
+      round 22 part 6** — `stereo_centers` gives real atom indices
+      directly, no new design question, no scoring change.
     - Quaternary-carbon adjacency (`ReduceAdjacentQuaternaryCenters`) is
       *not* just a wiring task even now: `stereo_centers` gives candidate
       atoms, but "adjacent quaternary centers" as a burden signal still

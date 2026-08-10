@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `SimplificationSuggestion::target_atoms` for `ReduceStereocenterDensity`
+  now carries real atom indices instead of always being empty —
+  `StereoCenterCount`/`StereoDensityHigh` findings' `Finding.atoms` are
+  populated from chematic 0.13.0's `stereo_centers` API (specified and
+  unspecified centers alike, matching `stereochemical_burden`'s own
+  "burden equally" policy). Purely additive: no weight, threshold, or
+  scoring formula changed, and no existing behavior for any other
+  finding/suggestion changes.
+
 ## [0.1.1] - 2026-08-11
 
 Correctness/dependency/infrastructure patch on `0.1.0`. Deliberately

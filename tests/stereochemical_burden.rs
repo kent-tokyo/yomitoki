@@ -2,7 +2,7 @@
 //! against chematic's actual `stereo_completeness` output before being used
 //! here (see `tasks/lessons.md` for the general practice).
 
-use yomitoki::{AnalysisConfig, FindingCode, analyze_smiles};
+use yomitoki::{AnalysisConfig, FindingCode, SuggestionCode, analyze_smiles};
 
 fn stereo_difficulty(smiles: &str) -> f64 {
     let config = AnalysisConfig::default();
@@ -142,4 +142,45 @@ fn molecule_without_stereocenters_triggers_no_stereo_findings() {
             .iter()
             .any(|f| f.code == FindingCode::StereoDensityHigh)
     );
+}
+
+#[test]
+fn stereo_findings_now_carry_real_atom_indices() {
+    // chematic 0.13.0's stereo_centers API (issue #263) exposes an
+    // atom-level candidate list for the first time -- StereoCenterCount/
+    // StereoDensityHigh findings used to always carry `atoms: Vec::new()`
+    // (see ROADMAP.md's "Ready to implement" section, gitignored, and
+    // docs/architecture.md's "Simplification suggestions" section for the
+    // history of why). Both findings' atom sets should be non-empty now,
+    // and match: they describe the same underlying centers.
+    let config = AnalysisConfig::default();
+    let report = analyze_smiles("CC(O)C(N)C(C)C(O)C(N)C", &config).expect("stereo-dense fragment");
+    let count_finding = report
+        .findings
+        .iter()
+        .find(|f| f.code == FindingCode::StereoCenterCount)
+        .expect("stereocenters exist");
+    let density_finding = report
+        .findings
+        .iter()
+        .find(|f| f.code == FindingCode::StereoDensityHigh)
+        .expect("above the density threshold");
+    assert!(!count_finding.atoms.is_empty());
+    assert_eq!(count_finding.atoms, density_finding.atoms);
+}
+
+#[test]
+fn reduce_stereocenter_density_suggestion_now_targets_real_atoms() {
+    // suggestions.rs copies `target_atoms` directly from the source
+    // finding's own `atoms` -- now that stereochemical_burden populates
+    // real atom indices (see the test above), the suggestion should carry
+    // them through rather than the always-empty Vec it used to.
+    let config = AnalysisConfig::default();
+    let report = analyze_smiles("CC(O)C(N)C(C)C(O)C(N)C", &config).expect("stereo-dense fragment");
+    let suggestion = report
+        .suggestions
+        .iter()
+        .find(|s| s.code == SuggestionCode::ReduceStereocenterDensity)
+        .expect("stereo-dense fragment gets a density-reduction suggestion");
+    assert!(!suggestion.target_atoms.is_empty());
 }

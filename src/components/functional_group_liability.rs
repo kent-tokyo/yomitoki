@@ -138,7 +138,7 @@ pub(crate) fn compute(mol: &Molecule) -> FunctionalGroupLiabilityOutcome {
         raw,
         normalized,
         confidence: ProbabilityLikeScore::new(confidence),
-        contribution: normalized,
+        contribution: normalized.value(),
         findings: (0..findings.len()).map(FindingRef).collect(),
     };
 

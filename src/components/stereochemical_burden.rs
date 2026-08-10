@@ -132,7 +132,7 @@ pub(crate) fn compute(mol: &Molecule) -> StereochemicalBurdenOutcome {
         raw,
         normalized,
         confidence: ProbabilityLikeScore::new(confidence),
-        contribution: normalized,
+        contribution: normalized.value(),
         findings: (0..findings.len()).map(FindingRef).collect(),
     };
 

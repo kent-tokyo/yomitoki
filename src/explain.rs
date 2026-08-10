@@ -85,15 +85,26 @@ pub(crate) fn render(
             evidence.value.unwrap_or(0.0) as usize,
             evidence.threshold.unwrap_or(0.0) as usize
         ),
-        FindingCode::FragmentRarityHigh => format!(
-            "{} structural fragment(s) occur in fewer than {:.0}% of the configured \
-             reference corpus{} — unprecedented substructures may indicate genuine \
-             synthetic novelty, or simply a gap in this corpus's coverage; this is not \
-             a claim about which.",
-            evidence.value.unwrap_or(0.0) as usize,
-            evidence.threshold.unwrap_or(0.0) * 100.0,
-            label.map(|l| format!(" (rarest: {l})")).unwrap_or_default()
-        ),
+        FindingCode::FragmentRarityHigh => {
+            let pct = evidence.value.unwrap_or(0.0).round() as u32;
+            format!(
+                "Fragment precedent is unusually weak: {pct}{} percentile in the \
+                 reference corpus — this molecule's structural fragments are less \
+                 common than most of the corpus, which may indicate genuine synthetic \
+                 novelty, or simply a gap in this corpus's coverage; this is not a \
+                 claim about which.",
+                ordinal_suffix(pct)
+            )
+        }
+        FindingCode::FragmentPrecedentStrong => {
+            let pct = evidence.value.unwrap_or(0.0).round() as u32;
+            format!(
+                "Fragment precedent is unusually strong: {pct}{} percentile in the \
+                 reference corpus — this molecule's structural fragments are more \
+                 common than most of the corpus.",
+                ordinal_suffix(pct)
+            )
+        }
         FindingCode::InputUnsupportedElement => format!(
             "Molecule contains {atom_count} atom(s) outside yomitoki's supported \
              element set."
@@ -109,6 +120,17 @@ pub(crate) fn render(
             evidence.value.unwrap_or(0.0) as usize,
             evidence.threshold.unwrap_or(0.0) as usize
         ),
+    }
+}
+
+/// English ordinal suffix for a percentile display (`92` -> `"nd"`).
+fn ordinal_suffix(n: u32) -> &'static str {
+    match (n % 100, n % 10) {
+        (11..=13, _) => "th",
+        (_, 1) => "st",
+        (_, 2) => "nd",
+        (_, 3) => "rd",
+        _ => "th",
     }
 }
 

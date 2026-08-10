@@ -37,6 +37,7 @@ struct FrequencyTableFile {
 #[derive(Deserialize)]
 struct ManifestFile {
     artifact_sha256: String,
+    reference_distribution: Vec<f64>,
 }
 
 /// A loaded fragment-frequency corpus, as produced by
@@ -48,6 +49,10 @@ pub struct FragmentCorpus {
     pub(crate) radius: u32,
     pub(crate) total_molecules_processed: u64,
     pub(crate) frequency: HashMap<u64, u64>,
+    /// Sorted quantile grid of this corpus's own molecule-level mean
+    /// -document-frequency distribution — index `i` is the value at
+    /// percentile `i / (len - 1)`. See [`FragmentCorpus::percentile_rank`].
+    reference_distribution: Vec<f64>,
     version: String,
 }
 
@@ -57,10 +62,13 @@ impl FragmentCorpus {
     /// writes.
     ///
     /// The frequency table must reference exactly one radius — build with
-    /// `--radii <N>` (a single value), not the tool's discouraged `0,1,2`
-    /// default (`chematic::fp::morgan_fp_counts` is cumulative, so multiple
-    /// radii store the same underlying fragments redundantly; see the
-    /// tool's README).
+    /// `--radius <N>` (a single value; the tool's flag was a list before
+    /// round 17, since `chematic::fp::morgan_fp_counts` is cumulative and
+    /// multiple radii would store the same fragments redundantly). The
+    /// manifest must carry a non-empty `reference_distribution` — corpora
+    /// built before round 17 don't have one and need rebuilding; there is
+    /// no absolute-scale fallback (see `rules::FRAGMENT_RARITY_WEIGHT`'s
+    /// doc comment for why an absolute scale doesn't work).
     pub fn load_dir(dir: impl AsRef<Path>) -> Result<FragmentCorpus, YomitokiError> {
         let dir = dir.as_ref();
         let table: FrequencyTableFile = read_json(&dir.join("fragment_frequencies.json"))?;
@@ -74,7 +82,7 @@ impl FragmentCorpus {
                 Some(r) if r != record.radius => {
                     return Err(YomitokiError::ModelLoadError(format!(
                         "corpus references multiple radii ({r} and {}) — rebuild with a \
-                         single --radii value",
+                         single --radius value",
                         record.radius
                     )));
                 }
@@ -84,11 +92,19 @@ impl FragmentCorpus {
         }
         let radius = radius
             .ok_or_else(|| YomitokiError::ModelLoadError("corpus has no fragments".to_string()))?;
+        if manifest.reference_distribution.len() < 2 {
+            return Err(YomitokiError::ModelLoadError(
+                "corpus manifest has no reference_distribution — rebuild with \
+                 tools/build-fragment-corpus (round 17 or later)"
+                    .to_string(),
+            ));
+        }
 
         Ok(FragmentCorpus {
             radius,
             total_molecules_processed: table.total_molecules_processed,
             frequency,
+            reference_distribution: manifest.reference_distribution,
             version: manifest.artifact_sha256,
         })
     }
@@ -99,6 +115,34 @@ impl FragmentCorpus {
     /// compared knowing whether they used the same corpus.
     pub fn version(&self) -> &str {
         &self.version
+    }
+
+    /// Where `mean_document_frequency` falls within this corpus's own
+    /// molecule-level mean-document-frequency distribution, as an
+    /// empirical percentile in `0.0..=1.0` (linear interpolation between
+    /// the two nearest grid points). `0.0` = at or below the rarest
+    /// molecule this corpus has seen; `1.0` = at or above the most common.
+    /// This is what makes `fragment_rarity`'s signal corpus-*relative*
+    /// rather than an absolute scale no real corpus approaches the
+    /// extremes of (see `rules::FRAGMENT_RARITY_WEIGHT`'s doc comment).
+    pub(crate) fn percentile_rank(&self, mean_document_frequency: f64) -> f64 {
+        let grid = &self.reference_distribution;
+        match grid.binary_search_by(|v| v.partial_cmp(&mean_document_frequency).unwrap()) {
+            Ok(i) => i as f64 / (grid.len() - 1) as f64,
+            Err(0) => 0.0,
+            Err(i) if i >= grid.len() => 1.0,
+            Err(i) => {
+                // Linear interpolation between grid[i-1] and grid[i].
+                let (lo, hi) = (grid[i - 1], grid[i]);
+                let frac = if hi > lo {
+                    (mean_document_frequency - lo) / (hi - lo)
+                } else {
+                    0.0
+                };
+                ((i - 1) as f64 + frac) / (grid.len() - 1) as f64
+            }
+        }
+        .clamp(0.0, 1.0)
     }
 }
 

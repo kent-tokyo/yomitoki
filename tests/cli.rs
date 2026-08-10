@@ -91,8 +91,15 @@ fn fragment_corpus_flag_with_a_real_corpus_populates_fragment_rarity() {
     .unwrap();
     std::fs::write(
         dir.path().join("manifest.json"),
-        serde_json::to_vec(&serde_json::json!({"artifact_sha256": "sha256:cli-test-fixture"}))
-            .unwrap(),
+        serde_json::to_vec(&serde_json::json!({
+            "artifact_sha256": "sha256:cli-test-fixture",
+            // A flat, uninformative reference distribution -- fine for
+            // this test, which only checks that fragment_rarity gets
+            // populated at all, not what it says (see tests/
+            // fragment_rarity.rs for formula-behavior coverage).
+            "reference_distribution": [0.0, 1.0],
+        }))
+        .unwrap(),
     )
     .unwrap();
 

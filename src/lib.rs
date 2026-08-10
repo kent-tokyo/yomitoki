@@ -33,3 +33,10 @@ pub use report::{
 /// definition). Not part of the supported public API.
 #[doc(hidden)]
 pub use rules::SUPPORTED_ELEMENTS;
+
+/// Re-exported only so `tools/build-fragment-corpus` can record which
+/// `fragment_rarity` formula/ruleset version was current when a corpus was
+/// built (manifest provenance — round 17). Not part of the supported
+/// public API.
+#[doc(hidden)]
+pub use rules::RULESET_VERSION;

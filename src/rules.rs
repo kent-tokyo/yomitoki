@@ -6,7 +6,11 @@
 //! any constant below changes — it's recorded in every report's
 //! `Provenance`.
 
-pub const RULESET_VERSION: &str = "0.8.0";
+/// Bumped whenever any constant in this module changes; recorded in every
+/// report's [`crate::Provenance`] and, via the `#[doc(hidden)]` re-export
+/// at the crate root, in `tools/build-fragment-corpus`'s manifest
+/// provenance too.
+pub const RULESET_VERSION: &str = "0.9.0";
 
 // ---------------------------------------------------------------------------
 // Applicability
@@ -107,15 +111,18 @@ pub(crate) const SIZE_WEIGHT_PER_MOLECULAR_WEIGHT_UNIT: f64 = 0.0006;
 /// commercially available long unbranched chains, which have many
 /// rotatable bonds but essentially no synthetic difficulty — exactly the
 /// "structural complexity vs. actual difficulty" conflation AGENTS.md §2
-/// names as a problem with existing tools. `fragment_rarity` (§5.4) was
-/// supposed to correct this by recognizing such fragments as
-/// common/precedented, and is now implemented — but round 16 found it
-/// currently does the *opposite* when tested end-to-end against a real
-/// corpus (dodecane's `overall.difficulty` went from `0.068` to `0.227`
-/// once a corpus was configured, not down). See `FRAGMENT_RARITY_WEIGHT`'s
-/// doc for the root cause (a formula defect, not a tuning one) — until
-/// it's redesigned, this component alone still overstates difficulty for
-/// this case, and configuring a corpus makes it worse, not better.
+/// names as a problem with existing tools. `fragment_rarity` (§5.4)
+/// corrects this once a corpus is configured — round 16 found the
+/// original formula did the *opposite* end-to-end; round 17's
+/// corpus-relative redesign (see `rules::FRAGMENT_PRECEDENT_FINDING_
+/// THRESHOLD`'s doc / the "Fragment rarity" section above) fixes the
+/// documented case specifically: dodecane's `overall.difficulty` measured
+/// `0.068` → `0.000` against the real 200k-molecule ChEMBL corpus
+/// (`--fragment-corpus`), the corrected direction. Not a general
+/// calibration claim — see that section's own caveat about corpus-domain
+/// bias (ChEMBL reflects bioactivity relevance, not raw synthetic
+/// accessibility; some genuinely-easy-but-bioactivity-atypical scaffolds
+/// can still score *more* difficult with a corpus configured).
 pub(crate) const SIZE_WEIGHT_PER_ROTATABLE_BOND: f64 = 0.03;
 
 /// Scale in the `normalized = 1 - exp(-raw / scale)` burden transform
@@ -191,13 +198,14 @@ pub(crate) const STEREO_DENSITY_FINDING_THRESHOLD: f64 = 0.25;
 /// aspirin (`CC(=O)Oc1ccccc1C(=O)O`) trips `phenol`, `phenolic_aldehyde`,
 /// `active_ester`, and `acetal_ketal`; paracetamol trips `phenol`,
 /// `aniline`, and `secondary_amine`. Neither molecule is remotely
-/// difficult to make. `fragment_rarity` (§5.4) was expected to correct for
-/// this the same way it was expected to correct the rotatable-bond term
-/// (`SIZE_WEIGHT_PER_ROTATABLE_BOND`) by recognizing such fragments as
-/// common/precedented — round 16 found it currently does the opposite for
-/// aspirin end-to-end (`overall.difficulty` `0.273` → `0.428` once a
-/// corpus is configured). See `FRAGMENT_RARITY_WEIGHT`'s doc for why (a
-/// formula defect, not a tuning one).
+/// difficult to make. `fragment_rarity` (§5.4) corrects for this the same
+/// way it corrects the rotatable-bond term (`SIZE_WEIGHT_PER_ROTATABLE_
+/// BOND`) once a corpus is configured — round 17's corpus-relative
+/// redesign measured aspirin's `overall.difficulty` at `0.273` → `0.095`
+/// against the real 200k-molecule ChEMBL corpus (the corrected direction;
+/// round 16 found the original formula went the other way). Paracetamol
+/// similarly measured `0.243` → `0.095`. See this file's "Fragment
+/// rarity" section for the formula and its corpus-domain-bias caveat.
 pub(crate) const FG_WEIGHT_PER_REACTIVE_GROUP: f64 = 0.12;
 
 /// Scale in the `normalized = 1 - exp(-raw / scale)` burden transform
@@ -271,97 +279,99 @@ pub(crate) const AGGREGATE_WEIGHT_RING_TOPOLOGY: f64 = 1.0;
 pub(crate) const AGGREGATE_WEIGHT_SIZE_TOPOLOGY: f64 = 0.4;
 pub(crate) const AGGREGATE_WEIGHT_STEREOCHEMICAL_BURDEN: f64 = 0.5;
 pub(crate) const AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY: f64 = 0.4;
-/// Only applied when a fragment corpus is configured
-/// (`AnalysisConfig.fragment_model`) — `fragment_rarity` is `None`
-/// otherwise and contributes nothing. `0.4` is a first-pass value matching
-/// `size_topology`/`functional_group_liability`'s weight class ("medium
-/// importance"), not a calibrated one — no real-molecule validation data
-/// exists yet to tune it against (same gap the other four weights have; see
-/// `docs/architecture.md`'s Non-goals). Does not itself rebalance the other
-/// four weights; whether aspirin/long-chain-alkane's known over
-/// -penalization (see `RING_WEIGHT_*`'s and `SIZE_WEIGHT_PER_ROTATABLE_
-/// BOND`'s doc comments) nets out correctly once this term is added is an
-/// empirical question for real molecules, not something this constant's
-/// value alone decides.
-pub(crate) const AGGREGATE_WEIGHT_FRAGMENT_RARITY: f64 = 0.4;
 
 // ---------------------------------------------------------------------------
-// Fragment rarity (AGENTS.md §5.4)
+// Fragment rarity (AGENTS.md §5.4) — corpus-relative signed precedent
 // ---------------------------------------------------------------------------
+//
+// Round 16 found the original formula (`raw = WEIGHT * (1.0 -
+// mean_document_frequency)`, added unconditionally to difficulty) broken,
+// not merely untuned: real molecules' mean document frequency in a diverse
+// corpus rarely exceeds ~0.3–0.4 even for ordinary fragments, so that
+// formula added positive burden for essentially every molecule, common or
+// not — confirmed end-to-end (aspirin `0.273 → 0.428`, dodecane
+// `0.068 → 0.227`, both *worse* once a corpus was configured, for exactly
+// the cases it was meant to correct).
+//
+// Round 17's redesign, per real round-16 measurement of the 200k-molecule
+// corpus's own molecule-level mean-document-frequency distribution
+// (`tools/build-fragment-corpus`'s `reference_distribution`, quantiles:
+// q01=0.079 q05=0.108 q10=0.123 q25=0.142 q50=0.161 q75=0.182 q90=0.204
+// q95=0.218 q99=0.250 — a fairly narrow, roughly symmetric distribution
+// around the median, no obvious plateau suggesting a hard neutral
+// dead-band boundary, which is why none is used below):
+//
+//   p = corpus.percentile_rank(mean_document_frequency)  // empirical CDF
+//   signed_signal = 1.0 - 2.0 * p                         // in [-1, 1]
+//   rarity_penalty    = max(signed_signal, 0.0)           // p < 0.5: rare
+//   precedent_support = max(-signed_signal, 0.0)          // p > 0.5: common
+//
+// `signed_signal` is continuous and crosses zero exactly at the corpus
+// median (p = 0.5), so it already provides a *soft* neutral zone around
+// "typical for this corpus" without needing a separate hard dead-band on
+// top — a second free parameter that round-16's single-corpus data
+// wouldn't justify picking a width for anyway.
+//
+// `precedent_support` is capped in `analyze::analyze` (not here — the cap
+// needs `size_topology`/`functional_group_liability`'s own contributions,
+// only known at aggregation time) at those two components' combined
+// contribution: strong fragment precedent can offset the "this looks like
+// an unusual/large substituent pattern" burden those two componen ts
+// capture, but must never zero out `ring_topology`/`stereochemical_burden`
+// burden just because a molecule's fragments are individually common — a
+// bridged cage or a stereocenter-dense core is exactly as hard to build
+// regardless of how precedented its individual fragments are.
+//
+// Deliberately no saturating burden transform (unlike every other
+// component, AGENTS.md §5.1): `signed_signal` is already bounded to
+// `[-1, 1]` by construction (a percentile can't exceed `[0, 1]`), so
+// there's no unbounded `raw` value to saturate — applying `1 - exp(-raw/
+// scale)` on top would only compress an already-bounded signal further,
+// for no expressed benefit.
+//
+// Known caveat, reported honestly rather than tuned away: corpus-domain
+// bias. Round 17's validation panel, run end-to-end against the real
+// 200k-molecule ChEMBL-37 corpus, confirmed the three documented target
+// cases fixed in the intended direction —
+//   aspirin              0.273 -> 0.095  (was worse in round 16, now better)
+//   paracetamol          0.243 -> 0.095
+//   dodecane             0.068 -> 0.000
+// — but also surfaced four structurally-legitimate molecules that got
+// substantially *harder*, not easier, once the corpus was configured:
+//   caffeine              0.287 -> 0.516  (MODERATELY_ACCESSIBLE -> CHALLENGING)
+//   norbornane (bridged)  0.341 -> 0.985  (MODERATELY_ACCESSIBLE -> HIGHLY_CHALLENGING)
+//   spiro-decane           0.199 -> 1.000  (LIKELY_ACCESSIBLE -> HIGHLY_CHALLENGING)
+//   stereocenter-dense     0.275 -> 1.000  (MODERATELY_ACCESSIBLE -> HIGHLY_CHALLENGING)
+// This was checked and is not a formula or cap bug: independently
+// recomputing each molecule's raw mean document frequency and percentile
+// against the corpus's own `fragment_frequencies.json`/
+// `reference_distribution` reproduces the same numbers the formula uses
+// (e.g. caffeine mean_df=0.153 -> p=0.386; norbornane mean_df=0.135 ->
+// p=0.178). The formula and support cap are behaving exactly as
+// specified — the corpus itself is the source of the surprise: ChEMBL is
+// a bioactivity-screening corpus, not a synthetic-accessibility corpus,
+// so its fragment-frequency table reflects which substructures show up in
+// bioassay-tested compounds, not which substructures are common building
+// blocks in synthesis. A caffeine-like fused purine core or a bridged
+// bicyclic ring can be genuinely easy to source/build while still being
+// under-represented in ChEMBL's compound population, so it registers as
+// "rare" here even though "rare in ChEMBL" and "hard to synthesize" are
+// not the same claim. `fragment_rarity`'s corpus-relative percentile is
+// only ever as good as the corpus it's given — swapping in a
+// synthesis-focused corpus (e.g. a reaction-precursor or building-block
+// database) instead of ChEMBL would be the natural next step to reduce
+// this bias, not a further formula change.
 
-/// A fragment's document frequency (occurrence count / corpus size) below
-/// this counts as "rare" for the `rare fragment count` figure AGENTS.md
-/// §5.4 requires the component to report. Purely descriptive — it does not
-/// drive `raw`/`normalized` (see `FRAGMENT_RARITY_WEIGHT`'s doc for why
-/// mean document frequency, not a threshold count, is what's used there).
-/// `0.05`: a first-pass round number, not tuned — see
-/// `tasks/upstream_and_corpus_research.md` (gitignored) Part 5 for the
-/// real-corpus numbers this was picked in view of (aspirin/dodecane mean
-/// document frequency ~0.24–0.27 against a real 200k-molecule ChEMBL
-/// corpus; a structurally atypical control's mean was ~0.033).
-pub(crate) const FRAGMENT_RARITY_DF_THRESHOLD: f64 = 0.05;
-
-/// `raw = FRAGMENT_RARITY_WEIGHT * (1.0 - mean_document_frequency)` across
-/// a molecule's fragments. Mean, not minimum: round-14 corpus testing
-/// (`tasks/upstream_and_corpus_research.md` Part 5) found minimum document
-/// frequency alone doesn't separate known-common molecules from a
-/// known-atypical control — a common molecule can still contain one
-/// specific, narrowly-precedented fragment (aspirin's rarest measured
-/// fragment was seen in under 0.04% of a 200k-molecule corpus) without the
-/// molecule as a whole being unusual. Mean document frequency across *all*
-/// of a molecule's fragments was the statistic that actually separated the
-/// tested cases.
-///
-/// **Round 16, run end-to-end against a real 200k-molecule ChEMBL corpus:
-/// this formula does not correct the false positives it was built to
-/// correct — it makes both of them worse.** Aspirin's `overall.difficulty`
-/// went from `0.273` (no corpus) to `0.428` (corpus configured); dodecane's
-/// went from `0.068` to `0.227`. Round 14 confirmed *relative* ranking is
-/// right (rare-control > aspirin/dodecane, e.g. a perfluorooctyl chain's
-/// `fragment_rarity.normalized` of `0.475` versus aspirin's `0.386`), but
-/// there is no baseline "common enough, contribute ~0" case: real
-/// molecules' mean document frequency in a diverse corpus rarely exceeds
-/// ~0.3–0.4 even for genuinely ordinary fragments (round-14 data: known
-/// -common cases ~0.24–0.27), so `1.0 - mean_document_frequency` sits at
-/// `~0.7` for essentially every real molecule, common or not, and always
-/// adds positive burden. This is a formula defect, not a constant-tuning
-/// one — no value of `FRAGMENT_RARITY_WEIGHT` or `FRAGMENT_RARITY_BURDEN_
-/// SCALE` fixes it, since the problem is what `raw` is computed *from*, not
-/// how it's scaled afterward. A fix needs a formula with an actual
-/// "common enough → ~zero" reference point (e.g. relative to the corpus's
-/// own mean-document-frequency distribution, not an absolute `1.0`
-/// ceiling that real corpora never approach) — not attempted here; this is
-/// a real design decision, not a value to guess at. Until redesigned,
-/// don't present `fragment_rarity` as correcting the rotatable-bond/Brenk
-/// -alert over-penalization cases it was meant to (see `SIZE_WEIGHT_PER_
-/// ROTATABLE_BOND`'s and `FG_WEIGHT_PER_REACTIVE_GROUP`'s doc comments,
-/// and the READMEs' Limitations sections) — it currently does the
-/// opposite for both.
-pub(crate) const FRAGMENT_RARITY_WEIGHT: f64 = 1.0;
-
-/// Non-linear burden scale (AGENTS.md §5.1), same saturating-transform
-/// convention as every other component.
-///
-/// Known weak spot (documented, not hidden — same practice as `SIZE_WEIGHT_
-/// PER_ROTATABLE_BOND`'s): with `FRAGMENT_RARITY_WEIGHT = 1.0`, `raw` is
-/// bounded to `0.0..=1.0` (since `1.0 - mean_document_frequency` can't
-/// exceed 1.0), which caps `normalized` at `1.0 - exp(-1.0/1.5) ≈ 0.487` —
-/// even a molecule sharing *zero* fragments with the corpus never reaches
-/// the "severe burden" range other components can reach (e.g. a
-/// heavily-fused ring system's `ring_topology` score). Left as-is rather
-/// than re-tuned blindly: real molecules' mean document frequency rarely
-/// approaches either extreme (round-14 data: known-common cases ~0.24–0.27,
-/// an atypical control ~0.033 — none near 0.0 or 1.0), so which of
-/// `FRAGMENT_RARITY_WEIGHT`/this scale should move, and by how much, needs
-/// more real-corpus data than three data points provide, not a guess.
-pub(crate) const FRAGMENT_RARITY_BURDEN_SCALE: f64 = 1.5;
-
-/// How many of a molecule's rarest fragments to name in a
-/// `FindingCode::FragmentRarityHigh` finding's explanation text. Fragment
-/// hashes aren't chemically interpretable on their own (no reverse mapping
-/// from hash to substructure exists in chematic's API) — this exists so
-/// the explanation is concrete evidence, not just a count.
-pub(crate) const FRAGMENT_RARITY_REPORT_COUNT: usize = 3;
+/// Minimum `|signed_signal|` for `fragment_rarity` to emit a
+/// `Finding`/`Contribution` at all — purely a *display* threshold ("is
+/// this worth surfacing as evidence"), not a scoring dead-band:
+/// `signed_signal` still applies to `overall.difficulty` continuously
+/// regardless of this constant. `0.1` (roughly `p` outside `[0.45,
+/// 0.55]`) is a first-pass round number for keeping near-median molecules
+/// finding-free rather than a tuned value — revisit with more real-corpus
+/// validation data than round 16/17's if it turns out too
+/// noisy/insensitive in practice.
+pub(crate) const FRAGMENT_PRECEDENT_FINDING_THRESHOLD: f64 = 0.1;
 
 /// Below this confidence (and absent a hard applicability failure), the
 /// verdict is `Indeterminate` rather than a difficulty-based bucket.

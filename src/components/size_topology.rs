@@ -75,7 +75,7 @@ pub(crate) fn compute(mol: &Molecule) -> SizeTopologyOutcome {
         // additional uncertainty to express (same rationale as
         // ring_topology's fixed confidence).
         confidence: ProbabilityLikeScore::new(1.0),
-        contribution: normalized,
+        contribution: normalized.value(),
         findings: (0..findings.len()).map(FindingRef).collect(),
     };
 

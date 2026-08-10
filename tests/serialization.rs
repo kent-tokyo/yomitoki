@@ -13,7 +13,7 @@ fn sample_report() -> SynthesizabilityReport {
         raw: 0.6,
         normalized: ProbabilityLikeScore::new(0.33),
         confidence: ProbabilityLikeScore::new(1.0),
-        contribution: ProbabilityLikeScore::new(0.33),
+        contribution: 0.33,
         findings: vec![FindingRef(0)],
     };
 

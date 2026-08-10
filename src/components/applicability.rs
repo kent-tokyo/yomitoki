@@ -165,7 +165,7 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
         raw: finite_or_zero(1.0 - confidence.value()),
         normalized: ProbabilityLikeScore::new(1.0 - confidence.value()),
         confidence,
-        contribution: ProbabilityLikeScore::new(0.0),
+        contribution: 0.0,
         findings: (0..findings.len()).map(FindingRef).collect(),
     };
 

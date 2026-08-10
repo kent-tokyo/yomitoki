@@ -318,24 +318,45 @@ rotatable-bond term over-penalizes simple, commercially available long
 unbranched chains (many rotatable bonds, essentially no synthetic
 difficulty) — the same "structural complexity vs. actual difficulty"
 conflation that existing SA-scoring tools are prone to. `fragment_rarity`
-was meant to correct for this by recognizing such fragments as
-common/precedented, and is now implemented — but round 16 found it
-currently makes this specific case *worse*: dodecane's `overall.
-difficulty` goes from `0.068` to `0.227` once a corpus is configured, not
-down. Confirmed formula defect, not a missing feature — see "Non-goals /
-deferred" below and `rules::FRAGMENT_RARITY_WEIGHT`'s doc comment.
+is meant to correct for this by recognizing such fragments as
+common/precedented. Round 16 found the original naive-document-frequency
+formula made this specific case *worse* (dodecane `0.068 → 0.227`); round
+17's corpus-relative percentile redesign confirms it fixed, end-to-end
+against a real 200k-molecule corpus: dodecane's `overall.difficulty` now
+measures `0.068 → 0.000`. Not a general calibration claim — see the fourth
+caveat below and `rules.rs`'s "Fragment rarity" section for the formula
+and its corpus-domain-bias discussion.
 
 **Second known caveat, same shape:** `functional_group_liability` wraps
 Brenk et al. (2008) directly, which was validated as a med-chem
 screening-library *desirability* filter, not a synthetic-difficulty
 signal. Several of its alerts fire on common, cheaply-precedented groups —
 aspirin trips `phenol`/`phenolic_aldehyde`/`active_ester`/`acetal_ketal`
-and lands at `ModeratelyAccessible` (synthesizability 0.74) despite being
-one of the most trivially synthesizable molecules there is; paracetamol
-similarly trips `phenol`/`aniline`/`secondary_amine`. `fragment_rarity`
-was expected to correct for this the same way — same result: aspirin's
-`overall.difficulty` goes from `0.273` to `0.428` once a corpus is
-configured, confirmed end-to-end, not merely predicted.
+and, without a corpus configured, lands at `ModeratelyAccessible`
+(synthesizability 0.74) despite being one of the most trivially
+synthesizable molecules there is; paracetamol similarly trips
+`phenol`/`aniline`/`secondary_amine`. `fragment_rarity` corrects for this
+the same way once a corpus is configured — round 17 confirms it
+end-to-end: aspirin's `overall.difficulty` measures `0.273 → 0.095`,
+paracetamol's `0.243 → 0.095`.
+
+**Fourth known caveat, discovered by round 17's validation panel:**
+`fragment_rarity`'s corpus-relative signal is only as good as the corpus
+it's given. Against the real 200k-molecule ChEMBL-37 corpus, several
+structurally-legitimate molecules score *harder*, not easier, once the
+corpus is configured — caffeine (`0.287 → 0.516`), a bridged bicyclic /
+norbornane (`0.341 → 0.985`), a spiro ring system (`0.199 → 1.000`), and a
+stereocenter-dense molecule (`0.275 → 1.000`). Checked and confirmed not a
+formula or cap bug: independently re-deriving each molecule's raw mean
+document frequency and percentile from the corpus's own
+`fragment_frequencies.json`/`reference_distribution` reproduces the same
+numbers the formula uses. The likely cause is corpus-domain bias: ChEMBL
+is a bioactivity-screening corpus, so its fragment-frequency table
+reflects what shows up in bioassay-tested compounds, not what's a common
+synthetic building block — "rare in ChEMBL" and "hard to synthesize" are
+different claims. Reported honestly rather than tuned away; the natural
+fix is a synthesis-focused reference corpus, not a further formula
+change.
 
 **Third known caveat, different shape:** `functional_group_liability`'s
 "dense functionalization" term (`identify_functional_groups`) counts
@@ -470,7 +491,7 @@ strictness. See `analyze::tests` for the regression tests covering this.
 
 | Field | Source |
 |---|---|
-| `schema_version` | literal constant in `provenance.rs` (currently `0.2.0`) |
+| `schema_version` | literal constant in `provenance.rs` (currently `0.4.0`) |
 | `yomitoki_version` | `env!("CARGO_PKG_VERSION")` |
 | `chematic_version` | chematic's declared version requirement |
 | `ruleset_version` | `rules::RULESET_VERSION` |
@@ -498,9 +519,11 @@ scales (SAscore `1`..`10`, easy..hard; yomitoki `difficulty` `0.0`..`1.0`,
 easy..hard) that the example deliberately does not rescale onto a shared
 axis. The value of the comparison is in where the two diverge, not where
 they agree — e.g. acyl halide (SAscore `6.62`, yomitoki `0.09`
-`LikelyAccessible`) and aspirin (SAscore `4.67`, yomitoki `0.27`
-`ModeratelyAccessible`, the same Brenk-validity gap documented in "Scoring
-direction" above). Reused the 14-fixture corpus already in
+`LikelyAccessible`) and aspirin, no fragment corpus configured (SAscore
+`4.67`, yomitoki `0.27` `ModeratelyAccessible`, the same Brenk-validity gap
+documented in "Scoring direction" above — with a corpus configured,
+yomitoki's aspirin score drops to `0.095`, see the fourth caveat there).
+Reused the 14-fixture corpus already in
 `tests/property_based.rs`'s fixed-molecule arm rather than inventing a
 second one.
 
@@ -520,28 +543,35 @@ Not implemented in v0.1 so far (tracked, not stubbed with fake data):
   `FragmentCorpus::load_dir` in the meantime. See
   `tasks/upstream_and_corpus_research.md` (gitignored) for the corpus-size
   -vs-signal measurements this was decided in view of.
-* **`fragment_rarity`'s scoring formula is confirmed broken, not merely
-  "unvalidated."** Run end-to-end against a real 200k-molecule ChEMBL
-  corpus (round 16): aspirin's `overall.difficulty` went from `0.273` (no
-  corpus) to `0.428` (corpus configured) — worse, not better, for exactly
-  the case (Brenk-alert over-firing) it exists to correct; dodecane's went
-  from `0.068` to `0.227` — same direction of failure for the
-  rotatable-bond case. Root cause: `raw = FRAGMENT_RARITY_WEIGHT * (1.0 -
-  mean_document_frequency)` has no "common enough → ~zero contribution"
-  reference point — real molecules' mean document frequency in a diverse
-  corpus rarely exceeds ~0.3–0.4 even for ordinary fragments, so `1.0 -
-  mean_document_frequency` sits around `0.7` and contributes positive
-  burden for essentially every molecule, common or not. This is a formula
-  defect, not a constant to retune — see `rules::FRAGMENT_RARITY_WEIGHT`'s
-  doc comment for the full analysis and what a fix would need (a
-  reference point relative to the corpus's own distribution, not an
-  absolute `1.0` ceiling). `FRAGMENT_RARITY_BURDEN_SCALE` also has a known
-  ceiling effect (`normalized` can't exceed ~0.49 with the current
-  constants) that's secondary to the formula problem. Confidence is a flat
-  `1.0`, with no model yet for how corpus size/coverage should discount
-  it. **Until redesigned, configuring a fragment corpus makes the two
-  documented false positives worse, not better — this is not currently a
-  usable correction mechanism.**
+* **`fragment_rarity`'s scoring formula was confirmed broken in round 16,
+  redesigned and fixed in round 17.** Round 16 found `raw =
+  FRAGMENT_RARITY_WEIGHT * (1.0 - mean_document_frequency)` had no
+  "common enough → ~zero contribution" reference point — real molecules'
+  mean document frequency in a diverse corpus rarely exceeds ~0.3–0.4 even
+  for ordinary fragments, so `1.0 - mean_document_frequency` sat around
+  `0.7` and contributed positive burden for essentially every molecule,
+  common or not (aspirin `0.273 → 0.428`, dodecane `0.068 → 0.227`, both
+  worse once a corpus was configured). Round 17 replaced it with a
+  corpus-relative signed-precedent formula: convert a molecule's mean
+  document frequency to `p`, its empirical percentile within the
+  corpus's own distribution (`FragmentCorpus::percentile_rank`, built from
+  a 1001-point quantile grid computed during corpus build), then
+  `signed_signal = 1.0 - 2.0 * p` — negative (support) above the median,
+  positive (penalty) below it. Precedent support is capped in
+  `analyze::analyze` at `size_topology`'s plus
+  `functional_group_liability`'s own contribution, so strong fragment
+  precedent can never erase `ring_topology`/`stereochemical_burden`
+  burden. Confirmed end-to-end against the real 200k-molecule corpus:
+  aspirin `0.273 → 0.095`, paracetamol `0.243 → 0.095`, dodecane
+  `0.068 → 0.000` — all three documented target cases now move in the
+  intended direction. See `rules.rs`'s "Fragment rarity" section for the
+  full formula, the measured corpus quantiles it was designed against, and
+  its own known caveat: some structurally-legitimate molecules (caffeine,
+  bridged/spiro ring systems, stereocenter-dense cores) score *harder*
+  against the ChEMBL corpus specifically, due to corpus-domain bias, not a
+  formula defect — see "Scoring direction" above for the specific numbers.
+  Confidence is still a flat `1.0`, with no model yet for how corpus
+  size/coverage should discount it.
 * Candidate `stereochemical_burden` indicators, each investigated and
   rejected/deferred for a distinct, evidenced reason (round 12 — corrects
   an earlier, inaccurate blanket "E/Z needs 2D coordinates" note):

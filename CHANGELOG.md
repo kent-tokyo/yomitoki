@@ -19,26 +19,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `analyze` itself — parsing stays the only fallible step inside `analyze`,
   per AGENTS.md §17). Scores from *mean* document frequency across a
   molecule's `chematic::fp::morgan_fp_counts` fragments (chosen over
-  minimum; see `rules::FRAGMENT_RARITY_WEIGHT`'s doc). New
-  `FindingCode::FragmentRarityHigh`, new `SuggestionCode::
-  IncreaseFragmentPrecedent` derivation, new `YomitokiError::
-  ModelLoadError`, new `Provenance.model_version` field. New `chematic`
-  `fp` feature dependency. `AGGREGATE_WEIGHT_FRAGMENT_RARITY` and
-  `FRAGMENT_RARITY_*` constants are first-pass, undocumented-as-calibrated
-  values — see their doc comments in `rules.rs` for known limitations
-  (`FRAGMENT_RARITY_BURDEN_SCALE`'s ceiling effect in particular).
-  `ruleset_version` bumped to 0.8.0, `schema_version` to 0.3.0.
+  minimum; see `rules.rs`'s "Fragment rarity" section). New
+  `FindingCode::FragmentRarityHigh`/`FragmentPrecedentStrong`, new
+  `SuggestionCode::IncreaseFragmentPrecedent` derivation, new
+  `YomitokiError::ModelLoadError`, new `Provenance.model_version` field.
+  New `chematic` `fp` feature dependency.
   No corpus-distribution decision has been made yet (the `yomitoki-core`/
   `yomitoki-models`/`yomitoki-data` split §5.4 sketches, vs. a
   feature-flagged external file) — build one locally with
   `tools/build-fragment-corpus` in the meantime.
-  **Known-broken scoring formula, confirmed by testing end-to-end against
-  a real corpus, not merely untuned**: configuring a corpus currently
-  makes the two documented false positives it exists to correct *worse*
+  Round 16 found the initial formula (`WEIGHT * (1.0 -
+  mean_document_frequency)`, added unconditionally to difficulty) confirmed
+  broken by end-to-end testing against a real corpus, not merely untuned:
+  it made the two documented false positives it exists to correct *worse*
   (aspirin's `overall.difficulty` `0.273` → `0.428`; dodecane's `0.068` →
-  `0.227`). See `rules::FRAGMENT_RARITY_WEIGHT`'s doc comment for the root
-  cause and what a fix needs. Do not treat `fragment_rarity` as a working
-  correction mechanism yet.
+  `0.227`). Round 17 redesigned it as a corpus-relative signed-precedent
+  formula (percentile of the molecule's mean document frequency within the
+  corpus's own distribution, `FragmentCorpus::percentile_rank` against a
+  1001-point quantile grid computed during corpus build and stored as
+  `manifest.json`'s `reference_distribution`), with precedent support
+  capped in `analyze::analyze` at `size_topology`'s plus
+  `functional_group_liability`'s combined contribution so strong fragment
+  precedent can never erase `ring_topology`/`stereochemical_burden`
+  burden. `ComponentScore.contribution` changed from `ProbabilityLikeScore`
+  to a signed `f64` to represent this (a schema-breaking change, accepted
+  pre-`0.1.0`). `SynthesizabilityReport.dominant_supports` is now
+  genuinely populated (previously always empty), with a new
+  `dominant_supports()` accessor. Confirmed end-to-end against the real
+  200k-molecule corpus: aspirin `0.273` → `0.095`, paracetamol `0.243` →
+  `0.095`, dodecane `0.068` → `0.000` — all three documented target cases
+  now move in the intended direction. Known caveat, reported rather than
+  hidden: some structurally-legitimate molecules (caffeine, bridged/spiro
+  ring systems, stereocenter-dense cores) score *harder* against the
+  ChEMBL corpus specifically, due to corpus-domain bias (ChEMBL is a
+  bioactivity corpus, not a synthesis-focused one) — see `rules.rs`'s
+  "Fragment rarity" section for the full before/after numbers.
+  `ruleset_version` bumped to 0.8.0 then 0.9.0, `schema_version` to 0.3.0.
 - `--fragment-corpus <dir>` CLI flag (`yomitoki analyze`), loads a
   `tools/build-fragment-corpus` output directory once before analyzing any
   molecule and enables `fragment_rarity` for the run. Omitted, behavior is

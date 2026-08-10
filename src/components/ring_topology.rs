@@ -169,7 +169,7 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
         // parsed and passed valence validation — no additional uncertainty
         // to express yet (see docs/architecture.md).
         confidence: ProbabilityLikeScore::new(1.0),
-        contribution: normalized,
+        contribution: normalized.value(),
         findings: (0..findings.len()).map(FindingRef).collect(),
     };
 

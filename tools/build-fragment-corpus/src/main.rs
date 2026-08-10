@@ -1,11 +1,11 @@
-//! Builds a fragment-frequency corpus for the (not yet implemented)
-//! `fragment_rarity` scoring component (AGENTS.md §5.4, §24). Not part of
-//! the published `yomitoki` crate — a standalone, unpublished build tool.
+//! Builds a fragment-frequency corpus for the `fragment_rarity` scoring
+//! component (AGENTS.md §5.4, §24). Not part of the published `yomitoki`
+//! crate — a standalone, unpublished build tool.
 //!
 //! ```text
 //! build-fragment-corpus --output <dir> \
 //!   --source "<name>|<license>|<url>|<path>" [--source ...] \
-//!   [--radii 0,1,2] [--limit N] \
+//!   [--radius 2] [--limit N] \
 //!   [--delimiter whitespace|tab|comma] [--smiles-column N] \
 //!   [--name-column N|none] [--title-line]
 //! ```
@@ -25,18 +25,30 @@
 //! SMILES across *all* `--source` inputs given in one invocation, so a
 //! molecule present in two sources is only counted once.
 //!
+//! `--radius` takes exactly one value, not a list: `chematic::fp::
+//! morgan_fp_counts(mol, radius)` is cumulative over iterations `0..=radius`
+//! (confirmed from `chematic-fp`'s source), so multiple radii used to store
+//! the same underlying fragments redundantly under different keys (round
+//! 15's finding) — and the molecule-level reference distribution (round 17)
+//! is inherently single-radius: a molecule's "how common are my fragments"
+//! statistic only means one thing per corpus, not one per radius.
+//!
 //! Writes two files to `--output`:
-//! - `fragment_frequencies.json`: for each `(radius, fragment_hash)`, the
-//!   number of distinct molecules in which that fragment occurs at least
-//!   once (document frequency, not raw atom-environment count).
+//! - `fragment_frequencies.json`: for each fragment hash, the number of
+//!   distinct molecules in which it occurs at least once (document
+//!   frequency, not raw atom-environment count).
 //! - `manifest.json`: per-source provenance (AGENTS.md §24 — name, license,
-//!   URL, input file sha256, record counts) plus `artifact_sha256`, the
-//!   sha256 of `fragment_frequencies.json`'s bytes. That hash is computed
-//!   over the frequency file only, not the manifest, so it stays
-//!   reproducible across runs even though the manifest's own
-//!   `generated_at_unix` field legitimately isn't.
+//!   URL, input file sha256, record counts), `artifact_sha256` (sha256 of
+//!   `fragment_frequencies.json`'s bytes — computed over the frequency file
+//!   only, not the manifest, so it stays reproducible across runs even
+//!   though the manifest's own `generated_at_unix` field legitimately
+//!   isn't), and `reference_distribution`: a 1001-point quantile grid
+//!   (p = 0.000, 0.001, ..., 1.000) of the corpus's own molecule-level mean
+//!   -document-frequency distribution, letting `fragment_rarity` convert a
+//!   query molecule's mean document frequency into an empirical percentile
+//!   against this exact corpus rather than an arbitrary absolute scale.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::process::ExitCode;
 
 use serde::Serialize;
@@ -51,23 +63,28 @@ struct SourceArg {
 
 struct Args {
     output: String,
-    radii: Vec<u32>,
+    radius: u32,
     limit: Option<usize>,
     sources: Vec<SourceArg>,
     reader_options: chematic::mol::SmilesReaderOptions,
 }
 
-const DEFAULT_RADII: &[u32] = &[0, 1, 2];
+const DEFAULT_RADIUS: u32 = 2;
+/// Number of points in the stored quantile grid (per-mille resolution:
+/// p = 0.000, 0.001, ..., 1.000).
+const DISTRIBUTION_GRID_POINTS: usize = 1001;
 
 const USAGE: &str = "\
 Usage:
   build-fragment-corpus --output <dir> \\
     --source \"<name>|<license>|<url>|<path>\" [--source ...] \\
-    [--radii 0,1,2] [--limit N] \\
+    [--radius 2] [--limit N] \\
     [--delimiter whitespace|tab|comma] [--smiles-column N] \\
     [--name-column N|none] [--title-line]
 
 <path> is a .sdf file or a SMILES table file (.smi/.csv/.tsv/.txt).
+--radius takes exactly one value (default 2 — ECFP4-equivalent; morgan_fp
+_counts is cumulative, so multiple radii would be redundant).
 --limit caps the total number of kept molecules across all sources combined
 (for smoke-testing the pipeline without processing a whole corpus).
 --delimiter/--smiles-column/--name-column/--title-line configure how
@@ -77,7 +94,7 @@ invocation.";
 
 fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
     let mut output = None;
-    let mut radii = None;
+    let mut radius = None;
     let mut limit = None;
     let mut sources = Vec::new();
     let mut reader_options = chematic::mol::SmilesReaderOptions::default();
@@ -85,20 +102,14 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--output" => output = Some(args.next().ok_or("--output requires a value")?),
-            "--radii" => {
-                let value = args.next().ok_or("--radii requires a value")?;
-                let mut parsed = Vec::new();
-                for part in value.split(',') {
-                    let radius: u32 = part
+            "--radius" => {
+                let value = args.next().ok_or("--radius requires a value")?;
+                radius = Some(
+                    value
                         .trim()
-                        .parse()
-                        .map_err(|_| format!("invalid --radii value {part:?}"))?;
-                    parsed.push(radius);
-                }
-                if parsed.is_empty() {
-                    return Err("--radii requires at least one value".to_string());
-                }
-                radii = Some(parsed);
+                        .parse::<u32>()
+                        .map_err(|_| format!("invalid --radius value {value:?}"))?,
+                );
             }
             "--limit" => {
                 let value = args.next().ok_or("--limit requires a value")?;
@@ -166,7 +177,7 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
 
     Ok(Args {
         output,
-        radii: radii.unwrap_or_else(|| DEFAULT_RADII.to_vec()),
+        radius: radius.unwrap_or(DEFAULT_RADIUS),
         limit,
         sources,
         reader_options,
@@ -241,16 +252,102 @@ struct FrequencyTable {
 #[derive(Serialize)]
 struct CorpusManifest {
     sources: Vec<SourceRecord>,
-    radii: Vec<u32>,
+    radius: u32,
     preprocessing: String,
     exclusion_criteria: String,
     generated_at_unix: u64,
     chematic_version: String,
     tool_version: String,
+    /// The `yomitoki::RULESET_VERSION` current when this corpus was built —
+    /// informational provenance, not a compatibility constraint: the corpus
+    /// format itself doesn't change across ruleset versions, but this lets
+    /// a future investigation correlate a corpus's `reference_distribution`
+    /// with which `fragment_rarity` formula it was measured against
+    /// (round 17).
+    yomitoki_ruleset_version_at_build: String,
+    /// Version tag for how a "fragment" is defined and hashed — bump this
+    /// (independent of `tool_version`) if the hashing scheme or fragment
+    /// extraction function ever changes, since it invalidates comparability
+    /// with corpora built under a prior definition.
+    fragment_definition_version: String,
+    /// Human-readable description of exactly what a "fragment" is and how
+    /// document frequency is counted, kept in the manifest itself so a
+    /// consumer doesn't need to read this tool's Rust source to interpret
+    /// `fragment_frequencies.json`.
+    fragment_definition: String,
     total_molecules_processed: u64,
     distinct_fragment_count: u64,
+    /// Mean, across all kept molecules, of each molecule's own mean
+    /// document frequency (the same statistic `fragment_rarity::compute`
+    /// computes per query molecule) — a single-number summary of how
+    /// "common" a typical corpus molecule's fragments are, measured
+    /// directly rather than assumed (round 16/17).
+    mean_document_frequency: f64,
+    /// Median of the same per-molecule statistic — equivalent to
+    /// `reference_distribution_quantiles.q50`, duplicated here as a
+    /// standalone summary field since it's the value `signed_signal`
+    /// treats as neutral (`p = 0.5`).
+    median_document_frequency: f64,
     artifact_file: String,
     artifact_sha256: String,
+    /// Human-readable description of `reference_distribution`'s shape and
+    /// purpose, kept in the manifest itself for the same reason as
+    /// `fragment_definition` above.
+    reference_distribution_definition: String,
+    /// A `DISTRIBUTION_GRID_POINTS`-point quantile grid (index `i`
+    /// corresponds to percentile `i / (DISTRIBUTION_GRID_POINTS - 1)`) of
+    /// this corpus's own molecule-level mean-document-frequency
+    /// distribution — one value per kept molecule (that molecule's mean
+    /// document frequency across its own fragments, against this same
+    /// corpus), sorted, then resampled onto the grid. Lets
+    /// `fragment_rarity` convert a query molecule's mean document
+    /// frequency into an empirical percentile *against this exact corpus*
+    /// (`FragmentCorpus::percentile_rank`) instead of an arbitrary
+    /// absolute scale — see `rules::FRAGMENT_RARITY_WEIGHT`'s doc comment
+    /// for why the old absolute-scale formula was wrong.
+    reference_distribution: Vec<f64>,
+    /// Named convenience subset of `reference_distribution`'s 1001 points,
+    /// for a human or tool that wants the standard quantiles without
+    /// indexing into the full grid.
+    reference_distribution_quantiles: NamedQuantiles,
+}
+
+#[derive(Serialize)]
+struct NamedQuantiles {
+    q01: f64,
+    q05: f64,
+    q10: f64,
+    q25: f64,
+    q50: f64,
+    q75: f64,
+    q90: f64,
+    q95: f64,
+    q99: f64,
+}
+
+impl NamedQuantiles {
+    fn from_sorted(sorted: &[f64]) -> Self {
+        Self {
+            q01: percentile(sorted, 0.01),
+            q05: percentile(sorted, 0.05),
+            q10: percentile(sorted, 0.10),
+            q25: percentile(sorted, 0.25),
+            q50: percentile(sorted, 0.50),
+            q75: percentile(sorted, 0.75),
+            q90: percentile(sorted, 0.90),
+            q95: percentile(sorted, 0.95),
+            q99: percentile(sorted, 0.99),
+        }
+    }
+}
+
+/// Linear-interpolation percentile of a value already sorted ascending.
+fn percentile(sorted: &[f64], p: f64) -> f64 {
+    if sorted.is_empty() {
+        return f64::NAN;
+    }
+    let idx = ((sorted.len() - 1) as f64 * p).round() as usize;
+    sorted[idx.min(sorted.len() - 1)]
 }
 
 fn main() -> ExitCode {
@@ -274,8 +371,14 @@ fn run(args: &Args) -> Result<(), String> {
         .map_err(|e| format!("could not create output dir {:?}: {e}", args.output))?;
 
     let mut seen_canonical: HashSet<String> = HashSet::new();
-    // (radius, fragment_hash) -> number of distinct molecules containing it.
-    let mut frequency: BTreeMap<(u32, u64), u64> = BTreeMap::new();
+    // fragment_hash -> number of distinct molecules containing it.
+    let mut frequency: HashMap<u64, u64> = HashMap::new();
+    // One entry per kept molecule, in processing order: its distinct
+    // fragment hashes. Small (a few dozen u64s per molecule at most) —
+    // kept in memory for the second pass below, which needs the *complete*
+    // frequency table to compute each molecule's own mean document
+    // frequency (not available until every molecule has been counted).
+    let mut molecule_fragment_hashes: Vec<Vec<u64>> = Vec::new();
     let mut total_molecules_processed: u64 = 0;
     let mut source_records = Vec::new();
     let mut remaining_limit = args.limit;
@@ -323,12 +426,12 @@ fn run(args: &Args) -> Result<(), String> {
                 *remaining -= 1;
             }
 
-            for &radius in &args.radii {
-                let counts = chematic::fp::morgan_fp_counts(&mol, radius);
-                for hash in counts.keys() {
-                    *frequency.entry((radius, *hash)).or_insert(0) += 1;
-                }
+            let counts = chematic::fp::morgan_fp_counts(&mol, args.radius);
+            let hashes: Vec<u64> = counts.keys().copied().collect();
+            for &hash in &hashes {
+                *frequency.entry(hash).or_insert(0) += 1;
             }
+            molecule_fragment_hashes.push(hashes);
         }
 
         source_records.push(SourceRecord {
@@ -345,17 +448,45 @@ fn run(args: &Args) -> Result<(), String> {
         });
     }
 
-    let fragments: Vec<FragmentRecord> = frequency
-        .into_iter()
-        .map(
-            |((radius, fragment_hash), occurrence_count)| FragmentRecord {
-                radius,
-                fragment_hash,
-                occurrence_count,
-            },
-        )
+    let mut fragments: Vec<FragmentRecord> = frequency
+        .iter()
+        .map(|(&fragment_hash, &occurrence_count)| FragmentRecord {
+            radius: args.radius,
+            fragment_hash,
+            occurrence_count,
+        })
         .collect();
+    // Deterministic byte output (artifact_sha256 depends on it) — HashMap
+    // iteration order isn't stable, so sort explicitly before writing.
+    fragments.sort_by_key(|f| f.fragment_hash);
     let distinct_fragment_count = fragments.len() as u64;
+
+    // Second pass: now that `frequency` is complete, compute each kept
+    // molecule's own mean document frequency against it, matching exactly
+    // what `fragment_rarity::compute` does at inference time.
+    let total = total_molecules_processed.max(1) as f64;
+    let mut mean_dfs: Vec<f64> = molecule_fragment_hashes
+        .iter()
+        .filter(|hashes| !hashes.is_empty())
+        .map(|hashes| {
+            let sum: f64 = hashes
+                .iter()
+                .map(|hash| frequency.get(hash).copied().unwrap_or(0) as f64 / total)
+                .sum();
+            sum / hashes.len() as f64
+        })
+        .collect();
+    mean_dfs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let reference_distribution: Vec<f64> = (0..DISTRIBUTION_GRID_POINTS)
+        .map(|i| percentile(&mean_dfs, i as f64 / (DISTRIBUTION_GRID_POINTS - 1) as f64))
+        .collect();
+    let reference_distribution_quantiles = NamedQuantiles::from_sorted(&mean_dfs);
+    let mean_document_frequency = if mean_dfs.is_empty() {
+        0.0
+    } else {
+        mean_dfs.iter().sum::<f64>() / mean_dfs.len() as f64
+    };
+    let median_document_frequency = reference_distribution_quantiles.q50;
 
     let table = FrequencyTable {
         total_molecules_processed,
@@ -377,7 +508,7 @@ fn run(args: &Args) -> Result<(), String> {
 
     let manifest = CorpusManifest {
         sources: source_records,
-        radii: args.radii.clone(),
+        radius: args.radius,
         preprocessing: format!(
             "Parsed via chematic::mol readers ({:?}, smiles_column={}, \
              name_column={:?}, title_line={} for non-.sdf sources); molecules \
@@ -396,10 +527,36 @@ fn run(args: &Args) -> Result<(), String> {
         generated_at_unix,
         chematic_version: "0.12".to_string(),
         tool_version: env!("CARGO_PKG_VERSION").to_string(),
+        yomitoki_ruleset_version_at_build: yomitoki::RULESET_VERSION.to_string(),
+        fragment_definition_version: "morgan-ecfp-v1".to_string(),
+        fragment_definition: format!(
+            "chematic::fp::morgan_fp_counts(mol, radius={}) — circular \
+             (Morgan/ECFP-like) substructure hashes, cumulative over \
+             iterations 0..=radius. Document frequency = number of \
+             distinct kept molecules in which a given fragment hash occurs \
+             at least once (not raw occurrence count).",
+            args.radius
+        ),
         total_molecules_processed,
         distinct_fragment_count,
+        mean_document_frequency,
+        median_document_frequency,
         artifact_file: "fragment_frequencies.json".to_string(),
         artifact_sha256,
+        reference_distribution_definition: format!(
+            "A {DISTRIBUTION_GRID_POINTS}-point quantile grid (index i = \
+             percentile i/{}) of this corpus's own molecule-level \
+             mean-document-frequency distribution: for each kept molecule, \
+             the mean of (occurrence_count / total_molecules_processed) \
+             across that molecule's own fragment hashes, sorted ascending \
+             and resampled onto the grid. FragmentCorpus::percentile_rank \
+             binary-searches this grid to convert a query molecule's mean \
+             document frequency into an empirical percentile against this \
+             exact corpus.",
+            DISTRIBUTION_GRID_POINTS - 1
+        ),
+        reference_distribution,
+        reference_distribution_quantiles,
     };
     let manifest_json = serde_json::to_vec_pretty(&manifest)
         .map_err(|e| format!("could not serialize manifest: {e}"))?;
@@ -436,7 +593,7 @@ mod tests {
         ]))
         .unwrap();
         assert_eq!(parsed.output, "out");
-        assert_eq!(parsed.radii, DEFAULT_RADII.to_vec());
+        assert_eq!(parsed.radius, DEFAULT_RADIUS);
         assert_eq!(parsed.limit, None);
         assert_eq!(parsed.sources.len(), 1);
         assert_eq!(parsed.sources[0].name, "DrugBank");
@@ -446,12 +603,12 @@ mod tests {
     }
 
     #[test]
-    fn parses_custom_radii_and_limit_and_multiple_sources() {
+    fn parses_custom_radius_and_limit_and_multiple_sources() {
         let parsed = parse_args(args(&[
             "--output",
             "out",
-            "--radii",
-            "0,1,2,3",
+            "--radius",
+            "3",
             "--limit",
             "100",
             "--source",
@@ -460,7 +617,7 @@ mod tests {
             "B|CC-BY-4.0|https://b.test|b.smi",
         ]))
         .unwrap();
-        assert_eq!(parsed.radii, vec![0, 1, 2, 3]);
+        assert_eq!(parsed.radius, 3);
         assert_eq!(parsed.limit, Some(100));
         assert_eq!(parsed.sources.len(), 2);
     }

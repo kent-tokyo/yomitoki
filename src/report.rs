@@ -112,12 +112,24 @@ pub enum FindingCode {
     /// Distinct functional-group cluster count (Ertl 2017) above the
     /// threshold.
     FunctionalGroupDense,
-    /// This molecule's fragments have low mean document frequency against
-    /// the configured [`crate::FragmentCorpus`] (`AnalysisConfig.
-    /// fragment_model`) — only ever produced when a corpus is configured;
-    /// see `evidence` for the rare-fragment count and `explanation` for the
-    /// rarest fragments' identifiers and document frequencies.
+    /// This molecule's fragments sit at a low percentile of the configured
+    /// [`crate::FragmentCorpus`]'s (`AnalysisConfig.fragment_model`) own
+    /// mean-document-frequency distribution — i.e. this molecule's
+    /// fragments are, relative to the reference corpus, unusually rare.
+    /// Only ever produced when a corpus is configured. Contributes a
+    /// difficulty *penalty* — see `components::fragment_rarity`'s module
+    /// doc; the opposite-direction case is
+    /// [`FindingCode::FragmentPrecedentStrong`].
     FragmentRarityHigh,
+    /// This molecule's fragments sit at a high percentile of the
+    /// configured [`crate::FragmentCorpus`]'s own mean-document-frequency
+    /// distribution — unusually strong precedent relative to the
+    /// reference corpus. Only ever produced when a corpus is configured.
+    /// Contributes a difficulty *support* (a reduction, capped — see
+    /// `components::fragment_rarity`'s module doc), appearing in
+    /// `SynthesizabilityReport::dominant_supports`, not
+    /// `dominant_penalties`.
+    FragmentPrecedentStrong,
     /// The molecule contains an element outside yomitoki's supported set.
     InputUnsupportedElement,
     /// The molecule consists of disconnected fragments.
@@ -210,9 +222,16 @@ pub struct ComponentScore {
     /// molecule's overall `confidence` (which today comes entirely from
     /// `input_quality` — see `docs/architecture.md`'s Confidence contract).
     pub confidence: ProbabilityLikeScore,
-    /// This component's actual weighted contribution to
-    /// `overall.difficulty`.
-    pub contribution: ProbabilityLikeScore,
+    /// This component's actual contribution to `overall.difficulty` —
+    /// signed, unlike `normalized`/most other fields here: always
+    /// non-negative for the five components whose evidence only ever
+    /// argues difficulty should be *higher*, but `fragment_rarity` can
+    /// contribute a negative value (a molecule with unusually strong
+    /// corpus precedent lowers difficulty, capped — see
+    /// `components::fragment_rarity`'s module doc). A plain `f64`, not
+    /// `ProbabilityLikeScore`, specifically so a negative value is
+    /// preserved rather than silently clamped to `0.0`.
+    pub contribution: f64,
     /// References into `SynthesizabilityReport.findings` for the findings
     /// that justify this component's score.
     pub findings: Vec<FindingRef>,
@@ -421,13 +440,15 @@ pub struct SynthesizabilityReport {
     /// "Dominant penalties" list in AGENTS.md §4.1/§15. Access via
     /// [`SynthesizabilityReport::dominant_penalties`].
     pub dominant_penalties: Vec<Contribution>,
-    /// Reserved for factors that *reduce* difficulty — always empty in
-    /// v0.1 (no component currently identifies these).
+    /// Factors that *reduce* difficulty, ranked by magnitude, highest
+    /// first — populated only by `fragment_rarity`'s precedent-support
+    /// case (`FindingCode::FragmentPrecedentStrong`), only when a corpus
+    /// is configured; empty otherwise, same as every prior version.
     pub dominant_supports: Vec<Contribution>,
     /// Derived from `findings` regardless of `overall.verdict` — a finding
     /// is real whether or not the molecule is also `OutOfDomain`/
     /// `Indeterminate` for an unrelated reason, so a suggestion can appear
-    /// alongside either verdict. Only 3 of `SuggestionCode`'s 6 variants
+    /// alongside either verdict. Only 4 of `SuggestionCode`'s 6 variants
     /// are reachable in v0.1; see `suggestions.rs`/`docs/architecture.md`.
     pub suggestions: Vec<SimplificationSuggestion>,
     /// Input-quality/domain-applicability signals, kept separate from
@@ -442,5 +463,14 @@ impl SynthesizabilityReport {
     /// "Dominant penalties" list in AGENTS.md §4.1/§15.
     pub fn dominant_penalties(&self) -> &[Contribution] {
         &self.dominant_penalties
+    }
+
+    /// Difficulty-*reducing* findings sorted by magnitude, highest first —
+    /// the "Dominant supports" counterpart to
+    /// [`SynthesizabilityReport::dominant_penalties`]. Empty unless a
+    /// fragment corpus is configured and produced a precedent-support
+    /// finding.
+    pub fn dominant_supports(&self) -> &[Contribution] {
+        &self.dominant_supports
     }
 }

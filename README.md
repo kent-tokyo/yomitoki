@@ -292,6 +292,16 @@ claims certainty (`expected_effect` is always `MayReduceDifficulty`, never
   transparent, chemically-named factors instead.
 * **RAscore** approximates retrosynthesis success. yomitoki is route-free and
   explains the structural reasons behind its assessment.
+* **BR-SAScore** retrains SAscore's fragment table on USPTO
+  reaction/eMolecules building-block data and reports a single
+  reaction/building-block-informed score. yomitoki returns five
+  independent structural components plus applicability, confidence, and
+  machine-readable findings/simplification-suggestion codes — a
+  structured diagnostic report, not a single number, and requires no
+  reaction corpus to produce `overall.difficulty` at all (corpus choice
+  is contractually guaranteed not to change it — see
+  [External benchmark](#external-benchmark-v010) below for how the two
+  actually compare on accuracy).
 * **AiZynthFinder, ASKCOS, RENKIN** are route planners. yomitoki never
   generates a route.
 
@@ -334,6 +344,30 @@ with essentially no structural burden by yomitoki's own model. Aspirin
 described in Limitations. Where they broadly agree (caffeine, spiro,
 bridged-plus-stereo), that's not evidence either one is "correct" — neither
 has been validated against real synthesis outcomes yet.
+
+## External benchmark (v0.1.0)
+
+yomitoki v0.1.0's frozen default was measured against BR-SAScore's own
+TS1/TS2/TS3 test sets, alongside SAscore and BR-SAScore itself, on the
+exact same molecules. Full methodology, per-molecule results, and honest
+limitations: **[docs/benchmark.md](docs/benchmark.md)**.
+
+Stated plainly, not rounded up: yomitoki is competitive with BR-SAScore
+on TS1 (ROC-AUC 0.952 vs. 0.983; balanced accuracy and MCC at yomitoki's
+own threshold actually exceed SAscore's), has **no discriminative power
+on TS2** (ROC-AUC 0.476 — chance level, diagnosed as a genuine structural
+finding: TS2's easy/hard classes are ring/size/stereo/functional-group
+homogeneous under yomitoki's model), and is weaker than both competitors
+on TS3 (0.673 vs. 0.839 / 0.905). The confidence-based selective-prediction
+evaluation this benchmark set out to validate as a differentiator **did
+not confirm that story** — on TS1, higher-confidence predictions were
+measurably *less* accurate than lower-confidence ones, traced to
+`overall.confidence` acting as a proxy for dataset provenance (stereo-tag
+completeness) rather than for prediction correctness. All of this is
+reported in `docs/benchmark.md` because it's true, not because it's
+flattering — the same document states what would need to change before
+these numbers improve, and yomitoki's per-round development process
+treats these results as confirmatory, not as something to retune against.
 
 ## Limitations
 

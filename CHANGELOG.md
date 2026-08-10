@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `docs/benchmark.md`: first external accuracy/selective-prediction/
+  throughput benchmark of the v0.1.0 frozen default against BR-SAScore's
+  TS1/TS2/TS3 test sets, SAscore, and BR-SAScore. No crate code changed —
+  this is measurement only. Headline, reported in full: competitive with
+  BR-SAScore on TS1 (ROC-AUC 0.952 vs. 0.983), no discriminative power on
+  TS2 (0.476, chance level — diagnosed as genuine structural homogeneity
+  between TS2's classes, not a bug), weaker than both competitors on TS3
+  (0.673 vs. 0.839/0.905). The confidence-based selective-prediction
+  differentiator this benchmark was designed to validate was **not
+  confirmed** — on TS1, `overall.confidence` is anti-correlated with
+  prediction correctness (a dataset-provenance confound via
+  `stereo_complete`), reported rather than hidden. `benchmarks/synthesizability/`
+  holds the (Rust-crate-independent, Python/RDKit-based) harness; see its
+  README for reproduction.
+
 ## [0.1.0] - 2026-08-10
 
 First non-alpha release. Closes out the `fragment_precedent` corpus

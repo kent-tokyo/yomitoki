@@ -46,3 +46,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v2
+
+  benchmark-smoke:
+    name: benchmark harness smoke test
+    runs-on: ubuntu-latest
+    # Statistics-only: synthetic fixtures, no RDKit, no downloaded
+    # dataset, no network access. Verifies the metrics implementation
+    # itself (ROC-AUC/PR-AUC/MCC/bootstrap CI/risk-coverage/AURC/
+    # calibration) stays correct -- not a full benchmark run, which needs
+    # real (large, license-encumbered) data this CI job deliberately
+    # never touches. See benchmarks/synthesizability/README.md.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install numpy==1.26.4 scipy==1.17.1 scikit-learn==1.8.0 pytest==9.1.1
+      - run: pytest benchmarks/synthesizability/scripts/test_metrics.py -v
+        working-directory: benchmarks/synthesizability/scripts

@@ -1,0 +1,16 @@
+# Pinned to what this benchmark suite was actually developed and verified
+# against (Python 3.13.6) -- exact pins, not ranges, so a benchmark run
+# is reproducible rather than silently drifting with whatever the latest
+# compatible release happens to be. Bump deliberately, not automatically.
+numpy==1.26.4
+scipy==1.17.1
+pandas==2.2.0
+scikit-learn==1.8.0
+rdkit==2025.9.3
+pytest==9.1.1
+
+# Competitor-specific dependencies (BRSAScore, syba) are listed in
+# competitors/README.md, not here -- they're optional (only needed to
+# actually run those competitors, not for the metrics/harness code
+# itself or the CI smoke test), and some are installed from source/git
+# rather than PyPI with a fixed version pin.

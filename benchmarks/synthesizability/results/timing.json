@@ -1,0 +1,71 @@
+{
+  "machine": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "processor": "arm",
+    "python_version": "3.13.6",
+    "rustc_version": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "build": "release"
+  },
+  "methods": {
+    "yomitoki": {
+      "ts1": {
+        "elapsed_s": 3.4133708749432117,
+        "n_molecules": 1800,
+        "ms_per_molecule": 1.8963171527462288,
+        "molecules_per_sec": 527.3379500637905
+      },
+      "ts2": {
+        "elapsed_s": 8.528463250026107,
+        "n_molecules": 1800,
+        "ms_per_molecule": 4.738035138903393,
+        "molecules_per_sec": 211.05795349408228
+      },
+      "ts3": {
+        "elapsed_s": 15.23220950004179,
+        "n_molecules": 1799,
+        "ms_per_molecule": 8.467042523647466,
+        "molecules_per_sec": 118.10499323785326
+      }
+    },
+    "sascore": {
+      "ts1": {
+        "elapsed_s": 0.36534708400722593,
+        "n_molecules": 1800,
+        "ms_per_molecule": 0.20297060222623664,
+        "molecules_per_sec": 4926.821860071009
+      },
+      "ts2": {
+        "elapsed_s": 0.41812395805027336,
+        "n_molecules": 1800,
+        "ms_per_molecule": 0.23229108780570742,
+        "molecules_per_sec": 4304.943463162128
+      },
+      "ts3": {
+        "elapsed_s": 0.5741770829772577,
+        "n_molecules": 1799,
+        "ms_per_molecule": 0.3191645819773528,
+        "molecules_per_sec": 3133.1797338056695
+      }
+    },
+    "brsascore": {
+      "ts1": {
+        "elapsed_s": 0.5573371660429984,
+        "n_molecules": 1800,
+        "ms_per_molecule": 0.3096317589127769,
+        "molecules_per_sec": 3229.6428619316775
+      },
+      "ts2": {
+        "elapsed_s": 0.7472660420462489,
+        "n_molecules": 1800,
+        "ms_per_molecule": 0.41514780113680494,
+        "molecules_per_sec": 2408.780673441329
+      },
+      "ts3": {
+        "elapsed_s": 1.2210111659951508,
+        "n_molecules": 1799,
+        "ms_per_molecule": 0.6787166014425519,
+        "molecules_per_sec": 1473.3689994831257
+      }
+    }
+  }
+}

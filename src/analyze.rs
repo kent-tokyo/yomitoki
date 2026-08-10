@@ -253,22 +253,26 @@ fn select_verdict(
 mod tests {
     use super::*;
 
-    // A confidence floor reachable by two of applicability's soft penalties
+    // A confidence floor reachable by applicability's two soft penalties
     // combined (CONFIDENCE_PENALTY_UNUSUAL_VALENCE * CONFIDENCE_PENALTY_STEREO_INCOMPLETE
-    // = 0.5 * 0.85 = 0.425, see components/applicability.rs). Standard
-    // strictness's threshold (0.45) must sit above this floor or
-    // `Indeterminate` can never fire — this test is what would have caught
-    // it before shipping.
+    // = 0.5 * 0.85 = 0.425, see components/applicability.rs) -- this is
+    // now the actual floor of achievable confidence. Standard strictness's
+    // threshold (0.45) must sit above this floor or `Indeterminate` can
+    // never fire — this test is what would have caught it before shipping.
     const PENALTY_FLOOR_CONFIDENCE: f64 = 0.425;
 
-    // The *lowest* floor: unusual valence combined with a stereo-uncheckable
-    // molecule (CONFIDENCE_PENALTY_UNUSUAL_VALENCE * CONFIDENCE_PENALTY_STEREO_UNCHECKABLE
-    // = 0.5 * 0.6 = 0.3) — lower than PENALTY_FLOOR_CONFIDENCE above because
-    // CONFIDENCE_PENALTY_STEREO_UNCHECKABLE (0.6) is a stronger penalty than
-    // CONFIDENCE_PENALTY_STEREO_INCOMPLETE (0.85); the two are mutually
-    // exclusive per molecule, so this and PENALTY_FLOOR_CONFIDENCE are never
-    // both live at once, but both must independently stay reachable and
-    // above the Standard threshold.
+    // A synthetic value below the real achievable floor above -- kept as a
+    // pure decision-function test (`select_verdict` itself doesn't care
+    // whether 0.3 is reachable in practice), but NOT achievable via any
+    // real applicability computation anymore. Historically this modeled
+    // unusual valence combined with a stereo-uncheckable molecule
+    // (0.5 * the since-removed CONFIDENCE_PENALTY_STEREO_UNCHECKABLE
+    // (0.6) = 0.3) -- that penalty was removed once chematic 0.13.0 fixed
+    // the bug it worked around (see rules.rs's
+    // INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT doc comment for the full
+    // consequence: Lenient strictness's own 0.3 threshold is now
+    // unreachable too, flagged there as a parked design decision, not
+    // silently changed).
     const LOWEST_PENALTY_FLOOR_CONFIDENCE: f64 = 0.3;
 
     #[test]

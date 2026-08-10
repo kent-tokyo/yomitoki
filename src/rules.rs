@@ -10,7 +10,11 @@
 /// report's [`crate::Provenance`] and, via the `#[doc(hidden)]` re-export
 /// at the crate root, in `tools/build-fragment-corpus`'s manifest
 /// provenance too.
-pub const RULESET_VERSION: &str = "0.9.0";
+///
+/// 0.10.0: `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE` removed (chematic
+/// 0.13.0 fixed the upstream bug it worked around, chematic#267) — see
+/// `docs/architecture.md`'s "Negatively charged atoms" section.
+pub const RULESET_VERSION: &str = "0.10.0";
 
 // ---------------------------------------------------------------------------
 // Applicability
@@ -44,18 +48,15 @@ pub(crate) const CONFIDENCE_PENALTY_UNUSUAL_VALENCE: f64 = 0.5;
 /// and not itself evidence the molecule is out of domain.
 pub(crate) const CONFIDENCE_PENALTY_STEREO_INCOMPLETE: f64 = 0.85;
 
-/// Confidence multiplier applied when stereo analysis could not be run at
-/// all (currently: any negatively charged atom — see
-/// `components::has_negatively_charged_atom`'s doc for why). Mutually
-/// exclusive with [`CONFIDENCE_PENALTY_STEREO_INCOMPLETE`] per molecule
-/// (either the real check ran, or it didn't), and deliberately a stronger
-/// penalty than that one: "zero stereo information because the check
-/// itself couldn't run" is a bigger gap than "checked, and some centers
-/// happen to be unspecified." Not as severe as
-/// [`CONFIDENCE_PENALTY_UNUSUAL_VALENCE`]'s territory either — a charged
-/// atom isn't itself a structural irregularity, it's a tooling limitation
-/// unrelated to whether the input molecule is well-formed.
-pub(crate) const CONFIDENCE_PENALTY_STEREO_UNCHECKABLE: f64 = 0.6;
+// `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE` (0.6) was removed here: it
+// applied when stereo analysis could not be run at all, which in
+// practice meant exactly one condition (any negatively charged atom,
+// chematic issue #267 — see git history / CHANGELOG.md for the full
+// story). Fixed upstream in chematic 0.13.0, verified directly (round
+// 22 part 4): stereo analysis now runs unconditionally, so this penalty
+// has no remaining trigger. `ApplicabilityReport.stereo_uncheckable`
+// stays in the schema (always `false` now) but nothing sets it `true`
+// anymore.
 
 // ---------------------------------------------------------------------------
 // Ring topology burden
@@ -545,16 +546,26 @@ pub(crate) const FRAGMENT_PRECEDENT_FINDING_THRESHOLD: f64 = 0.1;
 /// verdict is `Indeterminate` rather than a difficulty-based bucket.
 /// Strictness-dependent — see [`indeterminate_confidence_threshold`].
 /// `Standard`'s value (0.45) is deliberately above the lowest confidence
-/// floor applicability's soft penalties can combine to reach at Standard
-/// strictness — a threshold below that floor would make `Indeterminate`
-/// unreachable at that strictness level. Applicability currently has three
-/// soft-penalty sources (`components/applicability.rs`); two are mutually
-/// exclusive per molecule (`CONFIDENCE_PENALTY_STEREO_INCOMPLETE` and
-/// `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE` can't both apply — either the
-/// stereo check ran or it didn't), so the actual floor is
+/// floor applicability's soft penalties can combine to reach — a threshold
+/// below that floor would make `Indeterminate` unreachable. Applicability
+/// now has two soft-penalty sources (`components/applicability.rs`,
+/// `CONFIDENCE_PENALTY_UNUSUAL_VALENCE` and
+/// `CONFIDENCE_PENALTY_STEREO_INCOMPLETE`; a third,
+/// `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE`, was removed once chematic
+/// 0.13.0 fixed the bug it worked around — see that constant's old
+/// location, still commented, for the story), so the actual floor is now
 /// `CONFIDENCE_PENALTY_UNUSUAL_VALENCE * CONFIDENCE_PENALTY_STEREO_
-/// UNCHECKABLE = 0.5 * 0.6 = 0.3` (lower than the pre-`STEREO_UNCHECKABLE`
-/// floor of 0.5 * 0.85 = 0.425), well below 0.45.
+/// INCOMPLETE = 0.5 * 0.85 = 0.425`.
+///
+/// **`Lenient`'s value (0.3) predates this change and was calibrated
+/// against the now-removed `STEREO_UNCHECKABLE` floor (0.5 * 0.6 = 0.3)
+/// — with that floor gone, 0.3 is below the new achievable minimum
+/// (0.425), so `Indeterminate` is currently unreachable at `Lenient`
+/// strictness via applicability penalties alone.** Deliberately left
+/// unchanged rather than silently recalibrated: picking a new number
+/// here is a real design decision (what should "still abstain, but only
+/// reluctantly" mean now?), not a mechanical consequence of the chematic
+/// upgrade — flagged for an explicit decision, not decided here.
 const INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT: f64 = 0.3;
 const INDETERMINATE_CONFIDENCE_THRESHOLD_STANDARD: f64 = 0.45;
 const INDETERMINATE_CONFIDENCE_THRESHOLD_STRICT: f64 = 0.6;

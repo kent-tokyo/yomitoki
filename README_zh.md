@@ -105,11 +105,11 @@ Simplification suggestions (heuristic, not a guarantee):
 
 ```text
 Verdict: ModeratelyAccessible
-Synthesizability: 0.74
+Synthesizability: 0.69
 Confidence: 0.85
 Dominant penalties:
-1. 4 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
-2. Stereocenter density 0.33 is above the 0.25 threshold — stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal control.
+1. 5 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
+2. Stereocenter density 0.42 is above the 0.25 threshold — stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal control.
 3. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
 Simplification suggestions (heuristic, not a guarantee):
 1. ReduceStereocenterDensity: Stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal stereocontrol. Reducing the number of stereocenters, or spreading them further apart in the structure, would lower this contribution to difficulty — this is a structural heuristic, not a guarantee.
@@ -149,16 +149,16 @@ Dominant penalties:
 3. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
 ```
 
-丙氨酸阴离子(`C[C@@H](N)C(=O)[O-]`,去质子化丙氨酸)同时具有一个已指定的立体中心*和*一个带负电荷的原子 — 后者是 chematic 的一个已知 bug([#267](https://github.com/kent-tokyo/chematic/issues/267))。程序会安全地跳过立体分析,而不是崩溃或瞎猜,并相应地降低置信度,与"未指定立体中心"的情形明确区分开:
+丙氨酸阴离子(`C[C@@H](N)C(=O)[O-]`,去质子化丙氨酸)同时具有一个已指定的立体中心*和*一个带负电荷的原子。在 chematic 0.12 及之前版本中,负电荷会触发 chematic 自身的一个真实溢出 bug([chematic#267](https://github.com/kent-tokyo/chematic/issues/267))——yomitoki 曾以跳过所有带负电荷原子分子的整个立体分析作为规避方案,代价是置信度降低,且 `stereochemical_burden` 被强制归零。**我们已确认 chematic 0.13.0 直接修复了该 bug**(验证方式:丙氨酸阴离子现在返回的结果与其中性酸式完全一致),因此该规避方案已被移除。现在这个分子和其他分子一样会得到完整、正确的立体分析:
 
 ```text
 Verdict: LikelyAccessible
-Synthesizability: 0.92
-Confidence: 0.60
+Synthesizability: 0.86
+Confidence: 1.00
 Dominant penalties:
-1. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
-2. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
-3. Stereo analysis could not be run for this molecule: it contains a negatively charged atom, which triggers an arithmetic-overflow bug in chematic's stereo perception (panics in debug builds, produces an unverified result in release builds — see chematic issue #267). Stereocenter count/density and stereo completeness are unavailable, not verified to be zero/complete.
+1. 1 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
+2. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
+3. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
 ```
 
 配置 fragment corpus 只会改变 `fragment_precedent` 证据字段的内容 —— 自第 21 轮(option C)起,`overall.difficulty`/`overall.synthesizability` 仅由 `ring_topology`/`size_topology`/`stereochemical_burden`/`functional_group_liability` 计算得出,无论是否配置语料库,结果始终一致。
@@ -200,7 +200,7 @@ molecule                                sa_score      yomitoki_diff  verdict
 ethanol                                     3.45               0.01  LikelyAccessible
 benzene                                     2.40               0.10  LikelyAccessible
 norbornane (bridged)                        8.20               0.34  ModeratelyAccessible
-stereocenter-dense fragment                 8.32               0.27  ModeratelyAccessible
+stereocenter-dense fragment                 8.32               0.31  ModeratelyAccessible
 epoxide                                     6.23               0.13  LikelyAccessible
 aspirin                                     4.67               0.27  ModeratelyAccessible
 paracetamol                                 4.56               0.24  LikelyAccessible
@@ -209,11 +209,13 @@ acyl halide                                 6.62               0.09  LikelyAcces
 cyclopropane (strained)                     3.94               0.13  LikelyAccessible
 nitrile                                     4.97               0.04  LikelyAccessible
 alanine (specified stereocenter)            3.55               0.14  LikelyAccessible
-bridged ring + several stereocenters       10.00               0.69  Challenging
+bridged ring + several stereocenters       10.00               0.72  Challenging
 spiro ring system                           5.52               0.20  LikelyAccessible
 ```
 
 真正有意思的是两者出现分歧的行,而不是一致的行 — 分歧并不自动意味着 yomitoki 有 bug。最明显的例子是酰氯:SAscore 给出 `6.62`(片段少见),yomitoki 给出 `0.09`(`LikelyAccessible`)— 一种廉价、极为常见的酰化试剂,在 yomitoki 自身模型中几乎没有结构性负担。阿司匹林(`4.67` 对 `0.27`)与"局限性"中已经描述过的 Brenk 有效性缺口是同一种形状。两者大体一致的情况(咖啡因、螺环、桥环 + 多个立体中心)也不能证明其中任何一个是"正确的"— 二者都尚未针对真实合成结果进行过验证。
+
+"stereocenter-dense fragment" 与 "bridged ring + several stereocenters" 的 `yomitoki_diff` 随 chematic 0.13.0 升级发生了变化(`0.27→0.31`,`0.69→0.72`)— 这是与下方负电荷原子修复相互独立的另一个立体中心*计数*相关 bug 的修复(隐式氢的 rank-0 哨兵值会与某个真实原子的归一化 rank 0 冲突,导致特定位置的立体中心被漏数)。两个数值都朝着正确的方向变化(变大),说明之前是低估而不是高估。
 
 ## 外部基准测试(v0.1.0)
 
@@ -226,7 +228,6 @@ spiro ring system                           5.52               0.20  LikelyAcces
 ## 局限性
 
 * 计划中的六个组件均已实现(见上表),但 `fragment_precedent` **永远不会**计入 `overall.difficulty`/`overall.synthesizability` —— 自第 21 轮(option C)起,配置语料库(`AnalysisConfig.fragment_model`)只会改变 `fragment_precedent` 报告的内容,不会改变 `overall.difficulty` 衡量的对象。无论是否配置语料库,`overall.difficulty` 始终只反映 `ring_topology`/`size_topology`/`stereochemical_burden`/`functional_group_liability`。
-* 对于含有带负电荷原子(羧酸根、磺酸根、磷酸根等阴离子)的分子,立体分析(`stereo_complete` 以及整个 `stereochemical_burden`)完全无法运行 — 这是 chematic 的真实 bug([#267](https://github.com/kent-tokyo/chematic/issues/267)),不是设计选择。yomitoki 对此绝不会崩溃或瞎猜(参见 `ApplicabilityReport.stereo_uncheckable` 与 `StereoAnalysisSkipped` finding),但在上游修复之前,对这类分子确实完全没有立体化学信号。
 * `size_topology` 中的可旋转键(rotatable bond)项会过度惩罚简单的、可商业购得的无支链长链分子(可旋转键很多,但合成难度几乎为零)—— 例如 dodecane 的 `overall.difficulty` 为 `0.068`,阿司匹林(在 `functional_group_liability` 中触发多个 Brenk 警报)为 `0.273`(`ModeratelyAccessible`),尽管它是最容易合成的分子之一。第 20 轮之前,配置语料库后 `fragment_precedent` 会纠正这一点(dodecane `→ 0.000`,阿司匹林 `→ 0.095`)。**第 21 轮移除了这一纠正机制**(原因见下一条),因此无论是否配置语料库,这种过度惩罚现在都是已知但尚未解决的局限。`fragment_precedent` 仍会(作为解释性证据而非评分调整)报告此类片段具有很强的先例,因此即使分数不再反映这一点,报告中依然能看到这种不一致。
 * **`fragment_precedent` 是一个解释性的参考语料库信号,不是直接的合成难度项** —— 这是公开 contract,不只是一个注意事项。第 17-20 轮它曾计入 `overall.difficulty`;第 20 轮的跨语料库验证发现这并不安全:将 ChEMBL 与两个真实的、诚实标注为 synthesis-focused 的语料库(Open Reaction Database、SynRXN)对比后发现,一些结构上完全合理的分子(咖啡因、降冰片烷、螺环/富含立体中心的体系)在某个语料库下得分*更高*(更难),换另一个语料库则不会,且事先无法预测会是哪种情况 —— 最极端的例子是,完全没有合成难度可言的吡啶,仅凭配置的语料库不同,就在 `LikelyAccessible` 与 `HighlyChallenging` 之间反转,而这完全是由该组件自身无上限的 penalty 项造成的。**第 21 轮(option C)将 `fragment_precedent` 从 `overall.difficulty` 中完全剥离** —— 信号本身的计算和报告方式完全不变(`SynthesizabilityReport.fragment_precedent`),但它已无法再改变分数、verdict、`dominant_penalties` 或 `dominant_supports`。已完成端到端验证:无论配置哪个语料库(ChEMBL/ORD/SynRXN/不配置),测试过的每个分子的 `overall.difficulty` 都逐位完全一致。第 16-21 轮的完整历史与理由见 `rules.rs` 的 "Fragment precedent" 一节。
 * `stereochemical_burden` 仅覆盖四面体立体中心的数量与密度。以下各项经过调查后仍未实现,原因各不相同(完整依据见 `docs/architecture.md`):

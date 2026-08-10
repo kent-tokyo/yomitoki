@@ -175,11 +175,11 @@ together:
 
 ```text
 Verdict: ModeratelyAccessible
-Synthesizability: 0.74
+Synthesizability: 0.69
 Confidence: 0.85
 Dominant penalties:
-1. 4 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
-2. Stereocenter density 0.33 is above the 0.25 threshold — stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal control.
+1. 5 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
+2. Stereocenter density 0.42 is above the 0.25 threshold — stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal control.
 3. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
 Simplification suggestions (heuristic, not a guarantee):
 1. ReduceStereocenterDensity: Stereocenters are concentrated in a compact region, leaving little room for staged, orthogonal stereocontrol. Reducing the number of stereocenters, or spreading them further apart in the structure, would lower this contribution to difficulty — this is a structural heuristic, not a guarantee.
@@ -226,20 +226,25 @@ Dominant penalties:
 ```
 
 Alaninate (`C[C@@H](N)C(=O)[O-]`, deprotonated alanine) has a specified
-stereocenter *and* a negatively charged atom — the latter is a known
-chematic bug ([#267](https://github.com/kent-tokyo/chematic/issues/267)):
-stereo analysis is safely skipped rather than crashing or guessing, and
-confidence drops accordingly, distinctly from the ordinary "unspecified
-stereocenter" case:
+stereocenter *and* a negatively charged atom. Through chematic 0.12,
+the negative charge triggered a real upstream overflow bug
+([chematic#267](https://github.com/kent-tokyo/chematic/issues/267)) —
+yomitoki worked around it by skipping stereo analysis entirely for any
+negatively charged atom, at the cost of a real confidence penalty and a
+silently-zeroed `stereochemical_burden` for every such molecule.
+**chematic 0.13.0 fixed the bug directly** (verified: alaninate now
+returns the identical result its neutral-acid form would); the
+workaround was removed accordingly, and this molecule now gets full,
+correct stereo analysis like any other:
 
 ```text
 Verdict: LikelyAccessible
-Synthesizability: 0.92
-Confidence: 0.60
+Synthesizability: 0.86
+Confidence: 1.00
 Dominant penalties:
-1. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
-2. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
-3. Stereo analysis could not be run for this molecule: it contains a negatively charged atom, which triggers an arithmetic-overflow bug in chematic's stereo perception (panics in debug builds, produces an unverified result in release builds — see chematic issue #267). Stereocenter count/density and stereo completeness are unavailable, not verified to be zero/complete.
+1. 1 tetrahedral stereocenter(s) (specified or unspecified) requiring synthetic control.
+2. Reactive/unstable functional group detected: primary amine (Brenk et al. 2008 structural alert).
+3. Reactive/unstable functional group detected: acetal ketal (Brenk et al. 2008 structural alert).
 ```
 
 Configuring a fragment corpus (see below) only changes the `fragment_precedent`
@@ -325,7 +330,7 @@ molecule                                sa_score      yomitoki_diff  verdict
 ethanol                                     3.45               0.01  LikelyAccessible
 benzene                                     2.40               0.10  LikelyAccessible
 norbornane (bridged)                        8.20               0.34  ModeratelyAccessible
-stereocenter-dense fragment                 8.32               0.27  ModeratelyAccessible
+stereocenter-dense fragment                 8.32               0.31  ModeratelyAccessible
 epoxide                                     6.23               0.13  LikelyAccessible
 aspirin                                     4.67               0.27  ModeratelyAccessible
 paracetamol                                 4.56               0.24  LikelyAccessible
@@ -334,7 +339,7 @@ acyl halide                                 6.62               0.09  LikelyAcces
 cyclopropane (strained)                     3.94               0.13  LikelyAccessible
 nitrile                                     4.97               0.04  LikelyAccessible
 alanine (specified stereocenter)            3.55               0.14  LikelyAccessible
-bridged ring + several stereocenters       10.00               0.69  Challenging
+bridged ring + several stereocenters       10.00               0.72  Challenging
 spiro ring system                           5.52               0.20  LikelyAccessible
 ```
 
@@ -347,6 +352,15 @@ with essentially no structural burden by yomitoki's own model. Aspirin
 described in Limitations. Where they broadly agree (caffeine, spiro,
 bridged-plus-stereo), that's not evidence either one is "correct" — neither
 has been validated against real synthesis outcomes yet.
+
+`yomitoki_diff` for "stereocenter-dense fragment" and "bridged ring +
+several stereocenters" moved (`0.27→0.31`, `0.69→0.72`) with the
+chematic 0.13.0 upgrade — a separate stereocenter-*counting* bug fix
+from the negatively-charged-atom fix below (an implicit-hydrogen rank
+-0 sentinel could collide with a real atom's normalized rank 0,
+silently undercounting stereocenters at certain positions). Both
+numbers are now higher, correctly, not lower — the old counts were an
+undercount, not an overcount.
 
 ## External benchmark (v0.1.0)
 
@@ -399,14 +413,6 @@ separate from the TS1/2/3 confirmatory numbers above.
   what `overall.difficulty` measures. `overall.difficulty` always reflects
   exactly `ring_topology`/`size_topology`/`stereochemical_burden`/
   `functional_group_liability`, corpus configured or not.
-* Stereo analysis (both `stereo_complete` and all of `stereochemical_burden`)
-  cannot run at all for a molecule containing a negatively charged atom
-  (any carboxylate, sulfonate, phosphate, or other anion) — a real
-  chematic bug ([#267](https://github.com/kent-tokyo/chematic/issues/267)),
-  not a design choice. yomitoki never crashes or guesses on this (see
-  `ApplicabilityReport.stereo_uncheckable` and the
-  `StereoAnalysisSkipped` finding), but genuinely has no stereo signal for
-  such molecules until it's fixed upstream.
 * `size_topology`'s rotatable-bond term over-penalizes simple, commercially
   available long unbranched chains (many rotatable bonds, essentially no
   synthetic difficulty) — e.g. dodecane's `overall.difficulty` is `0.068`,

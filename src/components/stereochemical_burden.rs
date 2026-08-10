@@ -23,23 +23,26 @@
 //! only the confidence of *knowing* which configuration was intended
 //! differs.
 //!
-//! A negatively charged atom is a separate, narrower carve-out: chematic's
-//! `stereo_completeness` can't safely run on one at all (overflow bug,
-//! chematic issue #267, see `components::has_negatively_charged_atom`'s
-//! doc) — never a "no stereocenters" claim, always a `StereoAnalysisSkipped`
-//! finding plus a lowered component confidence instead.
+//! A negatively charged atom used to be a separate, narrower carve-out:
+//! chematic's `stereo_completeness` could not safely run on one at all
+//! (overflow bug, chematic issue #267) — fixed upstream in chematic
+//! 0.13.0 (verified directly: alaninate, `C[C@@H](N)C(=O)[O-]`, now
+//! returns the correct result, no panic). Stereo analysis runs
+//! unconditionally now; the `StereoAnalysisSkipped` finding code has no
+//! remaining trigger and is unreachable (kept in the schema for
+//! compatibility, same policy as every other retired-but-not-removed
+//! code in this project).
 
 use chematic::core::Molecule;
 use chematic::perception::stereo_validation::stereo_completeness;
 
-use crate::components::has_negatively_charged_atom;
 use crate::report::{
     ComponentScore, Contribution, Finding, FindingCode, FindingEvidence, FindingRef,
     ProbabilityLikeScore, Severity, finite_or_zero,
 };
 use crate::rules::{
-    CONFIDENCE_PENALTY_STEREO_UNCHECKABLE, STEREO_BURDEN_SCALE, STEREO_DENSITY_FINDING_THRESHOLD,
-    STEREO_WEIGHT_DENSITY, STEREO_WEIGHT_PER_CENTER,
+    STEREO_BURDEN_SCALE, STEREO_DENSITY_FINDING_THRESHOLD, STEREO_WEIGHT_DENSITY,
+    STEREO_WEIGHT_PER_CENTER,
 };
 
 pub(crate) struct StereochemicalBurdenOutcome {
@@ -52,26 +55,7 @@ pub(crate) fn compute(mol: &Molecule) -> StereochemicalBurdenOutcome {
     let mut findings = Vec::new();
     let mut contributions = Vec::new();
 
-    // A negatively charged atom overflows chematic's internal Morgan-rank
-    // computation (see components::has_negatively_charged_atom's doc,
-    // chematic issue #267) — never call stereo_completeness for one.
-    // total_centers/density fall back to 0, but that's not a fabricated
-    // "no stereocenters" claim: the StereoAnalysisSkipped finding below
-    // says why, and the component's own confidence drops accordingly.
-    let uncheckable = has_negatively_charged_atom(mol);
-    let total_centers = if uncheckable {
-        push(
-            &mut findings,
-            &mut contributions,
-            FindingCode::StereoAnalysisSkipped,
-            Severity::Medium,
-            FindingEvidence::default(),
-            0.0,
-        );
-        0
-    } else {
-        stereo_completeness(mol).total_centers
-    };
+    let total_centers = stereo_completeness(mol).total_centers;
     let atom_count = mol.atom_count();
     let density = if atom_count == 0 {
         0.0
@@ -114,19 +98,10 @@ pub(crate) fn compute(mol: &Molecule) -> StereochemicalBurdenOutcome {
     // other components.
     let normalized = ProbabilityLikeScore::new(1.0 - (-raw / STEREO_BURDEN_SCALE).exp());
 
-    let confidence = if uncheckable {
-        // A real, lowered confidence — not the usual 1.0 — since this
-        // component's own raw/normalized above are a documented fallback,
-        // not a genuine computation (see the StereoAnalysisSkipped finding
-        // above). Not wired into `overall.confidence` yet (only
-        // applicability's is), but stays honest in the schema regardless.
-        CONFIDENCE_PENALTY_STEREO_UNCHECKABLE
-    } else {
-        // Deterministic descriptor computation (Morgan-rank-based stereocenter
-        // detection) — no additional uncertainty to express yet, same
-        // rationale as ring_topology/size_topology.
-        1.0
-    };
+    // Deterministic descriptor computation (Morgan-rank-based stereocenter
+    // detection) — no additional uncertainty to express, same rationale
+    // as ring_topology/size_topology.
+    let confidence = 1.0;
 
     let score = ComponentScore {
         raw,

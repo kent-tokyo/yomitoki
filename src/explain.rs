@@ -51,11 +51,15 @@ pub(crate) fn render(
             evidence.threshold.unwrap_or(0.0)
         ),
         FindingCode::StereoAnalysisSkipped => {
-            "Stereo analysis could not be run for this molecule: it contains a negatively \
-             charged atom, which triggers an arithmetic-overflow bug in chematic's stereo \
-             perception (panics in debug builds, produces an unverified result in release \
-             builds — see chematic issue #267). Stereocenter count/density and stereo \
-             completeness are unavailable, not verified to be zero/complete."
+            // Not reachable as of chematic 0.13.0 (the one trigger, chematic
+            // issue #267, was fixed upstream) -- text kept for schema
+            // stability, describing what this code meant while it fired.
+            "Stereo analysis could not be run for this molecule: it contained a negatively \
+             charged atom, which used to trigger an arithmetic-overflow bug in chematic's \
+             stereo perception (panics in debug builds, produces an unverified result in \
+             release builds — see chematic issue #267, fixed in chematic 0.13.0). \
+             Stereocenter count/density and stereo completeness were unavailable, not \
+             verified to be zero/complete."
                 .to_string()
         }
         FindingCode::FunctionalGroupReactive => {

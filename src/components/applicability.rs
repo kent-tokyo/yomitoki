@@ -3,15 +3,13 @@
 use chematic::core::{Molecule, validate_valence};
 use chematic::perception::stereo_validation::stereo_completeness;
 
-use crate::components::has_negatively_charged_atom;
 use crate::config::AnalysisConfig;
 use crate::report::{
     ApplicabilityReport, AtomIndex, ComponentScore, Finding, FindingCode, FindingEvidence,
     FindingRef, ProbabilityLikeScore, Severity, finite_or_zero,
 };
 use crate::rules::{
-    CONFIDENCE_PENALTY_STEREO_INCOMPLETE, CONFIDENCE_PENALTY_STEREO_UNCHECKABLE,
-    CONFIDENCE_PENALTY_UNUSUAL_VALENCE, SUPPORTED_ELEMENTS,
+    CONFIDENCE_PENALTY_STEREO_INCOMPLETE, CONFIDENCE_PENALTY_UNUSUAL_VALENCE, SUPPORTED_ELEMENTS,
 };
 
 /// Result of the applicability component: the report-facing summary, the
@@ -88,25 +86,17 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
         });
     }
 
-    let stereo_uncheckable = has_negatively_charged_atom(mol);
-    let stereo_complete = if stereo_uncheckable {
-        findings.push(Finding {
-            code: FindingCode::StereoAnalysisSkipped,
-            severity: Severity::Medium,
-            confidence: ProbabilityLikeScore::new(1.0),
-            atoms: Vec::new(),
-            evidence: FindingEvidence::default(),
-            explanation: crate::explain::render(
-                FindingCode::StereoAnalysisSkipped,
-                FindingEvidence::default(),
-                0,
-                None,
-            ),
-        });
-        false
-    } else {
-        stereo_completeness(mol).unspecified == 0
-    };
+    // Negatively charged atoms used to overflow chematic's internal
+    // Morgan-rank computation here (chematic issue #267) -- fixed
+    // upstream in chematic 0.13.0 (verified directly: alaninate,
+    // C[C@@H](N)C(=O)[O-], now returns the correct specified=1 result,
+    // no panic, matching its neutral-acid form exactly). `stereo_complete`
+    // is unconditional now. `stereo_uncheckable` stays in the schema
+    // (never removed, per this project's compatibility policy) but has
+    // no remaining trigger condition -- always `false` until a genuinely
+    // new uncheckable case is found.
+    let stereo_uncheckable = false;
+    let stereo_complete = stereo_completeness(mol).unspecified == 0;
 
     let atom_count = mol.atom_count();
     let too_large = atom_count > config.max_heavy_atoms;
@@ -144,9 +134,7 @@ pub(crate) fn compute(mol: &Molecule, config: &AnalysisConfig) -> ApplicabilityO
     if unusual_valence {
         confidence *= CONFIDENCE_PENALTY_UNUSUAL_VALENCE;
     }
-    if stereo_uncheckable {
-        confidence *= CONFIDENCE_PENALTY_STEREO_UNCHECKABLE;
-    } else if !stereo_complete {
+    if !stereo_complete {
         confidence *= CONFIDENCE_PENALTY_STEREO_INCOMPLETE;
     }
     let confidence = ProbabilityLikeScore::new(finite_or_zero(confidence));
@@ -268,60 +256,59 @@ mod tests {
     }
 
     #[test]
-    fn negatively_charged_atom_skips_stereo_check_but_stays_in_domain() {
-        // Acetate: a negatively charged atom triggers a real overflow
-        // panic in chematic's stereo_completeness (chematic issue #267) —
-        // this must never reach that call, and must never claim
-        // stereo_complete=true (a lie: we didn't check).
+    fn negatively_charged_atom_gets_full_stereo_analysis() {
+        // Acetate has a negative formal charge but zero real stereocenters
+        // -- used to trigger a real overflow panic in chematic's
+        // stereo_completeness (chematic issue #267, worked around here
+        // until chematic 0.13.0 fixed it upstream). Now runs the real
+        // check and reports a genuine, non-fabricated "complete" result.
         let outcome = compute(&mol("CC(=O)[O-]"), &AnalysisConfig::default());
-        assert!(outcome.report.stereo_uncheckable);
-        assert!(!outcome.report.stereo_complete);
-        assert!(!outcome.out_of_domain);
-        assert!(
-            outcome
-                .findings
-                .iter()
-                .any(|f| f.code == FindingCode::StereoAnalysisSkipped)
-        );
-        assert!(
-            (outcome.score.confidence.value() - CONFIDENCE_PENALTY_STEREO_UNCHECKABLE).abs() < 1e-9
-        );
-    }
-
-    #[test]
-    fn guard_triggers_regardless_of_charge_magnitude() {
-        // The overflow happens on the sign bit alone (any negative i8 sign-
-        // extends before the u64 cast), not on how large the charge is —
-        // a doubly negative oxygen must trigger the guard exactly like a
-        // singly negative one.
-        let outcome = compute(&mol("[O-2]"), &AnalysisConfig::default());
-        assert!(outcome.report.stereo_uncheckable);
-    }
-
-    #[test]
-    fn zwitterion_with_both_charges_still_triggers_the_guard() {
-        // Glycine zwitterion: one positively and one negatively charged
-        // atom in the same connected molecule. Only the negative one is
-        // unsafe -- confirms the guard (`.any(charge < 0)`) still fires
-        // and doesn't get confused by the positive charge also present.
-        let outcome = compute(&mol("[NH3+]CC(=O)[O-]"), &AnalysisConfig::default());
-        assert!(outcome.report.stereo_uncheckable);
-        assert!(!outcome.out_of_domain);
-    }
-
-    #[test]
-    fn positively_charged_atom_does_not_trigger_the_stereo_uncheckable_guard() {
-        // Only negative charges overflow the u64 cast in chematic's
-        // simple_morgan_ranks -- a positively charged atom (e.g. an
-        // ammonium cation) is safe and should run the real check.
-        let outcome = compute(&mol("C[NH3+]"), &AnalysisConfig::default());
         assert!(!outcome.report.stereo_uncheckable);
+        assert!(outcome.report.stereo_complete);
+        assert!(!outcome.out_of_domain);
         assert!(
             !outcome
                 .findings
                 .iter()
                 .any(|f| f.code == FindingCode::StereoAnalysisSkipped)
         );
+        assert_eq!(outcome.score.confidence.value(), 1.0);
+    }
+
+    #[test]
+    fn negatively_charged_atom_with_a_real_stereocenter_is_analyzed_correctly() {
+        // Alaninate (deprotonated alanine): a specified stereocenter AND a
+        // negatively charged atom in the same molecule -- the exact case
+        // documented throughout this project's README/architecture as the
+        // chematic #267 workaround's motivating example. Must now report
+        // the same stereo_complete=true a neutral-acid form would.
+        let outcome = compute(&mol("C[C@@H](N)C(=O)[O-]"), &AnalysisConfig::default());
+        assert!(!outcome.report.stereo_uncheckable);
+        assert!(outcome.report.stereo_complete);
+        assert_eq!(outcome.score.confidence.value(), 1.0);
+    }
+
+    #[test]
+    fn doubly_negative_charge_does_not_panic_or_corrupt() {
+        // The old overflow happened on the sign bit alone (any negative
+        // i8 sign-extends before the u64 cast) -- a doubly negative oxygen
+        // exercised the same bug at a different magnitude. Confirms
+        // chematic 0.13.0's fix isn't magnitude-specific either.
+        let outcome = compute(&mol("[O-2]"), &AnalysisConfig::default());
+        assert!(!outcome.report.stereo_uncheckable);
+        assert!(outcome.report.stereo_complete);
+    }
+
+    #[test]
+    fn zwitterion_with_both_charges_is_analyzed_correctly() {
+        // Glycine zwitterion: one positively and one negatively charged
+        // atom in the same connected molecule -- previously the negative
+        // charge alone was enough to trigger the guard regardless of the
+        // positive charge also present; now both are safe and the real
+        // check runs.
+        let outcome = compute(&mol("[NH3+]CC(=O)[O-]"), &AnalysisConfig::default());
+        assert!(!outcome.report.stereo_uncheckable);
+        assert!(!outcome.out_of_domain);
     }
 
     #[test]

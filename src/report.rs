@@ -100,9 +100,12 @@ pub enum FindingCode {
     StereoCenterCount,
     /// Stereocenter density (centers per heavy atom) above the threshold.
     StereoDensityHigh,
-    /// Stereo analysis could not be run at all for this molecule (currently:
-    /// a negatively charged atom — see `components::has_negatively_charged_atom`'s
-    /// doc and [chematic#267](https://github.com/kent-tokyo/chematic/issues/267)).
+    /// Stereo analysis could not be run at all for this molecule. Not
+    /// reachable as of chematic 0.13.0 — the one trigger condition
+    /// (a negatively charged atom, [chematic#267](https://github.com/kent-tokyo/chematic/issues/267))
+    /// was an upstream bug, fixed directly rather than worked around.
+    /// Kept in the schema for compatibility (`#[non_exhaustive]`), same
+    /// policy as this project's other retired-but-not-removed codes.
     StereoAnalysisSkipped,
     /// A Brenk et al. (2008) reactive/unstable structural alert matched —
     /// the specific alert name is in `explanation`, not a separate code
@@ -321,14 +324,18 @@ pub struct ApplicabilityReport {
     pub stereo_complete: bool,
     /// `true` when stereo analysis (`stereo_complete`, and
     /// `stereochemical_burden`'s own score) could not be run at all, rather
-    /// than genuinely finding zero/incomplete stereocenters — currently
-    /// only for molecules containing a negatively charged atom, which
-    /// triggers an arithmetic-overflow bug in chematic's Morgan-rank
-    /// computation (panics in debug builds, silently corrupts results in
-    /// release builds; filed upstream as chematic issue #267). Distinct
-    /// from `stereo_complete` on purpose: "we checked and some centers are
-    /// unspecified" and "we could not check at all" are different findings
-    /// that call for different actions from a report reader.
+    /// than genuinely finding zero/incomplete stereocenters. Always
+    /// `false` as of chematic 0.13.0 — the one trigger condition (a
+    /// negatively charged atom, which used to hit an arithmetic-overflow
+    /// bug in chematic's Morgan-rank computation, filed upstream as
+    /// chematic issue #267) was fixed directly upstream rather than
+    /// worked around, so this field has no remaining trigger. Kept in the
+    /// schema (never fabricates `stereo_complete=true` in its place)
+    /// rather than removed, in case a genuinely new uncheckable condition
+    /// is found later. Distinct from `stereo_complete` on purpose: "we
+    /// checked and some centers are unspecified" and "we could not check
+    /// at all" are different findings that call for different actions
+    /// from a report reader.
     pub stereo_uncheckable: bool,
     /// `true` if the molecule consists of disconnected fragments — a hard
     /// `OutOfDomain` trigger.

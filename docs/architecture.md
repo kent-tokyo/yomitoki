@@ -491,21 +491,21 @@ Moot for `overall.confidence` either way — that field comes entirely from
 `input_quality`, never from `fragment_precedent`, before or after round
 21.
 
-## Negatively charged atoms (a chematic bug, worked around)
+## Negatively charged atoms (a chematic bug, worked around, then fixed upstream)
 
 Found while adding "salts" corpus coverage (AGENTS.md §14.5) to
 `tests/property_based.rs`: `chematic::perception::stereo_validation::
 stereo_completeness` (called by both `applicability` and
-`stereochemical_burden`) computes each atom's initial Morgan-rank
+`stereochemical_burden`) computed each atom's initial Morgan-rank
 invariant as `atomic_number as u64 * 1_000_000 + charge as u64 * 1000 +
 degree`. `Atom.charge` is `i8`; casting any *negative* charge to `u64`
-sign-extends before reinterpreting, so the multiplication overflows
-unconditionally — panics in debug builds (`attempt to multiply with
-overflow`), silently produces a corrupted-but-not-obviously-wrong result
+sign-extends before reinterpreting, so the multiplication overflowed
+unconditionally — panicked in debug builds (`attempt to multiply with
+overflow`), silently produced a corrupted-but-not-obviously-wrong result
 in release builds (confirmed empirically: the one case checked directly,
 a charged stereocenter-bearing molecule, still counted correctly, but
-that's incidental to wrapping arithmetic, not something the algorithm's
-design guarantees). Filed upstream:
+that was incidental to wrapping arithmetic, not something the
+algorithm's design guaranteed). Filed upstream:
 [chematic#267](https://github.com/kent-tokyo/chematic/issues/267).
 
 This meant `analyze`/`analyze_smiles`/`analyze_batch` panicked in debug
@@ -516,36 +516,72 @@ completion criterion, undetected for 12 rounds because no test fixture
 anywhere in this crate's corpus (fixed lists or `proptest` generators)
 had ever included a charged atom.
 
-`components::has_negatively_charged_atom(&Molecule) -> bool` guards both
-call sites. When it's true:
+### The workaround (rounds 12–21, removed round 22)
 
-* `applicability` never calls `stereo_completeness`. `stereo_complete` is
-  `false` (honest — it wasn't checked, not confirmed complete) and a new
-  `ApplicabilityReport.stereo_uncheckable` field is `true`, distinguishing
+`components::has_negatively_charged_atom(&Molecule) -> bool` guarded both
+call sites. When it was true:
+
+* `applicability` never called `stereo_completeness`. `stereo_complete` was
+  `false` (honest — it wasn't checked, not confirmed complete) and
+  `ApplicabilityReport.stereo_uncheckable` was `true`, distinguishing
   this from the ordinary "checked, found unspecified centers" case —
-  `stereo_complete=false` alone would conflate two findings that call for
-  different reader actions. Confidence gets `CONFIDENCE_PENALTY_STEREO_
-  UNCHECKABLE` (0.6) instead of `CONFIDENCE_PENALTY_STEREO_INCOMPLETE`
-  (0.85) — deliberately a *stronger* penalty, since "zero stereo
-  information" is a bigger gap than "checked, some centers unspecified".
-  The two are mutually exclusive per molecule.
-* `stereochemical_burden` never calls `stereo_completeness` either.
-  `total_centers`/density fall back to `0`, but `ComponentScore` stays
-  `Some` with a `FindingCode::StereoAnalysisSkipped` finding explaining why
-  — a bare zero here would be exactly the "fabricated zero" this project's
-  own `ComponentScores` doc explicitly refuses (`None` means "not
-  evaluated," a real zero means "evaluated, found none" — this is neither,
-  so it needs the finding to stay honest). `ComponentScore.confidence`
-  also drops to `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE`, not the usual
-  `1.0`.
+  `stereo_complete=false` alone would have conflated two findings that
+  call for different reader actions. Confidence got a dedicated,
+  stronger penalty (0.6, vs. 0.85 for "checked, some centers
+  unspecified") — the two were mutually exclusive per molecule.
+* `stereochemical_burden` never called `stereo_completeness` either.
+  `total_centers`/density fell back to `0`, but `ComponentScore` stayed
+  `Some` with a `FindingCode::StereoAnalysisSkipped` finding explaining
+  why — a bare zero there would have been exactly the "fabricated zero"
+  this project's own `ComponentScores` doc explicitly refuses.
 
 Not a hard `OutOfDomain` trigger: ring/size/functional-group-liability
-scoring all work fine on a charged molecule (none call
+scoring all worked fine on a charged molecule (none call
 `stereo_completeness`), and anionic species are mainstream, legitimate
-chemistry — treating every salt as fully out of scope would be far more
-punitive than the actual, narrow gap (stereo assessment specifically).
-`RULESET_VERSION` bumped to 0.7.0 for the new confidence-penalty constant
-and its effect on `overall.confidence` via applicability.
+chemistry — treating every salt as fully out of scope would have been far
+more punitive than the actual, narrow gap (stereo assessment
+specifically). `RULESET_VERSION` was bumped to 0.7.0 at the time for the
+new confidence-penalty constant and its effect on `overall.confidence`
+via applicability.
+
+### The fix (round 22 part 5)
+
+chematic 0.13.0 (2026-08-10) fixed the overflow directly: the invariant
+is now computed in `i64` and cast to `u64` once at the end, bit-for-bit
+identical to the old code for non-negative charges. Verified directly,
+not assumed from the changelog alone — a standalone probe against
+chematic 0.13.0 confirmed alaninate (`C[C@@H](N)C(=O)[O-]`, this
+project's own long-standing worked example for this bug) now returns
+`specified=1, unspecified=0`, matching its neutral-acid form exactly, no
+panic.
+
+The workaround was removed the same round: `has_negatively_charged_atom`
+deleted, both call sites now call `stereo_completeness` unconditionally,
+`CONFIDENCE_PENALTY_STEREO_UNCHECKABLE` removed (no remaining trigger,
+`RULESET_VERSION` bumped `0.9.0` → `0.10.0` per this module's own
+"bump whenever any constant changes" contract).
+`ApplicabilityReport.stereo_uncheckable` and
+`FindingCode::StereoAnalysisSkipped` stay in the schema (never removed,
+this project's standard compatibility policy for retired-but-not-removed
+fields/codes) but are permanently `false`/unreachable now, documented as
+such at their definitions rather than silently left describing dead
+behavior.
+
+**A real downstream consequence, flagged rather than silently
+absorbed**: `overall.confidence`'s achievable floor rose from 0.3
+(`CONFIDENCE_PENALTY_UNUSUAL_VALENCE * CONFIDENCE_PENALTY_STEREO_
+UNCHECKABLE = 0.5 * 0.6`) to 0.425 (`CONFIDENCE_PENALTY_UNUSUAL_VALENCE *
+CONFIDENCE_PENALTY_STEREO_INCOMPLETE = 0.5 * 0.85`), since the lower
+-floor combination no longer exists. `Standard` and `Strict` strictness's
+`Indeterminate` thresholds (0.45, 0.6) are unaffected (still above the
+new floor). `Lenient`'s threshold (0.3) was calibrated against the
+now-removed lower floor and is currently unreachable — `Indeterminate`
+cannot fire at `Lenient` strictness via applicability penalties alone
+anymore. Not silently recalibrated: see
+`rules::INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT`'s doc comment,
+parked as an explicit open design decision (what should `Lenient`'s
+abstention floor mean now?), not decided in the same round that found
+it.
 
 ## Abstention contract
 

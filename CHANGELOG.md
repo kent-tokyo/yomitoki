@@ -23,6 +23,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `stereo_complete`), reported rather than hidden. `benchmarks/synthesizability/`
   holds the (Rust-crate-independent, Python/RDKit-based) harness; see its
   README for reproduction.
+- `benchmarks/synthesizability/DEVELOPMENT_SET.md`: an unlabeled ablation
+  panel diagnosing why `overall.difficulty` scored at chance level on
+  TS2, plus a validation of that finding against MPScore, an independent
+  expert-chemist-labeled dataset (ROC-AUC 0.513, also chance-level,
+  reproducing TS2's result on a methodologically unrelated ground truth
+  with ~0.03% molecule overlap). Development-only — no scoring change,
+  kept explicitly separate from the confirmatory TS1/2/3 numbers.
+
+### Fixed
+
+- The long-standing workaround for [chematic#267](https://github.com/kent-tokyo/chematic/issues/267)
+  (a negatively charged atom overflowing chematic's internal Morgan-rank
+  computation, panicking in debug builds) has been **removed** — chematic
+  0.13.0 fixed the bug directly, verified independently before removing
+  the workaround. `applicability` and `stereochemical_burden` now run
+  full stereo analysis unconditionally, including for every carboxylate,
+  sulfonate, phosphate, or other anion-bearing molecule that previously
+  got a hardcoded `stereo_uncheckable=true`/zero-burden fallback instead
+  of a real answer. `ApplicabilityReport.stereo_uncheckable` and
+  `FindingCode::StereoAnalysisSkipped` stay in the schema (never
+  removed) but have no remaining trigger.
+- **Behavior change, not just a bug fix**: `overall.difficulty`/
+  `overall.confidence` for any molecule with a negatively charged atom
+  will now differ from previous versions — previously fabricated/floored
+  values are replaced with real computed ones. See `docs/architecture.md`'s
+  "Negatively charged atoms" section for the full before/after story,
+  including alaninate's exact numbers (confidence 0.60 → 1.00,
+  synthesizability 0.92 → 0.86, the latter now correctly reflecting its
+  real stereocenter instead of a fabricated zero).
+
+### Changed
+
+- `chematic` dependency bumped `0.12` → `0.13`. No breaking changes for
+  yomitoki's actual usage (yomitoki doesn't enable the `3d`/`ff`
+  features chematic 0.13's other breaking changes affect).
+
+### Known consequence, parked as an open design decision
+
+- Removing `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE` raised the achievable
+  floor of `overall.confidence` from 0.3 to 0.425. `Standard`/`Strict`
+  strictness's `Indeterminate` thresholds (0.45/0.6) are unaffected;
+  `Lenient`'s threshold (0.3) was calibrated against the now-removed
+  lower floor and is currently unreachable via applicability penalties
+  alone. Not silently recalibrated — see
+  `rules::INDETERMINATE_CONFIDENCE_THRESHOLD_LENIENT`'s doc comment.
 
 ## [0.1.0] - 2026-08-10
 

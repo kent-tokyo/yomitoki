@@ -83,11 +83,15 @@ fn high_density_molecule_triggers_density_finding() {
 }
 
 #[test]
-fn negatively_charged_atom_does_not_panic_and_reports_zero_with_a_finding() {
-    // Regression test for a real bug: chematic's stereo_completeness
-    // overflows (panics in debug builds) on any negatively charged atom
-    // (chematic issue #267). This must not panic, must not silently claim
-    // zero stereocenters, and must carry a finding saying why.
+fn negatively_charged_atom_does_not_panic() {
+    // Regression test for a real, now-fixed upstream bug: chematic's
+    // stereo_completeness used to overflow (panic in debug builds) on any
+    // negatively charged atom (chematic issue #267), worked around here
+    // until chematic 0.13.0 fixed it directly. Acetate has zero real
+    // stereocenters, so zero burden here is a genuine computed result,
+    // not the old hardcoded fallback -- StereoAnalysisSkipped no longer
+    // fires at all (see the next test for a case that would have hidden
+    // real stereocenters under the old fallback).
     let config = AnalysisConfig::default();
     let report = analyze_smiles("CC(=O)[O-]", &config).expect("acetate");
     assert_eq!(
@@ -100,11 +104,26 @@ fn negatively_charged_atom_does_not_panic_and_reports_zero_with_a_finding() {
         0.0
     );
     assert!(
-        report
+        !report
             .findings
             .iter()
             .any(|f| f.code == FindingCode::StereoAnalysisSkipped)
     );
+}
+
+#[test]
+fn negatively_charged_atom_with_a_real_stereocenter_now_gets_real_burden() {
+    // Alaninate: a specified stereocenter AND a negative charge. Before
+    // chematic 0.13.0's fix, the old guard forced this to report zero
+    // burden unconditionally -- a real molecule's real stereocenter was
+    // silently invisible to overall.difficulty for every negatively
+    // charged input. Now it must match its neutral-acid form exactly
+    // (the charge is chemically irrelevant to the alpha-carbon's
+    // configuration).
+    let charged = stereo_difficulty("C[C@@H](N)C(=O)[O-]");
+    let neutral = stereo_difficulty("C[C@@H](N)C(=O)O");
+    assert_eq!(charged, neutral);
+    assert!(charged > 0.0);
 }
 
 #[test]

@@ -380,6 +380,22 @@ answers. See `rules.rs`'s "Fragment precedent" section for the full
 numbers and `tasks/upstream_and_corpus_research.md` Part 6 (gitignored)
 for the corpus-build methodology.
 
+Round 20 settled the question this caveat had left open: is a bounded
+amount of corpus sensitivity acceptable, or does it undermine the
+contract entirely? Tested with a second synthesis-focused corpus (SynRXN)
+and — the change from rounds 17–19 — a 500-molecule *generated* probe
+panel rather than the same small diagnostic set. Result: ORD and SynRXN
+disagree with each other on precedent direction more often than either
+disagrees with ChEMBL (34.6% sign-flip rate over 500 probes), and plain
+pyridine — no plausible synthetic-difficulty story available — scores
+`HighlyChallenging` under ORD and `LikelyAccessible` under ChEMBL/SynRXN,
+driven entirely by `fragment_precedent`'s uncapped penalty term (the other
+four components sum to `0.119`). This caveat is no longer "documented and
+monitored" — it's now the reason `fragment_precedent` is recommended for
+removal from `overall.difficulty` (see the roadmap's item 4 and `rules.rs`
+for the full reasoning); not implemented yet, tracked as the actual
+blocker.
+
 **Third known caveat, different shape:** `functional_group_liability`'s
 "dense functionalization" term (`identify_functional_groups`) counts
 topologically *disconnected* functional-group clusters, since Ertl's
@@ -553,9 +569,12 @@ second one.
 ## Non-goals / deferred
 
 **Roadmap to a non-alpha `0.1.0`, decided after round 17's redesign shipped
-as `0.1.0-alpha.2`:** the code/formula/cap design is judged v0.1-ready, but
-corpus *semantics* were not settled yet. Three items were identified,
-in order:
+as `0.1.0-alpha.2`:** the code/formula/cap design was judged v0.1-ready at
+the time, pending corpus-*semantics* work (items 1–3 below); round 20's
+item 4 found that judgment was premature — the design has a real gap
+(the uncapped penalty side) that only surfaced once tested against a
+second corpus and a broad probe panel, not a corpus-semantics question at
+all. Four items, in order:
 
 1. ~~**Rename `fragment_rarity` to `fragment_precedent`**~~ — **done,
    round 18.** Component module (`components/fragment_precedent.rs`),
@@ -616,9 +635,41 @@ in order:
    empirically heterogeneous, not resolved by "use a better corpus" alone
    — documented as an open, corpus-choice-sensitive property of the signal,
    not a blocker to re-litigate before every release.
+4. ~~**Robustness-check option A against a second corpus and a broad
+   (not hand-picked) probe panel**~~ — **done, round 20. Result:
+   supersedes item 3's CONDITIONAL GO — NO-GO for `v0.1.0` as currently
+   wired, recommended contract C.** Built a second synthesis-focused
+   corpus (SynRXN v0.0.8, USPTO-rooted like most of ORD — an intentional
+   preprocessing/curation-robustness test, not a second-domain test) and
+   a 500-molecule *generated*, corpus-independent probe panel (never
+   sampled from ChEMBL/ORD/SynRXN). Result: ORD and SynRXN — sharing 83%
+   of SynRXN's own molecules — disagree with each other on
+   `fragment_precedent`'s penalty/support direction 34.6% of the time
+   (Spearman ρ=0.48 on `signed_signal`), *worse* agreement than either has
+   with ChEMBL (ρ=0.58 and ρ=0.98 respectively). Clearest single case,
+   verified by direct fragment-level query, not inferred: plain pyridine
+   scores `HighlyChallenging` (`difficulty=1.0`) against ORD and
+   `LikelyAccessible` (`difficulty=0.095`) against ChEMBL or SynRXN, with
+   `ring_topology`/`size_topology`/`stereochemical_burden`/
+   `functional_group_liability` summing to only `0.119` — the entire
+   swing is `fragment_precedent`'s own uncapped penalty term.
+   **Recommended contract: C** — remove `fragment_precedent` from
+   `overall.difficulty`, keep it as explanatory-only evidence. Not
+   implemented this round (evaluation round, formula/cap changes
+   explicitly out of scope); this is now **the remaining blocker** for a
+   non-alpha `0.1.0`. Full methodology, the SynRXN corpus build, the
+   overlap audit, and the pyridine mechanism check are in
+   `tasks/upstream_and_corpus_research.md` Part 7 (gitignored); the
+   durable summary is in `rules.rs`'s "Fragment precedent" section.
 
-None of the three change the underlying formula or cap logic itself, which
-round 17 already validated end-to-end.
+Items 1–3 didn't change the underlying formula or cap logic itself, which
+round 17 validated end-to-end for the cases it tested. Item 4 found that
+validation incomplete, not wrong: the formula behaves exactly as
+specified in every case checked, but "behaves as specified" and "safe to
+score with" turned out to be different claims once the penalty side's
+lack of a cap was stress-tested against corpus-breadth variation — see
+item 4 and `rules.rs`'s "Fragment precedent" section. No formula/cap
+change has been made yet; that is blocker 1 in item 4.
 
 Not implemented in v0.1 so far (tracked, not stubbed with fake data):
 

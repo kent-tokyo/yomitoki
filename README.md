@@ -363,9 +363,19 @@ has been validated against real synthesis outcomes yet.
   molecule `0.275 → 1.000`. The likely cause is that ChEMBL's
   fragment-frequency table reflects what shows up in bioassay-tested
   compounds, not what's a common synthetic building block — "rare in
-  ChEMBL" and "hard to synthesize" are not the same claim. A
-  synthesis-focused reference corpus would be the natural fix, not a
-  further formula change.
+  ChEMBL" and "hard to synthesize" are not the same claim.
+  **Update (round 20):** a synthesis-focused reference corpus was tried
+  (two of them, in fact) and did **not** resolve this — the two
+  synthesis-focused corpora tested disagree with *each other* on
+  precedent direction more often than either disagrees with ChEMBL, and
+  plain pyridine (no plausible synthetic-difficulty story) scored
+  `HighlyChallenging` against one of them purely from this component's
+  own uncapped penalty term. **Recommendation is now to remove
+  `fragment_precedent` from `overall.difficulty` entirely** (report it
+  only as explanatory evidence) — not yet implemented; see `rules.rs`'s
+  "Fragment precedent" section for the full reasoning. Until that lands,
+  treat any `overall.difficulty`/verdict computed with a fragment corpus
+  configured as provisional, not a validated production behavior.
 * `stereochemical_burden` only covers tetrahedral stereocenter count and
   density. Investigated and still not implemented, each for a different
   reason (see `docs/architecture.md` for the full evidence):

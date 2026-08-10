@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Validated (update — supersedes the round-19 entry below)
+
+- **Round-20 robustness test of round 19's cross-corpus validation —
+  result: NO-GO for `v0.1.0` as currently wired, recommended contract C.**
+  Round 19 concluded CONDITIONAL GO (keep `fragment_precedent` in
+  `overall.difficulty`) from a 15-molecule panel against one synthesis
+  -focused corpus (ORD). This round tested that conclusion against a
+  second synthesis-focused corpus (SynRXN v0.0.8, USPTO-rooted like most
+  of ORD — a preprocessing/curation-robustness test, not an independent
+  -domain test, since the two corpora's product pools overlap 83% at the
+  molecule level) and a 500-molecule *generated*, corpus-independent probe
+  panel. Result: ORD and SynRXN disagree with each other on
+  `fragment_precedent`'s penalty/support direction 34.6% of the time
+  (Spearman rho=0.48), worse agreement than either has with ChEMBL.
+  Clearest case, verified by direct fragment-level query: plain pyridine
+  scores `overall.difficulty=1.0` (`HighlyChallenging`) against ORD and
+  `0.095` (`LikelyAccessible`) against ChEMBL or SynRXN, with the other
+  four components summing to only `0.119` — `fragment_precedent`'s own
+  uncapped penalty term alone drives the result. **Recommended contract:
+  C** (remove `fragment_precedent` from `overall.difficulty`, keep it as
+  explanatory-only evidence) — not implemented this round (evaluation
+  round; formula/weight/cap changes were out of scope), tracked as the
+  actual blocker for a non-alpha `0.1.0`. No formula, weight, or cap was
+  changed in response to this round's data, matching round 19's
+  discipline. Full methodology in
+  `tasks/upstream_and_corpus_research.md` Part 7 (gitignored); durable
+  summary in `rules.rs`'s "Fragment precedent" section and
+  `docs/architecture.md`'s roadmap.
+
 ### Changed
 
 - **`fragment_rarity` renamed to `fragment_precedent`** (round 18, API/

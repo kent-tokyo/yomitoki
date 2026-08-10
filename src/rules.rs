@@ -434,6 +434,62 @@ pub(crate) const AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY: f64 = 0.4;
 // property of the signal rather than a bug pending a fix — a different or
 // larger synthesis-focused corpus could still shift this conclusion, and
 // nothing here should be read as "ORD settles it permanently."
+//
+// Round 20 supersedes round 19's "keep option A" decision above — a
+// second corpus did shift the conclusion, and quickly. Round 19's
+// 15-molecule panel found zero sign flips between ChEMBL and ORD and
+// read as reassuring; round 20 tested whether that held up against a
+// *second* synthesis-focused corpus (SynRXN v0.0.8, USPTO-rooted like
+// most of ORD — a preprocessing/curation-robustness test, not an
+// independent-domain test; see `tasks/upstream_and_corpus_research.md`
+// Part 7) and, critically, against a 500-molecule *generated* probe
+// panel rather than a small hand-picked one. Result: ORD and SynRXN —
+// sharing 83% of SynRXN's own molecules — disagree with each other on
+// `fragment_precedent`'s penalty/support direction 34.6% of the time
+// (Spearman rho = 0.48 on `signed_signal`), worse agreement than either
+// has with ChEMBL. The clearest single case: plain pyridine
+// (`c1ccncc1`) scores `overall.difficulty = 1.0`
+// (`HighlyChallenging`) against ORD and `0.095`
+// (`LikelyAccessible`) against ChEMBL or SynRXN — checked directly
+// (`query`'s per-fragment document-frequency output, not inferred) that
+// this is not a missing-fragment/coverage effect (pyridine's 9 radius-2
+// fragments are all present in every corpus tried) but a genuine
+// relative-frequency effect: ORD's product population is broader and
+// less pharma-concentrated than ChEMBL's or SynRXN's (314,983 distinct
+// fragments vs. 202,993 / 221,357 at the same 200k-molecule size, corpus
+// -wide mean document frequency 0.134 vs. 0.162 / 0.172), which
+// mechanically dilutes the relative frequency of any *particular*
+// scaffold, including one as ordinary as pyridine's ring. Confirmed
+// (not argued) that `ring_topology`/`stereochemical_burden`/
+// `size_topology`/`functional_group_liability` sum to only `0.119` for
+// pyridine under ORD — `fragment_precedent`'s own uncapped `+0.938`
+// contribution alone drives the clamp to `1.0`. The support cap
+// (`AGGREGATE_WEIGHT_SIZE_TOPOLOGY * size_topology.normalized +
+// AGGREGATE_WEIGHT_FUNCTIONAL_GROUP_LIABILITY *
+// functional_group_liability.normalized`, in `analyze::analyze`)
+// protects `ring_topology`/`stereochemical_burden` from being *erased*
+// by strong support, but nothing bounds the *penalty* side — so a
+// corpus whose breadth happens to dilute a common scaffold's relative
+// frequency doesn't add noise to `overall.difficulty`, it can
+// single-handedly determine the verdict for a structurally trivial
+// molecule. That is a structural property of the current contract, true
+// for any sufficiently broad reference corpus, not an ORD-specific
+// defect a different corpus pick would avoid.
+//
+// Round 20's verdict (full reasoning in
+// `tasks/upstream_and_corpus_research.md` Part 7): **NO-GO for v0.1.0 as
+// currently wired, recommended contract C** — remove
+// `fragment_precedent` from `overall.difficulty` and return it only as
+// independent explanatory evidence. Not implemented this round
+// (formula/weight/cap changes were explicitly out of scope for the
+// evaluation round itself); tracked as the actual blocking work for a
+// future round. `fragment_precedent` is opt-in
+// (`ComponentScores.fragment_precedent` is `None` without a configured
+// corpus) so a v0.1.0 cut today only exhibits this failure for a user
+// who follows this project's own documented `tools/build-fragment
+// -corpus` workflow — which limits blast radius without changing the
+// verdict, since that workflow is exactly what the READMEs and
+// `docs/architecture.md` recommend.
 
 /// Minimum `|signed_signal|` for `fragment_precedent` to emit a
 /// `Finding`/`Contribution` at all — purely a *display* threshold ("is

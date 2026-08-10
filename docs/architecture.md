@@ -251,28 +251,41 @@ alongside either verdict — this is a deliberate choice, matching how
 `dominant_penalties` already includes every difficulty-contributing finding
 regardless of verdict.
 
-4 of `SuggestionCode`'s 6 variants are reachable in v0.1, one per finding
+3 of `SuggestionCode`'s 6 variants are reachable in v0.1, one per finding
 code this module knows how to translate:
 `RingBridgedComplexity` → `ReplaceBridgedRingWithMonocyclicAnalog`,
 `RingMacrocycle` → `SimplifyMacrocyclicClosure`,
-`StereoDensityHigh` → `ReduceStereocenterDensity`,
-`FragmentPrecedentWeak` → `IncreaseFragmentPrecedent` (only reachable when a
-fragment corpus is configured — see below). The other 2 have no underlying
-signal to derive from yet: quaternary-carbon adjacency isn't computed
-anywhere; `brenk_matches_detailed` unions atoms per pattern rather than
-reporting per-occurrence matches, so `RemoveSimilarReactiveGroup` can't
-identify which specific occurrence to point at.
+`StereoDensityHigh` → `ReduceStereocenterDensity`. The other 3 are
+unreachable, each for a different reason: `IncreaseFragmentPrecedent` was
+reachable through round 20 but **retired round 21** (option C) — once
+`fragment_precedent` stopped contributing to `overall.difficulty`, "a more
+precedented analog would lower this contribution to difficulty" became a
+false claim, so `suggestions.rs` deliberately has no match arm for
+`FragmentPrecedentWeak` anymore (kept in the `SuggestionCode` schema since
+it's `#[non_exhaustive]`, never emitted). `ReduceAdjacentQuaternaryCenters`/
+`RemoveSimilarReactiveGroup` still have no underlying signal to derive from:
+quaternary-carbon adjacency has an atom-level candidate list now
+(`stereo_centers`, chematic 0.13.0 — see "Non-goals / deferred" below) but
+no adjacency-detection rule or `FindingCode` built on it yet; `RemoveSimilarReactiveGroup`
+is separately blocked on `brenk_matches_detailed` unioning atoms per pattern
+rather than reporting per-occurrence matches, so it still can't identify
+which specific occurrence to point at.
 
 `target_atoms` is copied directly from the source finding's own `atoms`
 field — for `ReduceStereocenterDensity` this is always empty, because
 `stereochemical_burden`'s findings never carry atom indices in the first
-place. This is a confirmed chematic API gap, not an oversight: chematic's
-`stereo_completeness` (used by `stereochemical_burden::compute`) reports
-only aggregate counts (`specified`/`unspecified`/`total_centers`), not which
-atoms are centers, and `chematic-chem`'s `assign_cip`/
-`tetrahedral_stereo_neighbors` only cover atoms with an explicit `@`/`@@`
-chirality annotation — they'd under-count relative to the density this
-finding is actually about (specified *and* unspecified centers together).
+place. Through chematic 0.12 this was a real API gap: `stereo_completeness`
+(used by `stereochemical_burden::compute`) reported only aggregate counts
+(`specified`/`unspecified`/`total_centers`), not which atoms are centers,
+and `chematic-chem`'s `assign_cip`/`tetrahedral_stereo_neighbors` only cover
+atoms with an explicit `@`/`@@` chirality annotation — they'd under-count
+relative to the density this finding is actually about (specified *and*
+unspecified centers together). **Update, chematic 0.13.0 (round 22 part 5,
+issue #263):** `chematic_perception::stereo_centers(&Molecule) ->
+Vec<(AtomIdx, bool)>` now reports exactly this, specified or not — the gap
+is closed, but `stereochemical_burden`'s findings haven't been updated to
+populate `atoms` from it yet (scoped, not implemented — see `ROADMAP.md`'s
+"Ready to implement" section, gitignored).
 
 `ExpectedEffect` is always `MayReduceDifficulty`, never
 `LikelyReducesDifficulty` — nothing in v0.1 is calibrated against real
@@ -837,40 +850,69 @@ Not implemented in v0.1 so far (tracked, not stubbed with fake data):
   an earlier, inaccurate blanket "E/Z needs 2D coordinates" note):
   * **E/Z double-bond stereo** — `chematic::chem::cip::assign_cip` (already
     used elsewhere in this crate) assigns E/Z directly from SMILES `/`/`\`
-    bond-direction markers, no 2D coordinates required. But it only covers
-    bonds the input SMILES explicitly marked — there is no chematic
-    function analogous to `stereo_completeness` that detects a
-    stereogenic-but-*unspecified* double bond. A specified-only count would
-    violate `STEREO_WEIGHT_PER_CENTER`'s own stated policy (tetrahedral
-    centers burden "specified or unspecified... equally," since whether the
-    SMILES wrote it out is a confidence concern, not a difficulty one) —
-    `C/C=C/C` and `CC=CC` are the same compound and must not get different
-    difficulty. Deferred, not implemented as specified-only.
+    bond-direction markers, no 2D coordinates required. Originally deferred
+    because chematic exposed no function analogous to `stereo_completeness`
+    that detects a stereogenic-but-*unspecified* double bond, and a
+    specified-only count would violate `STEREO_WEIGHT_PER_CENTER`'s own
+    stated policy (tetrahedral centers burden "specified or unspecified...
+    equally," since whether the SMILES wrote it out is a confidence
+    concern, not a difficulty one — `C/C=C/C` and `CC=CC` are the same
+    compound and must not get different difficulty). **Update, chematic
+    0.13.0 (round 22 part 5, issue #264):**
+    `chematic_chem::ez_completeness(&Molecule) ->
+    EzCompleteness{specified, unspecified, total}` now exists, reporting
+    all three counts separately — the missing detector. This resolves the
+    *data-availability* half of the deferral (burden could weight `total`,
+    matching tetrahedral stereocenters' own policy), but not automatically
+    the *design* half — still needs a real design pass (weight, threshold,
+    interaction with existing tetrahedral burden) before implementing, not
+    assumed resolved just because the API exists. See `ROADMAP.md`'s
+    "Needs scoping" section (gitignored).
   * **Atropisomerism** — `chematic::chem::detect_atropisomers` exists and
     runs on a plain `Molecule` (no coordinates), but was empirically
-    disqualified before use: probed directly against `c1ccccc1-c2ccccc2`
-    (flagged as an atropisomer) vs. the same molecule written
-    `c1ccccc1c2ccccc2` (not flagged) — a real representation-dependence bug
-    that would violate `tests/determinism.rs`'s canonical-SMILES-invariance
-    guarantee if wrapped as-is. Also confirmed it rates *para*-substituted
-    biphenyl (not sterically hindered) identically to genuinely hindered
-    *ortho*-substituted biphenyl — the heuristic (`ipso-carbon degree >= 3`
-    on both sides) doesn't actually check substitution position. Not a
-    citable/validated primitive; not wrapped.
-  * **Contiguous stereocenter runs, quaternary-carbon adjacency** — both
-    need an atom-level list of stereocenter candidates (specified and
-    unspecified), which chematic only exposes as aggregate counts
-    (`stereo_completeness`). The underlying algorithm
-    (`simple_morgan_ranks` + 4-distinct-neighbor check, in
-    `chematic-perception::stereo_validation`) is `pub(crate)`-only —
-    reading and reimplementing it inside yomitoki was considered and
-    rejected: every implemented component to date *wraps* a public,
-    validated chematic function rather than reimplementing chematic-owned
-    perception logic; doing so here for two comparatively low-value
-    findings would make yomitoki the second, independent owner of
-    stereocenter-candidate detection, with its own correctness burden and
-    no chematic test suite backing it. Deferred until chematic exposes the
-    atom-level candidates itself.
+    disqualified before use (round 12): probed directly against
+    `c1ccccc1-c2ccccc2` (flagged as an atropisomer) vs. the same molecule
+    written `c1ccccc1c2ccccc2` (not flagged) — a real
+    representation-dependence bug that would violate `tests/determinism.rs`'s
+    canonical-SMILES-invariance guarantee if wrapped as-is. Also confirmed
+    it rates *para*-substituted biphenyl (not sterically hindered)
+    identically to genuinely hindered *ortho*-substituted biphenyl — the
+    heuristic (`ipso-carbon degree >= 3` on both sides) doesn't actually
+    check substitution position. Not a citable/validated primitive; not
+    wrapped. **Update, chematic 0.13.0 (round 22 part 5, issues
+    #262/#276):** `detect_atropisomers` was rewritten to be independent of
+    inter-ring bond notation — exactly the defect above. Not yet
+    re-verified against this project's own disqualifying case (needs a
+    fresh empirical re-test, not just trusting the changelog); the
+    ipso-carbon-degree/substitution-position gap is a separate concern
+    the rewrite doesn't claim to address either way.
+  * **Contiguous stereocenter runs, quaternary-carbon adjacency** —
+    originally deferred as one item: both need an atom-level list of
+    stereocenter candidates (specified and unspecified), which chematic
+    only exposed as aggregate counts (`stereo_completeness`); the
+    underlying algorithm (`simple_morgan_ranks` + 4-distinct-neighbor
+    check, in `chematic-perception::stereo_validation`) was
+    `pub(crate)`-only, and reimplementing chematic-owned perception logic
+    inside yomitoki was rejected (every implemented component wraps a
+    public, validated chematic function rather than owning perception
+    logic independently). **Update, chematic 0.13.0 (round 22 part 5,
+    issue #263):** `chematic_perception::stereo_centers(&Molecule) ->
+    Vec<(AtomIdx, bool)>` now exposes exactly this atom-level list — the
+    two items no longer share a single blocker:
+    - `ReduceStereocenterDensity`'s `target_atoms` (currently always an
+      empty `Vec`, see "Simplification suggestions" below) is now purely
+      a wiring task — `stereo_centers` gives real atom indices directly,
+      no new design question. Scoped and ready; not yet implemented (see
+      `ROADMAP.md`'s "Ready to implement" section, gitignored).
+    - Quaternary-carbon adjacency (`ReduceAdjacentQuaternaryCenters`) is
+      *not* just a wiring task even now: `stereo_centers` gives candidate
+      atoms, but "adjacent quaternary centers" as a burden signal still
+      needs a new detection rule (what counts as adjacent), very likely a
+      new `FindingCode`, and a new weighted contribution — i.e. a scoring
+      -formula change requiring the same root-cause-first discipline as
+      the round 22 external-benchmark findings above, not a documentation
+      -availability question anymore. See `ROADMAP.md`'s "Needs scoping"
+      section (gitignored).
   * **Meso compound detection** — needs graph automorphism / topological
     symmetry-class computation. chematic has this
     (`chematic-smiles::canonical_automorphism`, `canonical_partition`) but

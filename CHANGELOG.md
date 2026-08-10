@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-10
+
+First non-alpha release. Closes out the `fragment_precedent` corpus
+-semantics work that `0.1.0-alpha.2` was published pending (see that
+section below): renamed from `fragment_rarity`, given a corpus-domain
+provenance contract, stress-tested against two independent
+synthesis-focused reference corpora (ORD, SynRXN) plus a 500-molecule
+generated probe panel, and — because that testing found the
+corpus-relative signal too corpus-sensitive to trust as a scoring input —
+removed from `overall.difficulty` entirely and re-reported as independent
+explanatory evidence (option C). `overall.difficulty` is now provably
+corpus-invariant: verified end-to-end that it's bit-for-bit identical
+across ChEMBL/ORD/SynRXN/no-corpus for every molecule in the validation
+panels, while the `fragment_precedent` signal itself still genuinely
+varies per corpus. See `rules.rs`'s "Fragment precedent" section for the
+complete round 16–21 history and reasoning.
+
 ### Validated (update — supersedes the round-19 entry below)
 
 - **Round-20 robustness test of round 19's cross-corpus validation —

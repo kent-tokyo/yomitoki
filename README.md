@@ -26,7 +26,7 @@ to read it and explain what it finds.
 > yomitoki does not merely estimate synthesizability; it exposes
 > the evidence and reasoning behind the estimate.
 
-> **Status: `0.1.0-alpha.2` is published; this checkout is ahead of it.**
+> **Status: `0.1.0` — first non-alpha release.**
 > All six planned components are implemented, including
 > `fragment_precedent` (renamed from `fragment_rarity` in round 18, since
 > it argues difficulty both up *and* down, not just up) — opt-in: no
@@ -49,8 +49,7 @@ to read it and explain what it finds.
 > only the evidence available alongside it. See Limitations for the full
 > before/after data and `rules.rs`'s "Fragment precedent" section for the
 > complete round 16–21 history. See [`CHANGELOG.md`](CHANGELOG.md) for the
-> full version history. This is a pre-release: the public API may still
-> change before a non-alpha `0.1.0`.
+> full version history.
 > See [`docs/architecture.md`](docs/architecture.md) for the current scope
 > and what's still missing.
 

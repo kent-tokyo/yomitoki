@@ -40,12 +40,31 @@ it's a nested crate with its own `Cargo.toml`).
 cargo run --release -- \
   --output data/out \
   --source "ChEMBL 37|CC-BY-SA-3.0|https://www.ebi.ac.uk/chembl/|data/raw/chembl_37_chemreps.txt" \
-  --delimiter tab --smiles-column 1 --name-column 0 --title-line
+  --delimiter tab --smiles-column 1 --name-column 0 --title-line \
+  --radii 2
 ```
+
+**Use `--radii 2`, not the `0,1,2` default.**
+`chematic::fp::morgan_fp_counts(mol, radius)` is cumulative — it returns
+iterations `0..=radius` merged into one map (confirmed by reading
+`chematic-fp`'s source), matching RDKit's own `GetMorganFingerprint`
+semantics. Calling it separately at radius 0, 1, *and* 2 (the tool's
+default) stores the same underlying fragment hashes redundantly under
+three different `radius` keys — radius 2 alone already captures everything
+the 3-radius default does, at ~11% less size (measured on a 5,000
+-molecule sample). Radius 2 is equivalent to a standard ECFP4 fingerprint.
 
 Add `--limit N` to smoke-test on the first N kept molecules instead of the
 whole corpus (parsing is the expensive part — `--limit` still reads the
 whole input file first, see the `ponytail:` note in `src/main.rs`).
+
+`src/bin/query.rs` is a small diagnostic tool for checking whether a built
+corpus actually discriminates: `cargo run --release --bin query -- --corpus
+<dir> "<SMILES>" --radii 2` reports document-frequency stats (min/max/mean)
+for a molecule's fragments against a built corpus. Used to validate the
+corpus against `rules.rs`'s own documented false positives (aspirin, long
+unbranched chains) — see `tasks/upstream_and_corpus_research.md`'s Part 5
+for the actual numbers.
 
 Multiple `--source` flags in one invocation are deduplicated by canonical
 SMILES *across all of them*, so a molecule present in both ChEMBL and a
@@ -73,9 +92,16 @@ differs run to run).
 
 ## Not yet done
 
-- Full, un-capped run over all of ChEMBL 37 (~2.4M compounds) — only
-  smoke-tested with `--limit` so far. A full run's wall-clock cost hasn't
-  been measured.
+- A decision on final corpus target size. Measured (real, not
+  extrapolated-from-one-point) scaling at 5,000 / 50,000 / 200,000
+  molecules: 29,165 / 94,848 / 202,993 distinct fragments, sublinear
+  growth (~`N^0.52`), gzip compression holding steady at ~8.5×. 200k
+  already produces a real discriminating signal (see
+  `tasks/upstream_and_corpus_research.md` Part 5) at 2.47 MB compressed —
+  comfortably under crates.io's 10 MB default limit. A full, un-capped run
+  over all of ChEMBL 37 (~2.9M compounds) was not attempted — extrapolating
+  the same growth curve lands right at the 10 MB boundary, genuinely
+  uncertain either way without actually measuring it.
 - SureChEMBL wiring in `fetch.sh`.
 - DrugBank's download blocker (see Status above) — needs either the site
   coming back, or a manual authenticated download.

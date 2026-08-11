@@ -138,6 +138,48 @@ def bootstrap_ci(
     return {"point": float(point), "low": low, "high": high, "n_valid_resamples": len(values)}
 
 
+def paired_bootstrap_diff_ci(
+    y_true,
+    y_score_before,
+    y_score_after,
+    metric_fn=lambda yt, ys: roc_auc_score(yt, ys),
+    n_bootstrap: int = 1000,
+    ci: float = 0.95,
+    rng_seed: int = 0,
+) -> dict:
+    """CI for `metric_fn(after) - metric_fn(before)` on the *same*
+    molecules (e.g. a before/after model-change comparison), using the
+    same resampled indices for both scores each round -- not two
+    independent `bootstrap_ci` calls. Independent CIs can each be wide
+    and overlapping while the paired difference is still tight and
+    significant (or vice versa); pairing is what makes the CI actually
+    answer "did this change help on this population," not "are these
+    two numbers merely each plausible on their own."
+    """
+    y_true = np.asarray(y_true, dtype=int)
+    y_score_before = np.asarray(y_score_before, dtype=float)
+    y_score_after = np.asarray(y_score_after, dtype=float)
+    n = len(y_true)
+    rng = np.random.default_rng(rng_seed)
+    point = metric_fn(y_true, y_score_after) - metric_fn(y_true, y_score_before)
+
+    diffs = []
+    for _ in range(n_bootstrap):
+        idx = rng.integers(0, n, size=n)
+        yt = y_true[idx]
+        if len(np.unique(yt)) < 2:
+            continue
+        diffs.append(metric_fn(yt, y_score_after[idx]) - metric_fn(yt, y_score_before[idx]))
+
+    if not diffs:
+        return {"point": point, "low": float("nan"), "high": float("nan"), "n_valid_resamples": 0}
+
+    alpha = (1.0 - ci) / 2.0
+    low = float(np.quantile(diffs, alpha))
+    high = float(np.quantile(diffs, 1.0 - alpha))
+    return {"point": float(point), "low": low, "high": high, "n_valid_resamples": len(diffs)}
+
+
 @dataclass
 class RiskCoveragePoint:
     coverage: float

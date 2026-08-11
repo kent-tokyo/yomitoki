@@ -10,3 +10,7 @@ C1CCCCC1C(F)C(Cl)C(Br)C(I)C	FM2_S4_four
 C1CCCCC1	CTRL_B0_cyclohexane
 C1CC2CCC1C2	CTRL_B2_norbornane
 C1C2CC3CC1CC(C2)C3	CTRL_B4_adamantane
+c1ccccc1	MULT_N1_one_ring
+c1ccc(-c2ccccc2)cc1	MULT_N2_two_rings
+c1ccc(-c2ccc(-c3ccccc3)cc2)cc1	MULT_N3_three_rings
+c1ccc(-c2ccc(-c3ccc(-c4ccccc4)cc3)cc2)cc1	MULT_N4_four_rings

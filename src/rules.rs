@@ -11,10 +11,18 @@
 /// at the crate root, in `tools/build-fragment-corpus`'s manifest
 /// provenance too.
 ///
+/// 0.11.0: `ring_topology`'s per-family burden aggregation changed from a
+/// plain sum (`Σ f_i`) to an L2 norm (`sqrt(Σ f_i²)`) — no constant in
+/// this module changed value, but the aggregation formula itself is
+/// exactly the kind of decision this version exists to track. See
+/// `src/components/ring_topology.rs`'s `family_burdens` comment and
+/// `benchmarks/synthesizability/DEVELOPMENT_SET.md` Part 7 for the
+/// development-set evidence.
+///
 /// 0.10.0: `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE` removed (chematic
 /// 0.13.0 fixed the upstream bug it worked around, chematic#267) — see
 /// `docs/architecture.md`'s "Negatively charged atoms" section.
-pub const RULESET_VERSION: &str = "0.10.0";
+pub const RULESET_VERSION: &str = "0.11.0";
 
 // ---------------------------------------------------------------------------
 // Applicability

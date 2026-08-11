@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `ring_topology`'s ring-family burden aggregation changed from a plain
+  sum (`Σ f_i` across separate ring families) to an L2 norm
+  (`sqrt(Σ f_i²)`). Suppresses the linear over-penalty previously
+  applied to molecules with several independent, ordinary ring systems
+  (e.g. biaryl-linked or benzyl-substituted scaffolds) — a molecule with
+  four separate, unfused rings is no longer scored as if it were roughly
+  four times as burdensome as one. Bridged/spiro/cage sensitivity is
+  unchanged: a single such ring family's own weight is mathematically
+  identical under L2 (the norm of one value is that value), so this
+  targets multiplicity specifically, not 3D structural complexity.
+  `RULESET_VERSION` bumped to `0.11.0`.
+
+  Development-set evidence (MPScore, not a confirmatory benchmark
+  claim — TS1/TS2/TS3 were not re-evaluated for this change): on the
+  ring-count ≥2 stratum, `ring_topology`'s own contribution AUC against
+  chemist hard/easy labels improved from 0.460 (worse than chance,
+  backwards) to 0.567; `overall.difficulty`'s AUC on the same stratum
+  from 0.538 to 0.638; false-positive rate (chemist-easy molecules
+  scored as hard) from 28.0% to 9.3%, with essentially no change to the
+  false-negative rate. Full methodology and numbers:
+  `benchmarks/synthesizability/DEVELOPMENT_SET.md` Part 7.
+
 ### Added
 
 - `SimplificationSuggestion::target_atoms` for `ReduceStereocenterDensity`

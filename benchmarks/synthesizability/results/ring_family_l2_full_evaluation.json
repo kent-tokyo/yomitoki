@@ -1,0 +1,27 @@
+{
+  "n_molecules_considered": 10543,
+  "n_complex_stratum": 6129,
+  "full_set_overall_auc": 0.5611532504807282,
+  "complex_stratum_overall_auc": 0.6374583469425072,
+  "complex_stratum_ring_only_auc": 0.5666871234826426,
+  "full_set_rates": {
+    "fp_rate": 0.05639913232104121,
+    "fn_rate": 0.8294759825327511,
+    "fp": 78,
+    "fn": 7598,
+    "n_easy": 1383,
+    "n_hard": 9160
+  },
+  "complex_stratum_rates": {
+    "fp_rate": 0.09263657957244656,
+    "fn_rate": 0.7045583506714583,
+    "fp": 78,
+    "fn": 3725,
+    "n_easy": 842,
+    "n_hard": 5287
+  },
+  "complex_stratum_mean_ring_contribution": {
+    "hard": 0.2404976748818547,
+    "easy": 0.21506533632962108
+  }
+}

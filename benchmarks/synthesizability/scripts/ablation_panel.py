@@ -42,6 +42,21 @@ from ../../docs/benchmark.md's TS2/TS3 stratification:
         either, the defect is "the components are blind," a different
         and worse finding than "the components are miscalibrated" (FM-1/
         FM-2 alone would only show the latter).
+
+  MULT (round 22 part 10, FM-1 candidate 2 -- ring-family *multiplicity*,
+        not fusion): 1 -> 2 -> 3 -> 4 independent, unfused benzene rings
+        connected by single bonds (benzene -> biphenyl -> p-terphenyl ->
+        p-quaterphenyl). Distinct from FM1_SERIES above, which fuses
+        rings together (one ring family growing denser); this series
+        keeps each ring its own separate family (ordinary ring COUNT
+        growing, not fusion). Added to check the L2-aggregation
+        candidate's target property directly: difficulty should grow
+        monotonically but sublinearly here, not ~linearly the way plain
+        summing would produce -- see DEVELOPMENT_SET.md Part 7's
+        mechanism check, which found chemist-easy MPScore molecules have
+        systematically more separate ring families than chemist-hard at
+        the same total ring count. Adopted into production in round 22
+        part 11 (ring_topology's raw aggregation: L1 sum -> L2 norm).
 """
 
 import csv
@@ -83,7 +98,14 @@ CTRL_SERIES = [
     ("CTRL_B4_adamantane", "C1C2CC3CC1CC(C2)C3", 10, 4, None, 4, 0),
 ]
 
-ALL_SERIES = {"FM1": FM1_SERIES, "FM2": FM2_SERIES, "CTRL": CTRL_SERIES}
+MULT_SERIES = [
+    ("MULT_N1_one_ring", "c1ccccc1", 6, 1, 0, 0, 0),
+    ("MULT_N2_two_rings", "c1ccc(-c2ccccc2)cc1", 12, 2, 0, 0, 0),
+    ("MULT_N3_three_rings", "c1ccc(-c2ccc(-c3ccccc3)cc2)cc1", 18, 3, 0, 0, 0),
+    ("MULT_N4_four_rings", "c1ccc(-c2ccc(-c3ccc(-c4ccccc4)cc3)cc2)cc1", 24, 4, 0, 0, 0),
+]
+
+ALL_SERIES = {"FM1": FM1_SERIES, "FM2": FM2_SERIES, "CTRL": CTRL_SERIES, "MULT": MULT_SERIES}
 
 
 def verify_descriptors(entries):

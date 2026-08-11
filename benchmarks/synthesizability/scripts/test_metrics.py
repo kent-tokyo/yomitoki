@@ -17,6 +17,7 @@ from metrics import (
     calibration_bins,
     classification_metrics,
     expected_calibration_error,
+    paired_bootstrap_diff_ci,
     risk_coverage_curve,
 )
 
@@ -58,6 +59,33 @@ def test_bootstrap_ci_contains_the_point_estimate():
     y_score = list(np.linspace(0, 1, 100))
     result = bootstrap_ci(y_true, y_score, n_bootstrap=500, rng_seed=1)
     assert result["low"] <= result["point"] <= result["high"]
+
+
+def test_paired_bootstrap_diff_ci_is_zero_when_before_equals_after():
+    y_true = [0, 1] * 50
+    y_score = list(np.linspace(0, 1, 100))
+    result = paired_bootstrap_diff_ci(y_true, y_score, y_score, n_bootstrap=200, rng_seed=0)
+    assert result["point"] == 0.0
+    assert result["low"] == 0.0 == result["high"]
+
+
+def test_paired_bootstrap_diff_ci_detects_a_real_improvement():
+    rng = np.random.default_rng(0)
+    y_true = rng.integers(0, 2, size=300)
+    before = rng.random(300)  # uncorrelated with y_true -- ~chance AUC
+    after = np.where(y_true == 1, before + 0.5, before)  # clearly separates the positive class
+    result = paired_bootstrap_diff_ci(y_true, before, after, n_bootstrap=500, rng_seed=1)
+    assert result["point"] > 0.0
+    assert result["low"] > 0.0  # CI should exclude zero for a real, large improvement
+
+
+def test_paired_bootstrap_diff_ci_is_reproducible_given_the_same_seed():
+    y_true = [0, 1] * 50
+    before = list(np.linspace(0, 1, 100))
+    after = list(np.linspace(0, 1, 100) ** 2)
+    a = paired_bootstrap_diff_ci(y_true, before, after, n_bootstrap=200, rng_seed=7)
+    b = paired_bootstrap_diff_ci(y_true, before, after, n_bootstrap=200, rng_seed=7)
+    assert a == b
 
 
 def test_risk_coverage_curve_monotonic_when_confidence_tracks_correctness():

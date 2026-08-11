@@ -127,6 +127,35 @@ fn atom_reordering_does_not_change_functional_group_findings() {
 }
 
 #[test]
+fn atom_reordering_does_not_change_multi_family_ring_topology_aggregation() {
+    // ring_topology's raw aggregation (round 22 part 10/11) sums squared
+    // per-family burdens into a Vec before taking sqrt -- the family
+    // *list*'s order depends on chematic's ring discovery, which is
+    // itself atom-index-dependent, so a differently-ordered SMILES for
+    // the same molecule can hand this Vec its entries in a different
+    // order. Floating-point addition is not perfectly associative, so
+    // this is a real (if narrow) way a multi-family aggregation could
+    // fail to be deterministic that none of the single-ring-family
+    // fixtures above (norbornane, aspirin) can exercise -- p-terphenyl
+    // (3 independent, unfused ring families) is the first fixture in
+    // this suite that actually has more than one family to reorder.
+    let config = AnalysisConfig::default();
+    let mol = chematic::smiles::parse("c1ccc(-c2ccc(-c3ccccc3)cc2)cc1").expect("p-terphenyl");
+
+    let baseline = yomitoki::analyze(&mol, &config).expect("analyze succeeds");
+
+    for seed in [1u64, 2, 3, 42] {
+        let reordered_smiles = chematic::smiles::random_smiles(&mol, seed);
+        let reordered_mol = chematic::smiles::parse(&reordered_smiles).unwrap_or_else(|e| {
+            panic!("random_smiles produced unparseable output {reordered_smiles:?}: {e}")
+        });
+        let reordered_report =
+            yomitoki::analyze(&reordered_mol, &config).expect("analyze succeeds");
+        assert_equivalent_reports(&baseline, &reordered_report, &format!("seed {seed}"));
+    }
+}
+
+#[test]
 fn canonical_vs_original_smiles_produce_the_same_report() {
     let config = AnalysisConfig::default();
     let original = yomitoki::analyze_smiles("C1CC2CCC1C2", &config).expect("valid SMILES");

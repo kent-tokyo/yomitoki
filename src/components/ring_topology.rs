@@ -28,7 +28,22 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
 
     let mut findings = Vec::new();
     let mut contributions = Vec::new();
-    let mut raw = 0.0;
+    // One entry per ring family, its own kind-weight plus its own
+    // macrocycle bonus if it qualifies -- aggregated below via L2 norm
+    // rather than a plain sum (round 22 part 10, branch
+    // `experiment/ring-topology-family-multiplicity`: linear (L1) summing
+    // across *separate* families let several ordinary, independent
+    // aromatic rings accumulate burden by count alone, which MPScore's
+    // complex-ring stratum showed skews chemist-easy at every fixed total
+    // ring count -- e.g. mean family count 1.11 (hard) vs. 3.16 (easy) at
+    // 5 total rings. L2 keeps a single genuinely complex family's burden
+    // close to intact while damping pure multiplicity of ordinary ones,
+    // and -- unlike a plain sum-cap or max() -- still grows (not frozen)
+    // as more, comparably-sized families are added, and never *decreases*
+    // versus fewer families (sqrt(x²+y²) ≥ x for y ≥ 0), preserving the
+    // "more ring complexity never lowers burden" invariant tested in
+    // `tests/ring_topology.rs`.
+    let mut family_burdens: Vec<f64> = Vec::new();
 
     let push = |findings: &mut Vec<Finding>,
                 contributions: &mut Vec<Contribution>,
@@ -124,7 +139,7 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
             }
         };
 
-        raw += kind_weight;
+        let mut family_burden = kind_weight;
 
         if max_ring_size >= MACROCYCLE_MIN_RING_SIZE {
             push(
@@ -139,11 +154,13 @@ pub(crate) fn compute(mol: &Molecule) -> RingTopologyOutcome {
                 },
                 RING_WEIGHT_MACROCYCLE_BONUS,
             );
-            raw += RING_WEIGHT_MACROCYCLE_BONUS;
+            family_burden += RING_WEIGHT_MACROCYCLE_BONUS;
         }
+
+        family_burdens.push(family_burden);
     }
 
-    let raw = finite_or_zero(raw);
+    let raw = finite_or_zero(family_burdens.iter().map(|f| f * f).sum::<f64>().sqrt());
     // Non-linear burden (AGENTS.md §5.1): bounded, monotonic, and saturates
     // rather than being capped or growing unbounded with ring count.
     let normalized = ProbabilityLikeScore::new(1.0 - (-raw / RING_BURDEN_SCALE).exp());

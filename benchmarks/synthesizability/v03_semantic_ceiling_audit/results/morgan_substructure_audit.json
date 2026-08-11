@@ -1,0 +1,326 @@
+{
+  "n_high_ring": 3451,
+  "model_r2_on_training_data": 0.27101681349559825,
+  "top_bits": [
+    {
+      "bit": 1917,
+      "permutation_importance": 0.02855727933975799,
+      "n_high_ring_molecules_with_bit": 1991,
+      "fraction_high_ring": 0.5769342219646479,
+      "example_environments": [
+        "C=O",
+        "C=O",
+        "C=O"
+      ],
+      "example_smiles": [
+        "CN1CCN(C(=O)Cn2nc(-c3cnc4[nH]cc(C(=O)NC(C)(C)C)c4n3)c3cc(OC(F)F)ccc32)CC1",
+        "CCOC(=O)C1(CC)CCN(C2=NOC3(C2)CN(Cc2cc(C4CC4)c(-c4ccc(F)cc4)c(Cl)c2OC)C3)CC1",
+        "CN(C)C(=O)c1cc(F)cc(C(C2CN(C(c3ccc(Cl)cc3)c3cccc(C#N)c3)C2)C(C)(C)F)c1"
+      ]
+    },
+    {
+      "bit": 1160,
+      "permutation_importance": 0.012811874981729676,
+      "n_high_ring_molecules_with_bit": 1166,
+      "fraction_high_ring": 0.3378730802665894,
+      "example_environments": [
+        "cc(c)-c",
+        "cc(c)-c",
+        "cc(c)-c"
+      ],
+      "example_smiles": [
+        "Cc1cccc(N2CCN(CCOc3ccc(-c4cc5c(nnn5C)c(C#N)n4)cc3C(F)(F)F)CC2)n1",
+        "CCOC(=O)C1(CC)CCN(C2=NOC3(C2)CN(Cc2cc(C4CC4)c(-c4ccc(F)cc4)c(Cl)c2OC)C3)CC1",
+        "CCC(=O)Nc1cncc(-c2cnc3c(c2)c(C=O)nn3C2CCCCO2)c1"
+      ]
+    },
+    {
+      "bit": 1199,
+      "permutation_importance": 0.011341669005245691,
+      "n_high_ring_molecules_with_bit": 1622,
+      "fraction_high_ring": 0.4700086931324254,
+      "example_environments": [
+        "ccccc",
+        "ccccc",
+        "ccccc"
+      ],
+      "example_smiles": [
+        "CCn1cc2c(c(N3CCOCC3)c1=O)C(=O)N(CCc1ccc3ccccc3n1)C2",
+        "O=C1c2ccccc2C(=O)N1CCn1c(=O)n(C2CCN(C3CC4CCCc5cccc3c54)CC2)c2ccccc21",
+        "COc1cc(C=O)c(OCc2c(-c3ccn[nH]3)ncc3ccccc23)cn1"
+      ]
+    },
+    {
+      "bit": 1853,
+      "permutation_importance": 0.010845826097274658,
+      "n_high_ring_molecules_with_bit": 110,
+      "fraction_high_ring": 0.03187481889307447,
+      "example_environments": [
+        "cccc(c)C",
+        "cc(-c)cc(c)Cl",
+        "cccc(c)C"
+      ],
+      "example_smiles": [
+        "CN(C)C(=O)c1cc(F)cc(C(C2CN(C(c3ccc(Cl)cc3)c3cccc(C#N)c3)C2)C(C)(C)F)c1",
+        "CCc1c(F)cncc1-c1cc(Cl)c2c(c1)CCc1nnc(C)n1-2",
+        "COc1cc2c(cc1Nc1nc3ccc(-c4ccc(NC(=O)[C@H](C)c5ccc(F)cc5)cc4)cn3n1)CCS2(=O)=O"
+      ]
+    },
+    {
+      "bit": 322,
+      "permutation_importance": 0.008472993615312108,
+      "n_high_ring_molecules_with_bit": 752,
+      "fraction_high_ring": 0.21790785279629094,
+      "example_environments": [
+        "cc(c)O",
+        "cc(c)O",
+        "cc(c)O"
+      ],
+      "example_smiles": [
+        "CN1CCN(C(=O)Cn2nc(-c3cnc4[nH]cc(C(=O)NC(C)(C)C)c4n3)c3cc(OC(F)F)ccc32)CC1",
+        "CN(C)C1CCN(c2ccc(-n3ccc(COc4ccc(Cl)nc4)cc3=O)cn2)C1",
+        "Cc1ccc(Oc2ccc(Nc3ncnc4cccc(OCC(=O)N5CCCC5)c34)cc2C)cn1"
+      ]
+    },
+    {
+      "bit": 1887,
+      "permutation_importance": 0.006815789477148027,
+      "n_high_ring_molecules_with_bit": 53,
+      "fraction_high_ring": 0.015357867284844973,
+      "example_environments": [
+        "cc(c)OCC",
+        "cc(c)OCC",
+        "cc(c)OCC"
+      ],
+      "example_smiles": [
+        "Cc1c(-c2ccccc2)n(Cc2ccccc2)c2cccc(-c3ccc(OCC(=O)O)cc3)c12",
+        "CC(C(=O)OCc1ccccc1)c1ccc(-c2ccc(NC(=O)COc3ccc(C(=O)c4ccc(OCC(=O)NCCN)cc4)cc3)cc2)c(F)c1",
+        "CNC(=O)COc1cccc(CN2C(=O)C3(COc4cc5c(cc43)CCO5)c3ccccc32)c1"
+      ]
+    },
+    {
+      "bit": 1535,
+      "permutation_importance": 0.006504132855304901,
+      "n_high_ring_molecules_with_bit": 812,
+      "fraction_high_ring": 0.23529411764705882,
+      "example_environments": [
+        "ccn",
+        "ccn",
+        "ccn"
+      ],
+      "example_smiles": [
+        "CN1CCN(C(=O)Cn2nc(-c3cnc4[nH]cc(C(=O)NC(C)(C)C)c4n3)c3cc(OC(F)F)ccc32)CC1",
+        "CN(C)C1CCN(c2ccc(-n3ccc(COc4ccc(Cl)nc4)cc3=O)cn2)C1",
+        "CCC(=O)Nc1cncc(-c2cnc3c(c2)c(C=O)nn3C2CCCCO2)c1"
+      ]
+    },
+    {
+      "bit": 802,
+      "permutation_importance": 0.005906890004706245,
+      "n_high_ring_molecules_with_bit": 365,
+      "fraction_high_ring": 0.10576644450883801,
+      "example_environments": [
+        "COC",
+        "cn(c)C",
+        "cn(c)C"
+      ],
+      "example_smiles": [
+        "CCC(=O)Nc1cncc(-c2cnc3c(c2)c(C=O)nn3C2CCCCO2)c1",
+        "C=CC(=O)NC1CCN(CCn2c(=O)c(-c3cc(OC)cc(OC)c3Cl)cc3cnc(NC)nc32)CC1",
+        "CN(CCCn1c(=O)[nH]c2cc(CNC[C@H](O[Si](C)(C)C(C)(C)C)c3ccc(O)c4[nH]c(=O)ccc34)ccc21)[C@@H]1CC[C@@H](OC(=O)C(O)(c2cccs2)c2cccs2)CC1"
+      ]
+    },
+    {
+      "bit": 335,
+      "permutation_importance": 0.005032519671477931,
+      "n_high_ring_molecules_with_bit": 185,
+      "fraction_high_ring": 0.05360764995653434,
+      "example_environments": [
+        "CCCN(c)C",
+        "cccc(C)n",
+        "cc(c)OCC"
+      ],
+      "example_smiles": [
+        "CN(C)C1CCN(c2ccc(-n3ccc(COc4ccc(Cl)nc4)cc3=O)cn2)C1",
+        "Cc1ccc(Oc2ccc(Nc3ncnc4cccc(OCC(=O)N5CCCC5)c34)cc2C)cn1",
+        "O=C(O)C1(c2cc(OCC3CC3)c(Cl)c(-c3ccc(C(F)(F)F)cc3)c2)CCC1"
+      ]
+    },
+    {
+      "bit": 875,
+      "permutation_importance": 0.004692104956350774,
+      "n_high_ring_molecules_with_bit": 2323,
+      "fraction_high_ring": 0.6731382208055636,
+      "example_environments": [
+        "ccc",
+        "ccc",
+        "ccc"
+      ],
+      "example_smiles": [
+        "CN1CCN(C(=O)Cn2nc(-c3cnc4[nH]cc(C(=O)NC(C)(C)C)c4n3)c3cc(OC(F)F)ccc32)CC1",
+        "CN(C)C1CCN(c2ccc(-n3ccc(COc4ccc(Cl)nc4)cc3=O)cn2)C1",
+        "Cc1cccc(N2CCN(CCOc3ccc(-c4cc5c(nnn5C)c(C#N)n4)cc3C(F)(F)F)CC2)n1"
+      ]
+    },
+    {
+      "bit": 1589,
+      "permutation_importance": 0.004671540637786509,
+      "n_high_ring_molecules_with_bit": 265,
+      "fraction_high_ring": 0.07678933642422486,
+      "example_environments": [
+        "CN(C)CCN",
+        "CN(C)CCN",
+        "cNC"
+      ],
+      "example_smiles": [
+        "CN1CCN(C(=O)Cn2nc(-c3cnc4[nH]cc(C(=O)NC(C)(C)C)c4n3)c3cc(OC(F)F)ccc32)CC1",
+        "CCn1cc(N2CCN(C(=O)OC)CC2=O)c2ccc(OCc3ccccn3)nc21",
+        "c1ccc2cc(-c3nnc(NC4CC4)cc3-c3ccncc3)ccc2c1"
+      ]
+    },
+    {
+      "bit": 1152,
+      "permutation_importance": 0.0044787688677109475,
+      "n_high_ring_molecules_with_bit": 1745,
+      "fraction_high_ring": 0.5056505360764996,
+      "example_environments": [
+        "N",
+        "N",
+        "N"
+      ],
+      "example_smiles": [
+        "CN1CCN(C(=O)Cn2nc(-c3cnc4[nH]cc(C(=O)NC(C)(C)C)c4n3)c3cc(OC(F)F)ccc32)CC1",
+        "CCC(=O)Nc1cncc(-c2cnc3c(c2)c(C=O)nn3C2CCCCO2)c1",
+        "Cc1ccc(Oc2ccc(Nc3ncnc4cccc(OCC(=O)N5CCCC5)c34)cc2C)cn1"
+      ]
+    },
+    {
+      "bit": 184,
+      "permutation_importance": 0.004436229835858829,
+      "n_high_ring_molecules_with_bit": 173,
+      "fraction_high_ring": 0.05013039698638076,
+      "example_environments": [
+        "CC(=O)O",
+        "cCC(NC)c(n)[nH]",
+        "cnc(CC)n(c)C"
+      ],
+      "example_smiles": [
+        "O=C(O)C1(c2cc(OCC3CC3)c(Cl)c(-c3ccc(C(F)(F)F)cc3)c2)CCC1",
+        "O=C(NC(Cc1ccc2nc(-c3c(Cl)cccc3Cl)ccc2c1)c1nnn[nH]1)c1c(Cl)cccc1Cl",
+        "CC(C)N1CCn2c(CC3(c4ccc(Cl)c(Cl)c4)CCCC3)nc(=O)c(O)c2C1=O"
+      ]
+    },
+    {
+      "bit": 73,
+      "permutation_importance": 0.004197017204292208,
+      "n_high_ring_molecules_with_bit": 53,
+      "fraction_high_ring": 0.015357867284844973,
+      "example_environments": [
+        "cc(c)c(C(N)=O)c(-c)o",
+        "c[nH]nnn",
+        "cc(C)c(=O)n(-c)n"
+      ],
+      "example_smiles": [
+        "CNC(=O)c1c(-c2ccc(F)cc2)oc2cc(N(C)S(C)(=O)=O)c3c(c12)CC(CN1CCOCC1)O3",
+        "O=C(NC(Cc1ccc2nc(-c3c(Cl)cccc3Cl)ccc2c1)c1nnn[nH]1)c1c(Cl)cccc1Cl",
+        "Cc1c(C(=O)Nc2ccc(Oc3ccnc4cc(OCCO)ccc34)cc2)c(=O)n(-c2ccccc2)n1C"
+      ]
+    },
+    {
+      "bit": 1452,
+      "permutation_importance": 0.004194276219715099,
+      "n_high_ring_molecules_with_bit": 1591,
+      "fraction_high_ring": 0.4610257896261953,
+      "example_environments": [
+        "cnc",
+        "COc",
+        "COc"
+      ],
+      "example_smiles": [
+        "CN1CCN(C(=O)Cn2nc(-c3cnc4[nH]cc(C(=O)NC(C)(C)C)c4n3)c3cc(OC(F)F)ccc32)CC1",
+        "CN(C)C1CCN(c2ccc(-n3ccc(COc4ccc(Cl)nc4)cc3=O)cn2)C1",
+        "Cc1cccc(N2CCN(CCOc3ccc(-c4cc5c(nnn5C)c(C#N)n4)cc3C(F)(F)F)CC2)n1"
+      ]
+    },
+    {
+      "bit": 667,
+      "permutation_importance": 0.004009800098707006,
+      "n_high_ring_molecules_with_bit": 272,
+      "fraction_high_ring": 0.07881773399014778,
+      "example_environments": [
+        "CCN",
+        "CCN",
+        "cC(=O)NC(C)C"
+      ],
+      "example_smiles": [
+        "CC(C(=O)OCc1ccccc1)c1ccc(-c2ccc(NC(=O)COc3ccc(C(=O)c4ccc(OCC(=O)NCCN)cc4)cc3)cc2)c(F)c1",
+        "COc1cc(C=CC(=O)Nc2ccc3ncnc(Nc4ccc(F)c(Cl)c4)c3c2)ccc1OCC(=O)NCCOCCOCCNC(=O)OC(C)(C)C",
+        "Cc1ccc(C(=O)NC2CC2)cc1-c1ccc2c(=O)n(CC3CC3)cc(CN3CCN[C@@H](C)C3)c2c1"
+      ]
+    },
+    {
+      "bit": 80,
+      "permutation_importance": 0.00400915219186535,
+      "n_high_ring_molecules_with_bit": 2386,
+      "fraction_high_ring": 0.6913937988988699,
+      "example_environments": [
+        "C",
+        "C",
+        "C"
+      ],
+      "example_smiles": [
+        "CN1CCN(C(=O)Cn2nc(-c3cnc4[nH]cc(C(=O)NC(C)(C)C)c4n3)c3cc(OC(F)F)ccc32)CC1",
+        "CN(C)C1CCN(c2ccc(-n3ccc(COc4ccc(Cl)nc4)cc3=O)cn2)C1",
+        "Cc1cccc(N2CCN(CCOc3ccc(-c4cc5c(nnn5C)c(C#N)n4)cc3C(F)(F)F)CC2)n1"
+      ]
+    },
+    {
+      "bit": 92,
+      "permutation_importance": 0.00382041066945229,
+      "n_high_ring_molecules_with_bit": 130,
+      "fraction_high_ring": 0.0376702405099971,
+      "example_environments": [
+        "ccn(c(c)C)S(c)(=O)=O",
+        "cc(C)n",
+        "cc(C)n"
+      ],
+      "example_smiles": [
+        "COc1cc(C(F)(F)F)ccc1C(=O)c1cccn1-c1ccn(S(=O)(=O)c2ccc(C)cc2)c1C(=O)c1ccc(C(F)(F)F)cc1OC",
+        "COc1cccc(Sc2cnc(Nc3nc(C4CCN(C(=O)OC(C)(C)C)CC4)cs3)cc2Oc2cccnc2C)c1",
+        "COc1ccc(-c2c(-c3ccc(C#N)cc3)ccn3c(=O)n(Cc4ccc(C(F)(F)F)nc4C)nc23)cc1"
+      ]
+    },
+    {
+      "bit": 216,
+      "permutation_importance": 0.0037840792700352343,
+      "n_high_ring_molecules_with_bit": 400,
+      "fraction_high_ring": 0.11590843233845262,
+      "example_environments": [
+        "cc(c)Cl",
+        "cc(c)Cl",
+        "cc(c)Cl"
+      ],
+      "example_smiles": [
+        "CN(C)C(=O)c1cc(F)cc(C(C2CN(C(c3ccc(Cl)cc3)c3cccc(C#N)c3)C2)C(C)(C)F)c1",
+        "O=C(N[C@@H]1CCCC[C@H]1O)c1nc(-c2ccc(Cl)cc2)c(OCC2CC2)nc1C(F)(F)F",
+        "O=C(NO)[C@@H](CCCN1C(=O)c2ccccc2C1=O)NS(=O)(=O)c1ccc(-c2ccc(Cl)cc2)cc1"
+      ]
+    },
+    {
+      "bit": 1088,
+      "permutation_importance": 0.003768094175830472,
+      "n_high_ring_molecules_with_bit": 2246,
+      "fraction_high_ring": 0.6508258475804115,
+      "example_environments": [
+        "ccc",
+        "ccc",
+        "ccc"
+      ],
+      "example_smiles": [
+        "Cc1cccc(N2CCN(CCOc3ccc(-c4cc5c(nnn5C)c(C#N)n4)cc3C(F)(F)F)CC2)n1",
+        "CN(C)C(=O)c1cc(F)cc(C(C2CN(C(c3ccc(Cl)cc3)c3cccc(C#N)c3)C2)C(C)(C)F)c1",
+        "Cc1ccc(Oc2ccc(Nc3ncnc4cccc(OCC(=O)N5CCCC5)c34)cc2C)cn1"
+      ]
+    }
+  ]
+}

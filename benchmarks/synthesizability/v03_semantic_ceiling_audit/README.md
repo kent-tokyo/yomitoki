@@ -227,3 +227,57 @@ subset membership was never altered; `n5` usage was strictly bounded to
 its overlap with the already-opened `n1` subset, documented in full
 (§6) — no new molecule population was scored or used as evidence
 anywhere in this round.
+
+## 12. Follow-up: what does the Morgan probe see that YOMITOKI doesn't? (`morgan_substructure_audit.py`)
+
+Direct pursuit of this README's own "Next experiment" recommendation
+(§9). Fit the same Morgan-fingerprint nonlinear model used in §1, on
+the high-ring subset only, and ranked bits by permutation importance
+(not impurity-based — `HistGradientBoostingRegressor` doesn't expose
+that, and permutation importance is the more defensible choice anyway).
+Each top bit mapped back to its actual substructure environment via
+RDKit's own `bitInfo` — no new hand-rolled substructure detector.
+
+**Caveat, stated plainly**: importances were computed in-sample
+(training data, not held out) — in-sample R² (0.271) is well above the
+properly cross-validated ρ=0.130 (§1) for this same population, the
+expected gap for 2048 sparse binary features fit on 3,451 molecules.
+This is an exploratory, suggestive ranking, not a rigorous held-out
+attribution — treated as a lead to investigate, not a finding to act on
+directly.
+
+**What actually showed up, and it's not ring topology.** The dominant
+bit by a wide margin (importance 0.0286, ~2.2× the runner-up) is a bare
+carbonyl (`C=O`) environment, present in 57.7% of high-ring molecules.
+The rest of the top 20 are almost entirely **functional-group and
+heteroatom-context signals** — aromatic C–N (pyridine-type, `ccn`/
+`cnc`), aliphatic and aromatic amines (`CN(C)CCN`, `CCN`, bare `N`),
+ethers (`COC`, `cc(c)O`, `cc(c)OCC`), a carboxylic acid (`CC(=O)O`), an
+aryl chloride (`cc(c)Cl`), an amide-adjacent aromatic pattern (`cc(c)
+c(C(N)=O)c(-c)o`) — **plus specific aromatic-substitution/connectivity
+patterns** (`cc(c)-c`, a biaryl-type C–C context; `ccccc`/`cccc(c)C`,
+generic and substituted benzene rings). **Nothing resembling
+ring-system count, fused-family size, bridgeheads, or spiro atoms
+appears in the top 20** — consistent with §7's finding that none of
+those descriptors predict route length within high-ring either.
+
+**Reading**: the signal Morgan captures in the high-ring regime that
+YOMITOKI's current four components miss looks less like "finer ring
+topology" and more like **functional-group/reactive-handle presence and
+specific bond-formation-relevant substructure patterns** (biaryl
+contexts read naturally as coupling-step precursors; the carbonyl/
+amine/ether dominance reads as "does this molecule have an obvious
+disconnection point"). This connects directly to an already-scoped,
+not-yet-implemented ROADMAP candidate: `chematic_rxn::retro::
+retro_disconnect` ("Needs scoping" section, round 22 part 7) — a
+template-based one-step retrosynthetic disconnection engine covering
+named reaction classes (amide coupling, Williamson ether, Suzuki,
+Buchwald, reductive amination, Mitsunobu). **Not a recommendation to
+implement it now** — that stays correctly gated behind the same
+scoring-formula discipline (new `FindingCode`, new weight,
+`RULESET_VERSION` bump) as every other "Needs scoping" item, and this
+round found evidence *for investigating that connection further*, not
+evidence sufficient to greenlight a specific implementation. Recorded
+as a sharpened, evidence-backed lead for whenever that scoping decision
+is revisited, not something this round decides. Full detail:
+`results/morgan_substructure_audit.json`.

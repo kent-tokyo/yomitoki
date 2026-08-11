@@ -1,0 +1,25 @@
+{
+  "n_stock_molecules": 13647,
+  "route_steps_vs_nearest_stock_similarity": {
+    "spearman_rho": -0.1918608220013657,
+    "p": 1.6801085978865094e-83
+  },
+  "by_ring_stratum": {
+    "low": {
+      "spearman_rho": -0.14353761022433006,
+      "p": 1.8010190148186672e-31,
+      "n": 6545
+    },
+    "high": {
+      "spearman_rho": -0.26506284093896276,
+      "p": 1.4088322800982183e-56,
+      "n": 3451
+    }
+  },
+  "nearest_stock_similarity_distribution": {
+    "mean": 0.4652523100376129,
+    "median": 0.44736841320991516,
+    "min": 0.21568627655506134,
+    "max": 1.0
+  }
+}

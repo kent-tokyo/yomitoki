@@ -47,6 +47,14 @@ benchmarks/synthesizability/chemical_space/results/knn_local_rates_umap.csv
 benchmarks/synthesizability/information_loss_audit/results/features.csv
 benchmarks/synthesizability/information_loss_audit/results/features_with_folds.csv
 
+# v0.3 Semantic Ceiling Audit (round 22 part 21): same policy as every
+# other round here -- SMILES-bearing derived CSVs and the large Morgan
+# fingerprint matrix are regenerable from the frozen final_holdout data
+# + committed scripts. Aggregate JSON summaries and the README ARE
+# committed.
+benchmarks/synthesizability/v03_semantic_ceiling_audit/results/*.csv
+benchmarks/synthesizability/v03_semantic_ceiling_audit/results/*.npy
+
 # Python build/test artifacts (benchmarks/synthesizability is a Python
 # harness; the core crate has none of these).
 __pycache__/

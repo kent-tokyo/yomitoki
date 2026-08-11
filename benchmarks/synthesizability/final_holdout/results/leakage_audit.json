@@ -1,0 +1,33 @@
+{
+  "n_candidate": 10000,
+  "n_unparseable": 0,
+  "per_dataset": {
+    "MPScore": {
+      "n_prior_dataset": 10966,
+      "exact_isomeric_overlap": 0,
+      "non_isomeric_connectivity_overlap": 1,
+      "bemis_murcko_scaffold_overlap": 1868
+    },
+    "TS1": {
+      "n_prior_dataset": 1800,
+      "exact_isomeric_overlap": 0,
+      "non_isomeric_connectivity_overlap": 0,
+      "bemis_murcko_scaffold_overlap": 1590
+    },
+    "TS2": {
+      "n_prior_dataset": 1800,
+      "exact_isomeric_overlap": 1,
+      "non_isomeric_connectivity_overlap": 1,
+      "bemis_murcko_scaffold_overlap": 1932
+    },
+    "TS3": {
+      "n_prior_dataset": 1799,
+      "exact_isomeric_overlap": 3,
+      "non_isomeric_connectivity_overlap": 3,
+      "bemis_murcko_scaffold_overlap": 1859
+    }
+  },
+  "ablation_panel_note": "Not separately checked: this project's controlled ablation panels use small numbers (<20 total across all rounds) of extremely common, simple reference molecules (pyridine, octane, cyclohexane, benzene, morpholine, etc.) embedded directly in analysis scripts, not sourced from any external corpus. Their overlap risk with a 10,000-molecule patent-derived holdout is structurally negligible and not worth a separate pass; flagged here rather than silently omitted.",
+  "n_excluded_exact_overlap": 4,
+  "n_final_evaluation_subset": 9996
+}

@@ -28,6 +28,14 @@ benchmarks/synthesizability/datasets/downloaded/
 benchmarks/synthesizability/results/raw/
 benchmarks/synthesizability/results/per_molecule.jsonl
 
+# Final holdout (round 22 part 20): same policy -- raw PaRoutes files and
+# any derived file carrying per-molecule SMILES are regenerable from the
+# checksums/scripts in HOLDOUT_MANIFEST.md, not committed. Aggregate
+# stats (leakage_audit.json, strata_and_threshold.json) and the manifest
+# itself ARE committed, as the pre-registration record.
+benchmarks/synthesizability/final_holdout/downloaded/
+benchmarks/synthesizability/final_holdout/results/*.csv
+
 # Chemical-space error atlas (development tooling, round 22 part 12):
 # per-molecule feature/embedding tables are large and fully regeneratable
 # from a fixed seed (see chemical_space/README.md) -- not committed. The

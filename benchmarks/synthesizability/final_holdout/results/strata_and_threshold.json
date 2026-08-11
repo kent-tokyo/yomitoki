@@ -1,0 +1,24 @@
+{
+  "strata_medians": {
+    "mw_median": 365.40600000000006,
+    "ring_count_median": 3.0,
+    "aromatic_ring_count_median": 2.0,
+    "stereocenter_count_median": 0.0,
+    "heteroatom_count_median": 6.0,
+    "route_steps_median": 3.0
+  },
+  "binary_threshold_route_steps_gt": 3.0,
+  "n_hard_above_threshold": 1849,
+  "n_easy_at_or_below_threshold": 8147,
+  "route_steps_distribution": {
+    "2": 4025,
+    "3": 4122,
+    "4": 1298,
+    "5": 372,
+    "6": 134,
+    "7": 29,
+    "8": 10,
+    "9": 3,
+    "10": 3
+  }
+}

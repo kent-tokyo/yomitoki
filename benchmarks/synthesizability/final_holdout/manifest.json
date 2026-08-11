@@ -1,0 +1,82 @@
+{
+  "dataset": {
+    "name": "PaRoutes n1",
+    "paper_doi": "10.1039/D2DD00015F",
+    "zenodo_doi": "10.5281/zenodo.6275421",
+    "license": "Apache-2.0",
+    "files": {
+      "n1-targets.txt": "c0d1b48379e1ceb1129fba4bf3773f73f27bdb22bb4d468417e6e404d3210c15",
+      "n1-stock.txt": "4b36825ba3395f7f85a69ba82e750b2263768d4384e06f99ff1e9d74cf6d3b0a",
+      "n1-routes.json": "c25a92a8cc0ac06dfdbeb51a902ed0a3d32a38318089aed7973a7ed5c0822974"
+    },
+    "original_n": 10000,
+    "label": "route_steps (continuous, 2-10, depth of longest reaction-node chain to an in_stock precursor)"
+  },
+  "leakage_audit": {
+    "exact_overlap_excluded": 4,
+    "unparseable_excluded": 0,
+    "final_evaluation_subset_n": 9996,
+    "novel_scaffold_subset_n": 7495
+  },
+  "endpoints": {
+    "primary": "spearman_correlation(overall.difficulty, route_steps)",
+    "secondary": [
+      "pearson_correlation",
+      "roc_auc@median_split",
+      "pr_auc@median_split",
+      "balanced_accuracy@median_split",
+      "mcc@median_split"
+    ],
+    "binary_threshold_route_steps_gt": 3.0
+  },
+  "comparators": {
+    "yomitoki_v0.1.x": {
+      "tag": "v0.1.1",
+      "commit": "bd98f80",
+      "binary_sha256": "f74679b8318d823627b1f816d6d172c0cd8975596c7e7e1b76dce642f0d0d14c"
+    },
+    "yomitoki_v0.2.0-alpha.1": {
+      "tag": "v0.2.0-alpha.1",
+      "commit": "77dc51c",
+      "binary_sha256": "47e705b1c73075f6d4a0a5087ebee49eeed0dbcb23ad87732289b9377c29bcd4"
+    },
+    "sascore": {
+      "source": "rdkit.Contrib.SA_Score.sascorer",
+      "rdkit_version": "2025.09.3"
+    },
+    "brsascore": {
+      "source": "PyPI BRSAScore",
+      "version": "0.1.1",
+      "config": "reaction_from=uspto, buildingblock_from=emolecules"
+    }
+  },
+  "bootstrap": {
+    "method": "paired_bootstrap_diff_ci",
+    "n_resamples": 1000,
+    "rng_seed": 0,
+    "ci": 0.95
+  },
+  "strata_medians": {
+    "mw": 365.40600000000006,
+    "ring_count": 3.0,
+    "aromatic_ring_count": 2.0,
+    "stereocenter_count": 0.0,
+    "heteroatom_count": 6.0
+  },
+  "success_gates": {
+    "strong_go": "spearman_rho >= 0.50 and clear improvement over v0.1.1 and no stratum collapse and TS1 not damaged and explanation contract preserved",
+    "go": "spearman_rho in [0.35, 0.50) and clear improvement over v0.1.1 and no major regression",
+    "mixed": "spearman_rho in [0.20, 0.35) or large stratum instability",
+    "no_go": "spearman_rho < 0.20 or worse than v0.1.1 or serious structural regression"
+  },
+  "frozen_scoring_untouched": [
+    "ring_family_l2_aggregation",
+    "size_topology_formula",
+    "SIZE_WEIGHT_PER_HETEROATOM=0.03",
+    "stereochemical_burden",
+    "functional_group_liability",
+    "overall_aggregation_weights",
+    "verdict_thresholds",
+    "confidence_formula"
+  ]
+}

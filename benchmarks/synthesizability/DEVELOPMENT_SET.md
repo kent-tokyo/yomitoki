@@ -384,6 +384,156 @@ itself — on a development set, per this project's own ordering rule,
 never by tuning against TS1/2/3 or re-running this MPScore set
 repeatedly until a change looks good on it.
 
+## Part 5 (round 22, part 8): FM-2 interaction diagnosis — does stereo burden separate hard/easy differently for simple vs. complex molecules?
+
+Follow-on round, prompted directly by design candidate B's
+"INCONCLUSIVE" verdict above. The ablation panel (round 22 part 2) is a
+*controlled, synthetic* demonstration of a mechanism: holding ring count
+at 1 and raising stereocenter count 0→4, `stereochemical_burden`'s own
+normalized score rises but `overall.difficulty` still can't cross 0.5 —
+an aggregation-ceiling effect. That result says nothing about whether
+*real* molecules' chemist-judged difficulty actually tracks stereocenter
+burden within the population where this ceiling would matter (small,
+simple molecules) — a distinct, empirical question this round measures
+directly on MPScore. Diagnosis only, per the round's own no-blind-tuning
+rule: no weight/threshold/formula is read or changed.
+Reproduce: `python3 scripts/evaluate_mpscore.py` (extended this round;
+same inputs as Part 4).
+
+**Method**: among MPScore molecules with a defined consensus label and
+at least one stereocenter, stratify by two independent "simplicity"
+definitions — ring count (≤1 vs. ≥2) and heavy-atom count (median
+split, 15 atoms) — and within each stratum compare (a) whether
+`stereochemical_burden`'s own contribution differs between chemist-hard
+and chemist-easy molecules (bootstrap 95% CI on the mean difference),
+(b) that component's own ROC-AUC in isolation, and (c) `overall
+.difficulty`'s ROC-AUC in the same stratum, to see whether a real
+component-level signal survives aggregation.
+
+### Result: the interaction exists, but not in the shape FM-2 originally implied
+
+| stratum | n (stereo+) | hard / easy | stereo Δ(hard−easy) 95% CI | stereo-only AUC | overall.difficulty AUC |
+|---|---|---|---|---|---|
+| simple (rings ≤ 1) | 1,894 | 1,674 / 220 | 0.013 [-0.001, 0.028] | 0.520 [0.480, 0.558] | 0.604 [0.562, 0.643] |
+| complex (rings ≥ 2) | 2,510 | 2,339 / 171 | **0.131 [0.112, 0.149]** | **0.759 [0.726, 0.792]** | 0.625 [0.570, 0.682] |
+| simple (≤ median heavy atoms) | 2,433 | 2,206 / 227 | 0.028 [0.015, 0.042] | 0.554 [0.519, 0.590] | 0.686 [0.655, 0.716] |
+| complex (> median heavy atoms) | 1,971 | 1,807 / 164 | **0.137 [0.117, 0.157]** | **0.756 [0.716, 0.790]** | 0.617 [0.563, 0.669] |
+
+(Full set, n=10,543; `fm2_stereo_simplicity_interaction_full` in
+`results/mpscore_evaluation.json` has the raw numbers, including the
+n_raters≥2 subset — qualitatively the same pattern, smaller n, wider
+CIs, see below.)
+
+Two findings, and they cut in different directions from what "FM-2:
+boost the stereo weight for small molecules" would predict:
+
+1. **In the *simple* stratum — where the ablation panel's ceiling
+   mechanism should matter most — the raw stereo signal itself is weak
+   or not statistically distinguishable from noise** (ring-based split:
+   CI includes 0; heavy-atom split: barely excludes 0, AUC 0.55, barely
+   above chance). This is not what a clean "real signal, suppressed by
+   aggregation" story predicts — if the signal doesn't clearly exist in
+   the component's own output for this population, boosting its weight
+   wouldn't reliably help. **`fraction_predicted_hard_at_threshold` in
+   the ring-based simple stratum is 0.0 for both classes** — not one
+   molecule, hard-labeled or easy-labeled, crosses `overall.difficulty
+   ≥ 0.5` in this stratum. The aggregation ceiling from the ablation
+   panel is real and total here, but there may not be much real stereo
+   signal underneath it to unlock in this specific population.
+2. **In the *complex* stratum, the opposite pattern holds: the stereo
+   signal is strong and clean** (AUC ≈ 0.76, a real discriminator) **but
+   `overall.difficulty`'s aggregate AUC is markedly worse (≈ 0.62–0.63)
+   — meaning the aggregate is actively *destroying* a real signal, not
+   just under-weighting a weak one.** The mechanism traces back to
+   `ring_topology`, not to stereo being too weak: mean `ring_topology`
+   contribution is *higher* for chemist-easy (0.306/0.301) than
+   chemist-hard (0.279/0.289) molecules in this exact stratum — the same
+   backwards direction Part 4 already found in the full population,
+   reproducing here even after conditioning on ring count and stereocenter
+   presence. **This links candidate B to candidate A more tightly than
+   the two being independent problems**: in the complex-ring population,
+   fixing `ring_topology`'s backwards calibration might recover most of
+   what looked like a stereo-weighting gap, since it's `ring_topology`'s
+   own direction canceling out an otherwise-strong stereo signal, not
+   stereo needing to be louder to compete.
+
+The n_raters≥2 subset (n=1,110, cleaner labels but far smaller — as few
+as 10-20 "easy" molecules per stratum) shows the same qualitative
+pattern with wider CIs; notably the simple-ring stratum's stereo
+Δ(hard−easy) becomes significant there (0.046, CI [0.001, 0.092]) where
+it wasn't on the full set — consistent with single-rater label noise
+diluting a real but modest effect in the full set, though the n is too
+small (144 hard / 20 easy) to treat this as a confirmed reversal of
+finding 1 above, only as a reason not to treat finding 1 as final either.
+
+### Updated verdict: B is neither confirmed nor cleanly ruled out — it's entangled with A, and MPScore can't resolve it further
+
+- **Where MPScore *can* speak (complex-ring/larger molecules)**: the
+  stereo signal is real and strong, and the aggregate is failing to use
+  it because of `ring_topology`'s own miscalibration (candidate A's
+  mechanism), not because stereo's weight is too small. This is evidence
+  *for* fixing A rather than B in this population.
+- **Where FM-2 was originally hypothesized to matter most
+  (simple/small molecules)**: MPScore's own signal is too weak/noisy to
+  confirm the mechanism matters in practice for real molecules, as
+  opposed to the controlled ablation panel where it's true by
+  construction. This is neither a confirmation nor a refutation of
+  candidate B in this population — it's a statement that **MPScore
+  cannot resolve this specific question with confidence**: every
+  simple-molecule stratum above has only 20-227 "easy"-labeled examples
+  against 1,674-2,206 "hard"-labeled ones (MPScore's 84%-hard base rate,
+  concentrated further by conditioning on "has a stereocenter"), so any
+  tuning decision made against this stratum specifically would be
+  fitting noise from a badly imbalanced slice of an already
+  not-built-for-tuning dataset (Part 4's own characterization, still
+  true here).
+- **Explicit answer to "does a development set adequate for *tuning*
+  FM-2 exist yet": no.** MPScore diagnoses (this section) but does not
+  supply a low-variance quantitative target for what a redesigned
+  aggregation should produce on genuinely simple, stereocenter-rich
+  molecules. This is the real parked item from this round — not a
+  candidate weight value (none was computed or considered), but the
+  absence of a dataset that could respect a redesign's own accuracy
+  once one is proposed.
+
+### Design-change decision B, updated
+
+**B. Stereochemical aggregation weight redesign: still not ready to
+implement, but for a more specific reason than "small contribution."**
+The mechanism is real (ablation panel) and the aggregation-ceiling
+effect is total in real data too (0% of the simple/ring≤1 stratum
+crosses threshold, either class). What's missing is not evidence the
+ceiling exists, but evidence of what a *fixed* ceiling should look
+like for real simple molecules — and untangling it from candidate A,
+since the clearest real-world evidence of a live, usable stereo signal
+being lost is in the *complex*-ring population, where the loss traces to
+`ring_topology`'s own backwards calibration, not to stereo's weight.
+**Recommended framing for future work**: treat A (`ring_topology`
+backwards-in-complex-population miscalibration) as the higher-confidence,
+better-evidenced target to fix first — it has a clear mechanism, a clear
+wrong-direction signature, and fixing it may resolve a meaningful share
+of what looked like B's problem for free. B's remaining, distinct
+question (does simple/small-molecule stereo burden deserve more weight
+on its own terms) stays open and needs either a larger, better-balanced
+"easy" sample within the simple/stereocenter-rich population, or a
+different ground-truth source entirely — not decided or scoped further
+this round.
+
+### Not done in round 22 part 8 (deliberately)
+
+- No weight, threshold, or aggregation-formula value was written,
+  computed as a candidate, or even sketched — this section reports
+  measurement outcomes only. If a number above reads like it implies a
+  specific fix, it doesn't; re-read the "Recommended framing" note.
+- No re-measurement against TS1/TS2/TS3 — this section's evidence is
+  entirely from MPScore, same discipline as Part 4.
+- No attempt to fix `ring_topology`'s backwards-in-complex-population
+  direction, despite it being the clearer, better-evidenced finding here
+  — flagged as the recommended next target, not started.
+- No new labeled dataset built to address the "MPScore can't resolve
+  the simple-stratum question" gap identified above — noted as missing,
+  not sourced.
+
 ## Not done in round 22 parts 2-3 (deliberately)
 
 - No fix. This is diagnosis; per the round's own test-set-integrity and

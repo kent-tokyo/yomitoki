@@ -10,6 +10,15 @@ a single combined number would mostly measure agreement with one
 chemist (becky), not with a panel.
 
 No weight/threshold/formula is read or changed by this script.
+
+Round 22 part 8 added `stereo_simplicity_interaction`: a diagnosis-only
+check of the FM-2 hypothesis (DEVELOPMENT_SET.md Part 1/round 22 part 2's
+ablation panel: small, stereocenter-rich molecules under-penalized into
+false negatives because ring_topology/size_topology stay near-zero and
+stereochemical_burden's own weight isn't enough alone to cross the 0.5
+threshold). It measures whether the interaction exists in real
+expert-labeled data; it does not propose or compute a candidate fix --
+see that function's own docstring.
 """
 
 import argparse
@@ -19,6 +28,8 @@ import sys
 import warnings
 from collections import Counter, defaultdict
 from pathlib import Path
+
+import numpy as np
 
 warnings.filterwarnings("ignore")
 from rdkit import Chem, RDLogger  # noqa: E402
@@ -187,6 +198,137 @@ def fm_stratification(ids, labels, smiles, yomitoki):
     }
 
 
+def _mean_diff_hard_minus_easy(y_true, y_score, rng_seed=0):
+    """Bootstrap CI for mean(score | hard) - mean(score | easy). A positive,
+    CI-excludes-zero result means the raw component signal *does* separate
+    the two classes in this subset -- independent of whether the aggregate
+    overall.difficulty threshold decision does.
+    """
+
+    def metric_fn(yt, ys):
+        pos, neg = ys[yt == 1], ys[yt == 0]
+        if len(pos) == 0 or len(neg) == 0:
+            return float("nan")
+        return float(np.mean(pos) - np.mean(neg))
+
+    return bootstrap_ci(y_true, y_score, metric_fn=metric_fn, rng_seed=rng_seed)
+
+
+def _roc_auc_ci_or_none(y_true, y_score, rng_seed=0):
+    if len(set(y_true)) < 2:
+        return None
+    return bootstrap_ci(y_true, y_score, metric_fn=lambda yt, ys: roc_auc_score(yt, ys), rng_seed=rng_seed)
+
+
+def _stratum_report(subset, min_per_class=5):
+    """One stratum's FM-2 diagnosis: among stereocenter-positive molecules
+    in this stratum, does stereochemical_burden's own contribution separate
+    hard from easy, and does that separation survive into overall.difficulty
+    (aggregate) accuracy -- or does it get swamped by ring/size staying
+    near-zero, exactly the mechanism the round-22-part-2 ablation panel
+    demonstrated (4 stereocenters at ring_count=1 still can't cross 0.5)?
+    """
+    stereo_rich = [r for r in subset if r["stereocenters"] > 0]
+    n_hard = sum(1 for r in stereo_rich if r["label"] == 1)
+    n_easy = sum(1 for r in stereo_rich if r["label"] == 0)
+    if n_hard < min_per_class or n_easy < min_per_class:
+        return {
+            "n_in_stratum": len(subset),
+            "n_stereocenter_positive": len(stereo_rich),
+            "n_hard": n_hard,
+            "n_easy": n_easy,
+            "note": f"fewer than {min_per_class} per class among stereocenter-positive "
+            "molecules in this stratum -- not reporting CIs on this n, would be noise",
+        }
+
+    y_true = np.array([r["label"] for r in stereo_rich])
+    stereo_score = np.array([r["stereo_contribution"] for r in stereo_rich])
+    ring_score = np.array([r["ring_contribution"] for r in stereo_rich])
+    overall_score = np.array([r["overall_difficulty"] for r in stereo_rich])
+
+    return {
+        "n_in_stratum": len(subset),
+        "n_stereocenter_positive": len(stereo_rich),
+        "n_hard": n_hard,
+        "n_easy": n_easy,
+        "mean_stereo_contribution": {
+            "hard": float(np.mean(stereo_score[y_true == 1])),
+            "easy": float(np.mean(stereo_score[y_true == 0])),
+        },
+        "mean_ring_contribution": {
+            "hard": float(np.mean(ring_score[y_true == 1])),
+            "easy": float(np.mean(ring_score[y_true == 0])),
+        },
+        "stereo_contribution_hard_minus_easy_95ci": _mean_diff_hard_minus_easy(y_true, stereo_score),
+        "stereo_contribution_only_roc_auc_95ci": _roc_auc_ci_or_none(y_true, stereo_score),
+        "overall_difficulty_roc_auc_95ci": _roc_auc_ci_or_none(y_true, overall_score),
+        "fraction_predicted_hard_at_threshold": {
+            "hard_label_molecules": float(np.mean(overall_score[y_true == 1] >= THRESHOLD)),
+            "easy_label_molecules": float(np.mean(overall_score[y_true == 0] >= THRESHOLD)),
+        },
+    }
+
+
+def stereo_simplicity_interaction(ids, labels, smiles, yomitoki):
+    """FM-2 diagnosis (round 22 part 8): does `stereochemical_burden`'s
+    contribution separate chemist-hard from chemist-easy differently in a
+    "simple" (low ring count / few heavy atoms) stratum than in a "complex"
+    one? Two independent stratifications (ring count, heavy-atom median
+    split) are reported so one axis's result doesn't rest on the other's
+    definition of "simple."
+
+    This is measurement only -- it does not read or propose any
+    weight/threshold/formula value. If the interaction is real (stereo
+    signal separates classes within the simple stratum, but
+    overall.difficulty's threshold accuracy in that same stratum stays
+    poor), that corroborates the ablation panel's mechanism with real
+    expert-labeled data. It does not by itself tell you how to fix the
+    aggregation -- that remains an explicit, separate design decision.
+    """
+    rows = []
+    for mol_id in ids:
+        row = labels[mol_id]
+        if row["hard_consensus"] == "":
+            continue
+        y_rec = yomitoki.get(mol_id)
+        if y_rec is None:
+            continue
+        smi = smiles.get(mol_id)
+        d = descriptors(smi) if smi else None
+        if d is None:
+            continue
+        comps = y_rec["yomitoki_components"]
+        rows.append(
+            {
+                "label": int(row["hard_consensus"]),
+                "stereo_contribution": comps["stereochemical_burden"]["contribution"],
+                "ring_contribution": comps["ring_topology"]["contribution"],
+                "overall_difficulty": y_rec["yomitoki_difficulty"],
+                "rings": d["rings"],
+                "heavy_atoms": d["heavy_atoms"],
+                "stereocenters": d["stereocenters"],
+            }
+        )
+
+    if not rows:
+        return {"note": "no molecules with a defined consensus label and parseable descriptors"}
+
+    median_heavy_atoms = float(np.median([r["heavy_atoms"] for r in rows]))
+
+    return {
+        "n_molecules_considered": len(rows),
+        "median_heavy_atoms": median_heavy_atoms,
+        "by_ring_count": {
+            "simple_ring_count_leq_1": _stratum_report([r for r in rows if r["rings"] <= 1]),
+            "complex_ring_count_geq_2": _stratum_report([r for r in rows if r["rings"] >= 2]),
+        },
+        "by_heavy_atom_median_split": {
+            "simple_below_or_at_median": _stratum_report([r for r in rows if r["heavy_atoms"] <= median_heavy_atoms]),
+            "complex_above_median": _stratum_report([r for r in rows if r["heavy_atoms"] > median_heavy_atoms]),
+        },
+    }
+
+
 def confidence_vs_disagreement(ids, labels, yomitoki):
     multi_rater_ids = [i for i in ids if labels[i]["n_raters"] in ("2", "3")]
     confidences = [yomitoki[i]["yomitoki_confidence"] for i in multi_rater_ids if i in yomitoki]
@@ -220,6 +362,10 @@ def main():
         "finding_rates_full": finding_rates(all_ids, labels, yomitoki),
         "fm_stratification_full": fm_stratification(all_ids, labels, smiles, yomitoki),
         "confidence_vs_disagreement": confidence_vs_disagreement(all_ids, labels, yomitoki),
+        "fm2_stereo_simplicity_interaction_full": stereo_simplicity_interaction(all_ids, labels, smiles, yomitoki),
+        "fm2_stereo_simplicity_interaction_n_raters_2plus": stereo_simplicity_interaction(
+            n_raters_2plus, labels, smiles, yomitoki
+        ),
     }
 
     out_path = RESULTS_DIR / "mpscore_evaluation.json"

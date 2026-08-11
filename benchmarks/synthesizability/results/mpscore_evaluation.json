@@ -287,5 +287,309 @@
       "0.85": 2
     },
     "n_unique_confidence_values": 2
+  },
+  "fm2_stereo_simplicity_interaction_full": {
+    "n_molecules_considered": 10543,
+    "median_heavy_atoms": 15.0,
+    "by_ring_count": {
+      "simple_ring_count_leq_1": {
+        "n_in_stratum": 4414,
+        "n_stereocenter_positive": 1894,
+        "n_hard": 1674,
+        "n_easy": 220,
+        "mean_stereo_contribution": {
+          "hard": 0.13396489279268045,
+          "easy": 0.12079755297365205
+        },
+        "mean_ring_contribution": {
+          "hard": 0.07577999153119247,
+          "easy": 0.06301390282069044
+        },
+        "stereo_contribution_hard_minus_easy_95ci": {
+          "point": 0.0131673398190284,
+          "low": -0.0014031875875157587,
+          "high": 0.027537066193011748,
+          "n_valid_resamples": 1000
+        },
+        "stereo_contribution_only_roc_auc_95ci": {
+          "point": 0.5198259476485283,
+          "low": 0.4796493549051007,
+          "high": 0.5584895217929597,
+          "n_valid_resamples": 1000
+        },
+        "overall_difficulty_roc_auc_95ci": {
+          "point": 0.6041517323775388,
+          "low": 0.562130409738312,
+          "high": 0.6428344810368345,
+          "n_valid_resamples": 1000
+        },
+        "fraction_predicted_hard_at_threshold": {
+          "hard_label_molecules": 0.0,
+          "easy_label_molecules": 0.0
+        }
+      },
+      "complex_ring_count_geq_2": {
+        "n_in_stratum": 6129,
+        "n_stereocenter_positive": 2510,
+        "n_hard": 2339,
+        "n_easy": 171,
+        "mean_stereo_contribution": {
+          "hard": 0.21464869101320572,
+          "easy": 0.08403079337108119
+        },
+        "mean_ring_contribution": {
+          "hard": 0.279456745299874,
+          "easy": 0.3060052845209038
+        },
+        "stereo_contribution_hard_minus_easy_95ci": {
+          "point": 0.13061789764212453,
+          "low": 0.1121037953506883,
+          "high": 0.14867336111503052,
+          "n_valid_resamples": 1000
+        },
+        "stereo_contribution_only_roc_auc_95ci": {
+          "point": 0.7587550535166475,
+          "low": 0.7258589644325917,
+          "high": 0.7917810037785041,
+          "n_valid_resamples": 1000
+        },
+        "overall_difficulty_roc_auc_95ci": {
+          "point": 0.6253934679937696,
+          "low": 0.5700608056999604,
+          "high": 0.682293426918562,
+          "n_valid_resamples": 1000
+        },
+        "fraction_predicted_hard_at_threshold": {
+          "hard_label_molecules": 0.5044890979050877,
+          "easy_label_molecules": 0.3216374269005848
+        }
+      }
+    },
+    "by_heavy_atom_median_split": {
+      "simple_below_or_at_median": {
+        "n_in_stratum": 5292,
+        "n_stereocenter_positive": 2433,
+        "n_hard": 2206,
+        "n_easy": 227,
+        "mean_stereo_contribution": {
+          "hard": 0.14485033186612795,
+          "easy": 0.11689675565452223
+        },
+        "mean_ring_contribution": {
+          "hard": 0.13752284531878373,
+          "easy": 0.0751687362510527
+        },
+        "stereo_contribution_hard_minus_easy_95ci": {
+          "point": 0.027953576211605713,
+          "low": 0.014975680560378042,
+          "high": 0.04205654194900385,
+          "n_valid_resamples": 1000
+        },
+        "stereo_contribution_only_roc_auc_95ci": {
+          "point": 0.5540935614124074,
+          "low": 0.519238068505403,
+          "high": 0.5904358179976297,
+          "n_valid_resamples": 1000
+        },
+        "overall_difficulty_roc_auc_95ci": {
+          "point": 0.6857519140829376,
+          "low": 0.6546870747555645,
+          "high": 0.7162345297796195,
+          "n_valid_resamples": 1000
+        },
+        "fraction_predicted_hard_at_threshold": {
+          "hard_label_molecules": 0.1115140525838622,
+          "easy_label_molecules": 0.013215859030837005
+        }
+      },
+      "complex_above_median": {
+        "n_in_stratum": 5251,
+        "n_stereocenter_positive": 1971,
+        "n_hard": 1807,
+        "n_easy": 164,
+        "mean_stereo_contribution": {
+          "hard": 0.22511382773556002,
+          "easy": 0.0878607547992792
+        },
+        "mean_ring_contribution": {
+          "hard": 0.2640451778120556,
+          "easy": 0.2995527996624237
+        },
+        "stereo_contribution_hard_minus_easy_95ci": {
+          "point": 0.1372530729362808,
+          "low": 0.11692058160827498,
+          "high": 0.15704216077953526,
+          "n_valid_resamples": 1000
+        },
+        "stereo_contribution_only_roc_auc_95ci": {
+          "point": 0.7560587552472096,
+          "low": 0.715636497592668,
+          "high": 0.7904704722674034,
+          "n_valid_resamples": 1000
+        },
+        "overall_difficulty_roc_auc_95ci": {
+          "point": 0.6167596879344553,
+          "low": 0.5629544337311709,
+          "high": 0.6686646787246239,
+          "n_valid_resamples": 1000
+        },
+        "fraction_predicted_hard_at_threshold": {
+          "hard_label_molecules": 0.5168788046485888,
+          "easy_label_molecules": 0.3170731707317073
+        }
+      }
+    }
+  },
+  "fm2_stereo_simplicity_interaction_n_raters_2plus": {
+    "n_molecules_considered": 1110,
+    "median_heavy_atoms": 17.0,
+    "by_ring_count": {
+      "simple_ring_count_leq_1": {
+        "n_in_stratum": 382,
+        "n_stereocenter_positive": 164,
+        "n_hard": 144,
+        "n_easy": 20,
+        "mean_stereo_contribution": {
+          "hard": 0.1396430054975093,
+          "easy": 0.09376940251964097
+        },
+        "mean_ring_contribution": {
+          "hard": 0.08798396911615725,
+          "easy": 0.06404300316198977
+        },
+        "stereo_contribution_hard_minus_easy_95ci": {
+          "point": 0.04587360297786833,
+          "low": 0.0007491714082850596,
+          "high": 0.09186325918346981,
+          "n_valid_resamples": 1000
+        },
+        "stereo_contribution_only_roc_auc_95ci": {
+          "point": 0.6036458333333332,
+          "low": 0.4658609162090706,
+          "high": 0.740268924020497,
+          "n_valid_resamples": 1000
+        },
+        "overall_difficulty_roc_auc_95ci": {
+          "point": 0.7190972222222223,
+          "low": 0.5858938567266991,
+          "high": 0.8313020833333332,
+          "n_valid_resamples": 1000
+        },
+        "fraction_predicted_hard_at_threshold": {
+          "hard_label_molecules": 0.0,
+          "easy_label_molecules": 0.0
+        }
+      },
+      "complex_ring_count_geq_2": {
+        "n_in_stratum": 728,
+        "n_stereocenter_positive": 301,
+        "n_hard": 291,
+        "n_easy": 10,
+        "mean_stereo_contribution": {
+          "hard": 0.2233111390311559,
+          "easy": 0.07462542114107956
+        },
+        "mean_ring_contribution": {
+          "hard": 0.2898740226317824,
+          "easy": 0.3011216507117946
+        },
+        "stereo_contribution_hard_minus_easy_95ci": {
+          "point": 0.14868571789007634,
+          "low": 0.088611713116626,
+          "high": 0.20785985746219124,
+          "n_valid_resamples": 1000
+        },
+        "stereo_contribution_only_roc_auc_95ci": {
+          "point": 0.784192439862543,
+          "low": 0.6757978061702377,
+          "high": 0.8814574171072789,
+          "n_valid_resamples": 1000
+        },
+        "overall_difficulty_roc_auc_95ci": {
+          "point": 0.6993127147766324,
+          "low": 0.4578399897655831,
+          "high": 0.9006800137887944,
+          "n_valid_resamples": 1000
+        },
+        "fraction_predicted_hard_at_threshold": {
+          "hard_label_molecules": 0.563573883161512,
+          "easy_label_molecules": 0.2
+        }
+      }
+    },
+    "by_heavy_atom_median_split": {
+      "simple_below_or_at_median": {
+        "n_in_stratum": 599,
+        "n_stereocenter_positive": 274,
+        "n_hard": 254,
+        "n_easy": 20,
+        "mean_stereo_contribution": {
+          "hard": 0.16834380460258366,
+          "easy": 0.09437909926733787
+        },
+        "mean_ring_contribution": {
+          "hard": 0.17609310591937177,
+          "easy": 0.0614028824263231
+        },
+        "stereo_contribution_hard_minus_easy_95ci": {
+          "point": 0.0739647053352458,
+          "low": 0.02926591217784102,
+          "high": 0.11710796809744471,
+          "n_valid_resamples": 1000
+        },
+        "stereo_contribution_only_roc_auc_95ci": {
+          "point": 0.6574803149606299,
+          "low": 0.5399311023622048,
+          "high": 0.7723703146605191,
+          "n_valid_resamples": 1000
+        },
+        "overall_difficulty_roc_auc_95ci": {
+          "point": 0.8379921259842519,
+          "low": 0.7655042331800144,
+          "high": 0.9043558657853695,
+          "n_valid_resamples": 1000
+        },
+        "fraction_predicted_hard_at_threshold": {
+          "hard_label_molecules": 0.21653543307086615,
+          "easy_label_molecules": 0.0
+        }
+      },
+      "complex_above_median": {
+        "n_in_stratum": 511,
+        "n_stereocenter_positive": 191,
+        "n_hard": 181,
+        "n_easy": 10,
+        "mean_stereo_contribution": {
+          "hard": 0.23388291646768752,
+          "easy": 0.07340602764568575
+        },
+        "mean_ring_contribution": {
+          "hard": 0.2889247692544469,
+          "easy": 0.30640189218312786
+        },
+        "stereo_contribution_hard_minus_easy_95ci": {
+          "point": 0.16047688882200178,
+          "low": 0.08845382738749549,
+          "high": 0.22258984835832274,
+          "n_valid_resamples": 1000
+        },
+        "stereo_contribution_only_roc_auc_95ci": {
+          "point": 0.7651933701657458,
+          "low": 0.6187678878724754,
+          "high": 0.8827991452991453,
+          "n_valid_resamples": 1000
+        },
+        "overall_difficulty_roc_auc_95ci": {
+          "point": 0.6955801104972377,
+          "low": 0.44858343914072957,
+          "high": 0.9010450089126558,
+          "n_valid_resamples": 1000
+        },
+        "fraction_predicted_hard_at_threshold": {
+          "hard_label_molecules": 0.6022099447513812,
+          "easy_label_molecules": 0.2
+        }
+      }
+    }
   }
 }

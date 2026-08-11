@@ -534,6 +534,110 @@ this round.
   the simple-stratum question" gap identified above — noted as missing,
   not sourced.
 
+## Part 6 (round 22, part 9): FM-1 candidate fix — aromaticity-aware fused-ring discount, tested and not adopted
+
+Direct follow-on to Part 5's "Recommended framing": fix `ring_topology`'s
+backwards-in-complex-population direction first, since it has the
+clearer mechanism and may recover part of what looked like B's problem.
+Per explicit instruction ("ring_topologyの修正を development set で試して"),
+this is a real code experiment, not a pure-Python simulation — the
+formula depends on chematic's own SSSR/ring-family perception, which
+RDKit's ring perception doesn't reproduce 1:1, so approximating it in
+Python would risk testing a formula yomitoki doesn't actually run.
+
+**Mechanism check first** (before any code change, per the standing
+no-blind-tuning discipline applied to *diagnosis* too): does MPScore's
+ring≥2 "easy" population actually skew aromatic/flat, as the FM-1 story
+implies? Within the ring≥2, labeled subset (n=6,129): 94.8% of
+chemist-easy molecules are aromatic-dominated fused (aromatic_frac≥0.5),
+vs. 61.9% of chemist-hard. The correlation is real and strong — but
+conditioning on it does not by itself flip `ring_topology`'s backwards
+mean-contribution direction in either slice (aromatic-dominated:
+hard=0.254 vs. easy=0.292; non-aromatic-dominated: hard=0.289 vs.
+easy=0.312 — both still backwards, though the non-aromatic slice's
+easy-class n=44 is too thin to read on its own). Verdict: worth testing
+the real fix, but a binary aromatic/non-aromatic split was not
+guaranteed to be sufficient on its own — flagged before implementing,
+not discovered after.
+
+**Candidate implemented** (branch
+`experiment/ring-topology-aromatic-fused-discount`, not merged to
+`main`): one new constant,
+`RING_WEIGHT_FUSED_AROMATIC_DENSITY_FACTOR`. For a `Fused` ring family
+where every atom is aromatic (`mol.atom(a).aromatic` for all `a` in
+`family.atoms` — confirmed as a plain public field on
+`chematic_core::Atom`), only the *density* term of the fused-family
+weight is discounted by this factor; the base per-family weight and
+every other branch (`Simple`, `Spiro`, `Bridged`, the macrocycle bonus)
+are untouched, per the "one axis of change" rule — `RING_WEIGHT_BRIDGED`
+was deliberately left alone even though "cage should arguably be
+harder" was tempting to add at the same time. Verified with a new unit
+test comparing naphthalene (fused, fully aromatic) against decalin
+(same fused-bicyclic topology and fusion density, fully saturated) —
+same `RingSystemKind::Fused` family, same density (0.2), differing only
+in aromaticity; before this change both scored identically, after,
+naphthalene < decalin.
+
+**Result, rebuilt CLI, re-run over all 10,966 MPScore molecules**
+(`run_yomitoki.py` against the real release binary, not a Python
+approximation):
+
+| | full-set `overall.difficulty` ROC-AUC | complex (ring≥2) `ring_topology` mean(hard−easy) | complex `ring_topology`-only ROC-AUC | complex `overall.difficulty` ROC-AUC |
+|---|---|---|---|---|
+| baseline (main) | 0.513 | −0.0257 [−0.033, −0.018] | 0.460 [0.438, 0.482] | 0.538 [0.515, 0.561] |
+| candidate, factor=0.3 | 0.521 | −0.0243 [−0.032, −0.017] | 0.471 [0.449, 0.494] | 0.550 [0.528, 0.573] |
+| candidate, factor=0.0 (ceiling probe) | 0.522 | −0.0236 [−0.031, −0.016] | 0.473 [0.450, 0.496] | 0.552 [0.530, 0.575] |
+
+The `factor=0.0` row removes the density escalation entirely for
+fully-aromatic fused families (flat base weight only, regardless of
+fusion extent) — the maximum this single lever can do. It was run
+specifically to answer "is this mechanism even capable of flipping the
+sign," not as a serious candidate value (a hard zero loses real signal:
+a hypothetical large flat PAH would score identically to naphthalene).
+The committed candidate value is 0.3, a moderate point, not the probed
+extreme.
+
+**Conclusion: real, small, positive, and insufficient.** The fix moves
+every number in the right direction and the full-set effect is not
+nothing (+0.008-0.009 AUC from one constant). But even at its ceiling,
+`ring_topology`'s own contribution in the complex stratum stays
+backwards (ROC-AUC 0.47, still <0.5; mean(hard−easy) still negative).
+Aromaticity-of-the-fused-family is not the dominant source of the
+backwards direction. Two mechanisms this fix does not touch are the
+more likely remaining drivers, neither investigated further this round:
+(a) `raw` sums `kind_weight` across *every* separate ring family in a
+molecule, so a molecule with several separate, unfused aromatic rings
+(e.g. a biaryl- or benzyl-substituted heterocycle — common,
+well-precedented, chemist-easy) accumulates burden by family *count*,
+independent of any single family's density or aromaticity; (b) the
+`Bridged`/`Spiro`/macrocycle weights, left untouched by design this
+round, were not checked for the same backwards-direction problem in
+this population.
+
+**Disposition**: not adopted, not merged to `main`. The branch and its
+commit stay as a reviewable, reproducible artifact (code diff +
+`ring_topology_aromatic_experiment.py` + this write-up), not reverted —
+consistent with treating a negative-leaning result as a finding to keep,
+not evidence to discard. FM-1 is not closed; the next candidate should
+target ring-family *multiplicity* (mechanism (a) above) rather than
+further tuning this one constant, which is now known to be
+insufficient on its own.
+
+### Not done in round 22 part 9 (deliberately)
+
+- No further tuning of `RING_WEIGHT_FUSED_AROMATIC_DENSITY_FACTOR`
+  beyond the two values reported (0.3, 0.0) — both already establish the
+  lever's ceiling; searching more points on the same insufficient axis
+  would be noise, not signal.
+- No attempt at mechanism (a) (ring-family-count-based burden) or a
+  `Bridged`/`Spiro` backwards-direction check — flagged above as the
+  better next targets, not started.
+- No re-measurement against TS1/TS2/TS3.
+- `RULESET_VERSION` not bumped — the change is not adopted, so there is
+  nothing to version.
+- Nothing merged to `main`; `git checkout` deliberately *not* used to
+  discard the experiment — the branch is the artifact.
+
 ## Not done in round 22 parts 2-3 (deliberately)
 
 - No fix. This is diagnosis; per the round's own test-set-integrity and

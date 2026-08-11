@@ -1,0 +1,959 @@
+{
+  "n_molecules": 10543,
+  "global_fn_rate": 0.8294759825327511,
+  "global_fp_rate": 0.05639913232104121,
+  "hdbscan": {
+    "space": "UMAP",
+    "min_cluster_size": 30,
+    "n_clusters": 60,
+    "n_noise_points": 2310,
+    "note": "Clusters are an error-localization aid, not a claim of independent real chemical classes."
+  },
+  "knn_enrichment": {
+    "k": 15,
+    "space": "UMAP",
+    "n_molecules_local_fn_rate_geq_2x_global": 0,
+    "n_molecules_local_fp_rate_geq_2x_global": 170,
+    "note": "2x-global is reported as one reference cut, not used as a hard filter elsewhere."
+  },
+  "top_fn_regions": [
+    {
+      "region_id": "fn_cluster_30",
+      "n": 71,
+      "n_hard": 62,
+      "n_easy": 9,
+      "fp_rate": 0.0,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 0.0,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_01264",
+      "representative_ids": [
+        "MPSCORE_01264",
+        "MPSCORE_00997",
+        "MPSCORE_03440",
+        "MPSCORE_03404",
+        "MPSCORE_03848"
+      ],
+      "mean_stereocenters": 1.056338028169014,
+      "mean_ring_count": 1.380281690140845,
+      "mean_heavy_atoms": 16.056338028169016,
+      "mean_fg_count": 1.1690140845070423,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.8732394366197183,
+      "component_contribution_means": {
+        "ring_contribution": 0.10912423353188705,
+        "size_contribution": 0.12423858288821796,
+        "stereo_contribution": 0.10216223626476816,
+        "fg_contribution": 0.13847916725993814
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 83
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 53
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 11
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 3
+        }
+      ],
+      "structural_interpretation": "low reactive FG count (1.2 vs global 2.1); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fn_cluster_22",
+      "n": 264,
+      "n_hard": 263,
+      "n_easy": 1,
+      "fp_rate": 0.0,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 0.0,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_03266",
+      "representative_ids": [
+        "MPSCORE_03266",
+        "MPSCORE_03261",
+        "MPSCORE_05871",
+        "MPSCORE_03260",
+        "MPSCORE_03252"
+      ],
+      "mean_stereocenters": 0.007575757575757576,
+      "mean_ring_count": 2.125,
+      "mean_heavy_atoms": 17.977272727272727,
+      "mean_fg_count": 3.147727272727273,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.9962121212121212,
+      "component_contribution_means": {
+        "ring_contribution": 0.1568135920764698,
+        "size_contribution": 0.13032294933866256,
+        "stereo_contribution": 0.0007473079917172258,
+        "fg_contribution": 0.24263118057155375
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 831
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 8
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 2
+        }
+      ],
+      "structural_interpretation": "low stereocenters (0.0 vs global 1.3); high reactive FG count (3.1 vs global 2.1); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fn_cluster_32",
+      "n": 54,
+      "n_hard": 53,
+      "n_easy": 1,
+      "fp_rate": 0.0,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 0.0,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_03245",
+      "representative_ids": [
+        "MPSCORE_03245",
+        "MPSCORE_01712",
+        "MPSCORE_02480",
+        "MPSCORE_01696",
+        "MPSCORE_02700"
+      ],
+      "mean_stereocenters": 0.07407407407407407,
+      "mean_ring_count": 2.074074074074074,
+      "mean_heavy_atoms": 18.555555555555557,
+      "mean_fg_count": 3.611111111111111,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.9814814814814815,
+      "component_contribution_means": {
+        "ring_contribution": 0.1365522019640327,
+        "size_contribution": 0.13283171296447144,
+        "stereo_contribution": 0.007065585307629652,
+        "fg_contribution": 0.2749054939412283
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 195
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 4
+        },
+        {
+          "code": "RING_SPIRO",
+          "n": 1
+        }
+      ],
+      "structural_interpretation": "low stereocenters (0.1 vs global 1.3); high reactive FG count (3.6 vs global 2.1); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fn_cluster_33",
+      "n": 116,
+      "n_hard": 113,
+      "n_easy": 3,
+      "fp_rate": 0.0,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 0.0,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_06893",
+      "representative_ids": [
+        "MPSCORE_06893",
+        "MPSCORE_08755",
+        "MPSCORE_09791",
+        "MPSCORE_09963",
+        "MPSCORE_06892"
+      ],
+      "mean_stereocenters": 0.5517241379310345,
+      "mean_ring_count": 1.3879310344827587,
+      "mean_heavy_atoms": 13.327586206896552,
+      "mean_fg_count": 3.103448275862069,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.9741379310344828,
+      "component_contribution_means": {
+        "ring_contribution": 0.1305310952610563,
+        "size_contribution": 0.08807587616387345,
+        "stereo_contribution": 0.02147851693065567,
+        "fg_contribution": 0.2092731198333795
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 360
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 14
+        },
+        {
+          "code": "RING_BRIDGED_COMPLEXITY",
+          "n": 5
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 2
+        }
+      ],
+      "structural_interpretation": "low stereocenters (0.6 vs global 1.3); low aromatic rings (0.2 vs global 1.0); high reactive FG count (3.1 vs global 2.1); low bridgeheads (0.1 vs global 0.2)"
+    },
+    {
+      "region_id": "fn_cluster_35",
+      "n": 72,
+      "n_hard": 69,
+      "n_easy": 3,
+      "fp_rate": 0.0,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 0.0,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_00165",
+      "representative_ids": [
+        "MPSCORE_00165",
+        "MPSCORE_07288",
+        "MPSCORE_05007",
+        "MPSCORE_07284",
+        "MPSCORE_09186"
+      ],
+      "mean_stereocenters": 0.8472222222222222,
+      "mean_ring_count": 2.0416666666666665,
+      "mean_heavy_atoms": 17.02777777777778,
+      "mean_fg_count": 2.2222222222222223,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.9583333333333334,
+      "component_contribution_means": {
+        "ring_contribution": 0.18881570814013232,
+        "size_contribution": 0.1042682112801192,
+        "stereo_contribution": 0.08434889331667576,
+        "fg_contribution": 0.16559200587839426
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 160
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 56
+        },
+        {
+          "code": "RING_MACROCYCLE",
+          "n": 10
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 2
+        }
+      ],
+      "structural_interpretation": "low aromatic rings (0.5 vs global 1.0); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fn_cluster_40",
+      "n": 34,
+      "n_hard": 34,
+      "n_easy": 0,
+      "fp_rate": NaN,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": NaN,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_04291",
+      "representative_ids": [
+        "MPSCORE_04291",
+        "MPSCORE_04264",
+        "MPSCORE_04263",
+        "MPSCORE_04292",
+        "MPSCORE_04222"
+      ],
+      "mean_stereocenters": 0.0,
+      "mean_ring_count": 2.0,
+      "mean_heavy_atoms": 14.411764705882353,
+      "mean_fg_count": 3.088235294117647,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 1.0,
+      "component_contribution_means": {
+        "ring_contribution": 0.2646490475531742,
+        "size_contribution": 0.0911843231162456,
+        "stereo_contribution": 0.0,
+        "fg_contribution": 0.24029207260058835
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 105
+        }
+      ],
+      "structural_interpretation": "low stereocenters (0.0 vs global 1.3); high aromatic rings (2.0 vs global 1.0); high reactive FG count (3.1 vs global 2.1); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fn_cluster_41",
+      "n": 49,
+      "n_hard": 44,
+      "n_easy": 5,
+      "fp_rate": 0.0,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 0.0,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_06313",
+      "representative_ids": [
+        "MPSCORE_06313",
+        "MPSCORE_00283",
+        "MPSCORE_09410",
+        "MPSCORE_09409",
+        "MPSCORE_05819"
+      ],
+      "mean_stereocenters": 0.10204081632653061,
+      "mean_ring_count": 3.2448979591836733,
+      "mean_heavy_atoms": 18.816326530612244,
+      "mean_fg_count": 1.4489795918367347,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.8979591836734694,
+      "component_contribution_means": {
+        "ring_contribution": 0.2600382890241636,
+        "size_contribution": 0.10573300260863391,
+        "stereo_contribution": 0.009535434767350623,
+        "fg_contribution": 0.11137001414656353
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 71
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 5
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 3
+        }
+      ],
+      "structural_interpretation": "high rings (3.2 vs global 2.0); low stereocenters (0.1 vs global 1.3); high aromatic rings (3.1 vs global 1.0); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fn_cluster_44",
+      "n": 32,
+      "n_hard": 25,
+      "n_easy": 7,
+      "fp_rate": 0.0,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 0.0,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_07278",
+      "representative_ids": [
+        "MPSCORE_07278",
+        "MPSCORE_00157",
+        "MPSCORE_06193",
+        "MPSCORE_06196",
+        "MPSCORE_04998"
+      ],
+      "mean_stereocenters": 0.0,
+      "mean_ring_count": 1.78125,
+      "mean_heavy_atoms": 14.15625,
+      "mean_fg_count": 0.96875,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.78125,
+      "component_contribution_means": {
+        "ring_contribution": 0.1765700489191959,
+        "size_contribution": 0.11090909273701494,
+        "stereo_contribution": 0.0,
+        "fg_contribution": 0.13550193928631998
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 31
+        }
+      ],
+      "structural_interpretation": "low stereocenters (0.0 vs global 1.3); high aromatic rings (1.8 vs global 1.0); low reactive FG count (1.0 vs global 2.1); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fn_cluster_45",
+      "n": 54,
+      "n_hard": 36,
+      "n_easy": 18,
+      "fp_rate": 0.0,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 0.0,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_07274",
+      "representative_ids": [
+        "MPSCORE_07274",
+        "MPSCORE_00153",
+        "MPSCORE_06190",
+        "MPSCORE_01136",
+        "MPSCORE_07264"
+      ],
+      "mean_stereocenters": 0.0,
+      "mean_ring_count": 1.4074074074074074,
+      "mean_heavy_atoms": 13.518518518518519,
+      "mean_fg_count": 1.1666666666666667,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.6666666666666666,
+      "component_contribution_means": {
+        "ring_contribution": 0.138410176309682,
+        "size_contribution": 0.11161733696953723,
+        "stereo_contribution": 0.0,
+        "fg_contribution": 0.14957749405178808
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 63
+        }
+      ],
+      "structural_interpretation": "low stereocenters (0.0 vs global 1.3); low reactive FG count (1.2 vs global 2.1); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fn_cluster_46",
+      "n": 40,
+      "n_hard": 29,
+      "n_easy": 11,
+      "fp_rate": 0.0,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 0.0,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_04466",
+      "representative_ids": [
+        "MPSCORE_04466",
+        "MPSCORE_04228",
+        "MPSCORE_04406",
+        "MPSCORE_04462",
+        "MPSCORE_04409"
+      ],
+      "mean_stereocenters": 0.0,
+      "mean_ring_count": 1.025,
+      "mean_heavy_atoms": 14.425,
+      "mean_fg_count": 1.475,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.725,
+      "component_contribution_means": {
+        "ring_contribution": 0.09608043128007468,
+        "size_contribution": 0.11252635491636051,
+        "stereo_contribution": 0.0,
+        "fg_contribution": 0.17594751353542332
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 59
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 4
+        }
+      ],
+      "structural_interpretation": "low rings (1.0 vs global 2.0); low stereocenters (0.0 vs global 1.3); low bridgeheads (0.0 vs global 0.2)"
+    }
+  ],
+  "top_fp_regions": [
+    {
+      "region_id": "fp_cluster_8",
+      "n": 38,
+      "n_hard": 8,
+      "n_easy": 30,
+      "fp_rate": 0.6333333333333333,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 11.22948717948718,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_08527",
+      "representative_ids": [
+        "MPSCORE_08527",
+        "MPSCORE_10319",
+        "MPSCORE_00371",
+        "MPSCORE_06382",
+        "MPSCORE_09593"
+      ],
+      "mean_stereocenters": 3.3684210526315788,
+      "mean_ring_count": 7.394736842105263,
+      "mean_heavy_atoms": 37.921052631578945,
+      "mean_fg_count": 1.2105263157894737,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.21052631578947367,
+      "component_contribution_means": {
+        "ring_contribution": 0.32665470178599015,
+        "size_contribution": 0.20634090980518496,
+        "stereo_contribution": 0.0,
+        "fg_contribution": 0.1530860821769608
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 46
+        },
+        {
+          "code": "RING_BRIDGED_COMPLEXITY",
+          "n": 32
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 20
+        }
+      ],
+      "structural_interpretation": "high size (37.9 vs global 16.3); high rings (7.4 vs global 2.0); high stereocenters (3.4 vs global 1.3); high aromatic rings (3.9 vs global 1.0); low reactive FG count (1.2 vs global 2.1); high bridgeheads (3.4 vs global 0.2)"
+    },
+    {
+      "region_id": "fp_cluster_51",
+      "n": 44,
+      "n_hard": 38,
+      "n_easy": 6,
+      "fp_rate": 0.5,
+      "fn_rate": 0.7368421052631579,
+      "fp_enrichment_vs_global": 8.865384615384615,
+      "fn_enrichment_vs_global": 0.8883224117149942,
+      "medoid_id": "MPSCORE_08850",
+      "representative_ids": [
+        "MPSCORE_08850",
+        "MPSCORE_08851",
+        "MPSCORE_08719",
+        "MPSCORE_08853",
+        "MPSCORE_07051"
+      ],
+      "mean_stereocenters": 0.09090909090909091,
+      "mean_ring_count": 3.3863636363636362,
+      "mean_heavy_atoms": 21.272727272727273,
+      "mean_fg_count": 2.5681818181818183,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.8636363636363636,
+      "component_contribution_means": {
+        "ring_contribution": 0.29824091585347295,
+        "size_contribution": 0.11071018589642158,
+        "stereo_contribution": 0.009280250879934943,
+        "fg_contribution": 0.2765621232056094
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 113
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 19
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 8
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 4
+        }
+      ],
+      "structural_interpretation": "high rings (3.4 vs global 2.0); low stereocenters (0.1 vs global 1.3); high aromatic rings (2.0 vs global 1.0); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fp_cluster_58",
+      "n": 64,
+      "n_hard": 52,
+      "n_easy": 12,
+      "fp_rate": 0.25,
+      "fn_rate": 0.9615384615384616,
+      "fp_enrichment_vs_global": 4.4326923076923075,
+      "fn_enrichment_vs_global": 1.1592119383643469,
+      "medoid_id": "MPSCORE_09441",
+      "representative_ids": [
+        "MPSCORE_09441",
+        "MPSCORE_10503",
+        "MPSCORE_06438",
+        "MPSCORE_09434",
+        "MPSCORE_00289"
+      ],
+      "mean_stereocenters": 0.03125,
+      "mean_ring_count": 3.671875,
+      "mean_heavy_atoms": 20.28125,
+      "mean_fg_count": 1.71875,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.8125,
+      "component_contribution_means": {
+        "ring_contribution": 0.2906008877455375,
+        "size_contribution": 0.10734840929517998,
+        "stereo_contribution": 0.002975233794369517,
+        "fg_contribution": 0.1826006178574627
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 110
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 7
+        },
+        {
+          "code": "RING_FUSED_DENSE",
+          "n": 4
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 3
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 2
+        }
+      ],
+      "structural_interpretation": "high rings (3.7 vs global 2.0); low stereocenters (0.0 vs global 1.3); high aromatic rings (3.6 vs global 1.0); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fp_cluster_27",
+      "n": 45,
+      "n_hard": 28,
+      "n_easy": 17,
+      "fp_rate": 0.23529411764705882,
+      "fn_rate": 0.7857142857142857,
+      "fp_enrichment_vs_global": 4.171945701357466,
+      "fn_enrichment_vs_global": 0.947241755349152,
+      "medoid_id": "MPSCORE_08310",
+      "representative_ids": [
+        "MPSCORE_08310",
+        "MPSCORE_04762",
+        "MPSCORE_04761",
+        "MPSCORE_04763",
+        "MPSCORE_09326"
+      ],
+      "mean_stereocenters": 2.0,
+      "mean_ring_count": 2.533333333333333,
+      "mean_heavy_atoms": 20.444444444444443,
+      "mean_fg_count": 1.2444444444444445,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.6222222222222222,
+      "component_contribution_means": {
+        "ring_contribution": 0.18890918221662834,
+        "size_contribution": 0.13927165757784848,
+        "stereo_contribution": 0.18121123126459945,
+        "fg_contribution": 0.14958619856746674
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 56
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 45
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 5
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 3
+        }
+      ],
+      "structural_interpretation": "high stereocenters (2.0 vs global 1.3); high aromatic rings (2.5 vs global 1.0); low reactive FG count (1.2 vs global 2.1); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fp_cluster_37",
+      "n": 38,
+      "n_hard": 33,
+      "n_easy": 5,
+      "fp_rate": 0.2,
+      "fn_rate": 0.42424242424242425,
+      "fp_enrichment_vs_global": 3.5461538461538464,
+      "fn_enrichment_vs_global": 0.5114583582601482,
+      "medoid_id": "MPSCORE_10141",
+      "representative_ids": [
+        "MPSCORE_10141",
+        "MPSCORE_08131",
+        "MPSCORE_00227",
+        "MPSCORE_00221",
+        "MPSCORE_06178"
+      ],
+      "mean_stereocenters": 3.736842105263158,
+      "mean_ring_count": 4.2105263157894735,
+      "mean_heavy_atoms": 17.526315789473685,
+      "mean_fg_count": 1.0,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.868421052631579,
+      "component_contribution_means": {
+        "ring_contribution": 0.3142409562376094,
+        "size_contribution": 0.096002581345856,
+        "stereo_contribution": 0.21923875465026102,
+        "fg_contribution": 0.105154917862676
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 38
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 37
+        },
+        {
+          "code": "RING_BRIDGED_COMPLEXITY",
+          "n": 28
+        },
+        {
+          "code": "STEREO_DENSITY_HIGH",
+          "n": 6
+        }
+      ],
+      "structural_interpretation": "high rings (4.2 vs global 2.0); high stereocenters (3.7 vs global 1.3); high aromatic rings (1.6 vs global 1.0); low reactive FG count (1.0 vs global 2.1); high bridgeheads (1.5 vs global 0.2)"
+    },
+    {
+      "region_id": "fp_cluster_38",
+      "n": 92,
+      "n_hard": 77,
+      "n_easy": 15,
+      "fp_rate": 0.13333333333333333,
+      "fn_rate": 0.6233766233766234,
+      "fp_enrichment_vs_global": 2.364102564102564,
+      "fn_enrichment_vs_global": 0.7515306488720545,
+      "medoid_id": "MPSCORE_05326",
+      "representative_ids": [
+        "MPSCORE_05326",
+        "MPSCORE_05325",
+        "MPSCORE_05321",
+        "MPSCORE_05739",
+        "MPSCORE_04857"
+      ],
+      "mean_stereocenters": 2.0434782608695654,
+      "mean_ring_count": 4.489130434782608,
+      "mean_heavy_atoms": 21.141304347826086,
+      "mean_fg_count": 1.1630434782608696,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.8369565217391305,
+      "component_contribution_means": {
+        "ring_contribution": 0.29888076619221415,
+        "size_contribution": 0.10478242523687648,
+        "stereo_contribution": 0.1522644906838722,
+        "fg_contribution": 0.1434136783403882
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 107
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 75
+        },
+        {
+          "code": "RING_BRIDGED_COMPLEXITY",
+          "n": 40
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 5
+        }
+      ],
+      "structural_interpretation": "high rings (4.5 vs global 2.0); high stereocenters (2.0 vs global 1.3); high aromatic rings (2.5 vs global 1.0); low reactive FG count (1.2 vs global 2.1); high bridgeheads (0.9 vs global 0.2)"
+    },
+    {
+      "region_id": "fp_cluster_52",
+      "n": 60,
+      "n_hard": 46,
+      "n_easy": 14,
+      "fp_rate": 0.07142857142857142,
+      "fn_rate": 1.0,
+      "fp_enrichment_vs_global": 1.2664835164835164,
+      "fn_enrichment_vs_global": 1.2055804158989207,
+      "medoid_id": "MPSCORE_05344",
+      "representative_ids": [
+        "MPSCORE_05344",
+        "MPSCORE_04160",
+        "MPSCORE_09730",
+        "MPSCORE_04161",
+        "MPSCORE_04221"
+      ],
+      "mean_stereocenters": 0.03333333333333333,
+      "mean_ring_count": 1.7666666666666666,
+      "mean_heavy_atoms": 12.616666666666667,
+      "mean_fg_count": 1.1833333333333333,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.7666666666666667,
+      "component_contribution_means": {
+        "ring_contribution": 0.1460314518889992,
+        "size_contribution": 0.0879675842105849,
+        "stereo_contribution": 0.0,
+        "fg_contribution": 0.0952839400009687
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 71
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 1
+        },
+        {
+          "code": "RING_BRIDGED_COMPLEXITY",
+          "n": 1
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 1
+        }
+      ],
+      "structural_interpretation": "low stereocenters (0.0 vs global 1.3); high aromatic rings (1.6 vs global 1.0); low reactive FG count (1.2 vs global 2.1); low bridgeheads (0.0 vs global 0.2)"
+    },
+    {
+      "region_id": "fp_cluster_39",
+      "n": 223,
+      "n_hard": 206,
+      "n_easy": 17,
+      "fp_rate": 0.058823529411764705,
+      "fn_rate": 0.7815533980582524,
+      "fp_enrichment_vs_global": 1.0429864253393666,
+      "fn_enrichment_vs_global": 0.9422254706782827,
+      "medoid_id": "MPSCORE_05798",
+      "representative_ids": [
+        "MPSCORE_05798",
+        "MPSCORE_05795",
+        "MPSCORE_05796",
+        "MPSCORE_05797",
+        "MPSCORE_05743"
+      ],
+      "mean_stereocenters": 2.201793721973094,
+      "mean_ring_count": 2.484304932735426,
+      "mean_heavy_atoms": 12.443946188340806,
+      "mean_fg_count": 1.4663677130044843,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.9237668161434978,
+      "component_contribution_means": {
+        "ring_contribution": 0.2245034626358986,
+        "size_contribution": 0.0870139309714806,
+        "stereo_contribution": 0.07253626699680547,
+        "fg_contribution": 0.1418242993783637
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 327
+        },
+        {
+          "code": "RING_BRIDGED_COMPLEXITY",
+          "n": 85
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 65
+        },
+        {
+          "code": "RING_FUSED_DENSE",
+          "n": 6
+        },
+        {
+          "code": "STEREO_DENSITY_HIGH",
+          "n": 3
+        }
+      ],
+      "structural_interpretation": "high stereocenters (2.2 vs global 1.3); low aromatic rings (0.0 vs global 1.0); high bridgeheads (1.4 vs global 0.2)"
+    },
+    {
+      "region_id": "fp_cluster_43",
+      "n": 1157,
+      "n_hard": 1056,
+      "n_easy": 101,
+      "fp_rate": 0.04950495049504951,
+      "fn_rate": 0.7395833333333334,
+      "fp_enrichment_vs_global": 0.8777608530083778,
+      "fn_enrichment_vs_global": 0.8916271825919102,
+      "medoid_id": "MPSCORE_03575",
+      "representative_ids": [
+        "MPSCORE_03575",
+        "MPSCORE_09132",
+        "MPSCORE_09093",
+        "MPSCORE_03545",
+        "MPSCORE_07331"
+      ],
+      "mean_stereocenters": 4.006050129645636,
+      "mean_ring_count": 1.5004321521175454,
+      "mean_heavy_atoms": 12.6447709593777,
+      "mean_fg_count": 1.2618841832324978,
+      "mean_agreement_fraction": 1.0,
+      "fraction_expert_hard": 0.9127052722558341,
+      "component_contribution_means": {
+        "ring_contribution": 0.1536825176827654,
+        "size_contribution": 0.08739041304857306,
+        "stereo_contribution": 0.2879190844886271,
+        "fg_contribution": 0.13105016089119176
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 1460
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 998
+        },
+        {
+          "code": "STEREO_DENSITY_HIGH",
+          "n": 594
+        },
+        {
+          "code": "RING_BRIDGED_COMPLEXITY",
+          "n": 121
+        },
+        {
+          "code": "RING_MACROCYCLE",
+          "n": 62
+        }
+      ],
+      "structural_interpretation": "high stereocenters (4.0 vs global 1.3); low aromatic rings (0.0 vs global 1.0); low reactive FG count (1.3 vs global 2.1)"
+    },
+    {
+      "region_id": "fp_cluster_54",
+      "n": 568,
+      "n_hard": 440,
+      "n_easy": 128,
+      "fp_rate": 0.0234375,
+      "fn_rate": 0.9931818181818182,
+      "fp_enrichment_vs_global": 0.41556490384615385,
+      "fn_enrichment_vs_global": 1.1973605494268826,
+      "medoid_id": "MPSCORE_04169",
+      "representative_ids": [
+        "MPSCORE_04169",
+        "MPSCORE_09509",
+        "MPSCORE_04218",
+        "MPSCORE_04269",
+        "MPSCORE_01089"
+      ],
+      "mean_stereocenters": 0.01584507042253521,
+      "mean_ring_count": 1.4242957746478873,
+      "mean_heavy_atoms": 13.84330985915493,
+      "mean_fg_count": 1.8961267605633803,
+      "mean_agreement_fraction": 0.9976528169014084,
+      "fraction_expert_hard": 0.7746478873239436,
+      "component_contribution_means": {
+        "ring_contribution": 0.13403535869632757,
+        "size_contribution": 0.09329238819403211,
+        "stereo_contribution": 0.0014336642017779217,
+        "fg_contribution": 0.18670076810712327
+      },
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 1077
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 105
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 10
+        },
+        {
+          "code": "RING_MACROCYCLE",
+          "n": 6
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 5
+        }
+      ],
+      "structural_interpretation": "low stereocenters (0.0 vs global 1.3); low bridgeheads (0.0 vs global 0.2)"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "similarity_threshold": 0.7,
+  "n_total_pairs_found": 290,
+  "n_label_differs": 241,
+  "n_prediction_differs": 58,
+  "n_top_pairs_reported": 41
+}

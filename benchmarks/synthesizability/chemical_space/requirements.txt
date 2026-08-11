@@ -1,0 +1,13 @@
+# Additional pins for the chemical-space error atlas, on top of
+# ../requirements.txt (numpy/scipy/pandas/scikit-learn/rdkit/pytest --
+# install that first). Exact pins, same discipline as the parent file:
+# reproducible, not silently drifting.
+umap-learn==0.5.12
+hdbscan==0.8.44
+matplotlib==3.10.8
+
+# umap-learn's own dependencies, pinned for the same reason (pulled in
+# transitively, but version drift here changes UMAP's actual behavior):
+numba==0.66.0
+pynndescent==0.6.0
+llvmlite==0.48.0

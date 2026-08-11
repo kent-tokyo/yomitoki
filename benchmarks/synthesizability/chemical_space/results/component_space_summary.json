@@ -1,0 +1,61 @@
+{
+  "n_molecules": 10543,
+  "component_space_pca_for_visualization": {
+    "explained_variance_ratio": [
+      0.4915071705664748,
+      0.2800312881751139
+    ],
+    "loadings": {
+      "PC1": {
+        "ring_contribution": 0.24412996507900084,
+        "size_contribution": -0.01872969027778029,
+        "stereo_contribution": 0.958321221196687,
+        "fg_contribution": -0.1472080020131871
+      },
+      "PC2": {
+        "ring_contribution": 0.8681867541217606,
+        "size_contribution": 0.1265162193906008,
+        "stereo_contribution": -0.14861176154190456,
+        "fg_contribution": 0.45624549370929995
+      }
+    }
+  },
+  "cross_space_comparison": [
+    {
+      "space": "yomitoki_component_space_raw_4d",
+      "n_dimensions": 4,
+      "knn_label_purity_k15": 0.8291188466280944,
+      "nearest_neighbor_expert_label_agreement": 0.8735653988428341,
+      "nearest_neighbor_yomitoki_prediction_agreement": 0.9969648107749217,
+      "silhouette_expert_label_caution_class_imbalance_87pct_hard": -0.05862654432781379,
+      "fn_local_rate_concentration_index": 0.4740795050621844,
+      "fp_local_rate_concentration_index": 7.550693579132121,
+      "mean_local_fn_rate": 0.7231591261184356,
+      "mean_local_fp_rate": 0.006424483859748965
+    },
+    {
+      "space": "descriptor_pca_3d",
+      "n_dimensions": 3,
+      "knn_label_purity_k15": 0.826734958424231,
+      "nearest_neighbor_expert_label_agreement": 0.8731860001896993,
+      "nearest_neighbor_yomitoki_prediction_agreement": 0.9353125296405198,
+      "silhouette_expert_label_caution_class_imbalance_87pct_hard": 0.12359077896379722,
+      "fn_local_rate_concentration_index": 0.40341859921080403,
+      "fp_local_rate_concentration_index": 8.350091058720912,
+      "mean_local_fn_rate": 0.7187264851876443,
+      "mean_local_fp_rate": 0.006980935217679977
+    },
+    {
+      "space": "morgan_umap_2d",
+      "n_dimensions": 2,
+      "knn_label_purity_k15": 0.8479180498909229,
+      "nearest_neighbor_expert_label_agreement": 0.8598121976666983,
+      "nearest_neighbor_yomitoki_prediction_agreement": 0.9455562932751589,
+      "silhouette_expert_label_caution_class_imbalance_87pct_hard": -0.053931092823207134,
+      "fn_local_rate_concentration_index": 0.4290375312305566,
+      "fp_local_rate_concentration_index": 6.328869621635345,
+      "mean_local_fn_rate": 0.7167978753675425,
+      "mean_local_fp_rate": 0.007252837585759904
+    }
+  ]
+}

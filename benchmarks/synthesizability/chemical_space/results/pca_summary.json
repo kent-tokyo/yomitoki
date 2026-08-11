@@ -1,0 +1,152 @@
+{
+  "n_components": 3,
+  "n_molecules": 10543,
+  "feature_columns": [
+    "heavy_atoms",
+    "mol_wt",
+    "ring_count",
+    "ring_system_count",
+    "aromatic_ring_count",
+    "aromatic_atom_fraction",
+    "rotatable_bonds",
+    "heteroatom_count",
+    "stereocenters",
+    "stereocenter_density",
+    "bridgeheads",
+    "spiro_atoms",
+    "tpsa",
+    "fraction_csp3",
+    "fg_count"
+  ],
+  "explained_variance_ratio": [
+    0.31826504790895677,
+    0.18366616048139286,
+    0.14045468223911692
+  ],
+  "cumulative_explained_variance_ratio": [
+    0.31826504790895677,
+    0.5019312083903497,
+    0.6423858906294666
+  ],
+  "top_loadings_per_pc": {
+    "PC1": [
+      {
+        "feature": "aromatic_ring_count",
+        "loading": 0.4066622053397972
+      },
+      {
+        "feature": "heavy_atoms",
+        "loading": 0.3822712491482862
+      },
+      {
+        "feature": "aromatic_atom_fraction",
+        "loading": 0.3561356870207075
+      },
+      {
+        "feature": "ring_system_count",
+        "loading": 0.3311716666905725
+      },
+      {
+        "feature": "fraction_csp3",
+        "loading": -0.32529164366536134
+      }
+    ],
+    "PC2": [
+      {
+        "feature": "stereocenters",
+        "loading": 0.5176791941369291
+      },
+      {
+        "feature": "stereocenter_density",
+        "loading": 0.4563646918105099
+      },
+      {
+        "feature": "bridgeheads",
+        "loading": 0.3348953171313282
+      },
+      {
+        "feature": "ring_count",
+        "loading": 0.32798181629915973
+      },
+      {
+        "feature": "fraction_csp3",
+        "loading": 0.31091543401452326
+      }
+    ],
+    "PC3": [
+      {
+        "feature": "tpsa",
+        "loading": 0.5630021715766975
+      },
+      {
+        "feature": "heteroatom_count",
+        "loading": 0.5484558793262823
+      },
+      {
+        "feature": "fg_count",
+        "loading": 0.3585442102874726
+      },
+      {
+        "feature": "rotatable_bonds",
+        "loading": 0.29057681361142446
+      },
+      {
+        "feature": "aromatic_atom_fraction",
+        "loading": -0.2644997794070973
+      }
+    ]
+  },
+  "full_loadings_per_pc": {
+    "PC1": {
+      "heavy_atoms": 0.3822712491482862,
+      "mol_wt": 0.3144823706618703,
+      "ring_count": 0.31949046905419193,
+      "ring_system_count": 0.3311716666905725,
+      "aromatic_ring_count": 0.4066622053397972,
+      "aromatic_atom_fraction": 0.3561356870207075,
+      "rotatable_bonds": 0.11401550176690688,
+      "heteroatom_count": 0.16577344283395914,
+      "stereocenters": -0.159760278740399,
+      "stereocenter_density": -0.23986879608360134,
+      "bridgeheads": 0.05974419603913438,
+      "spiro_atoms": -0.004589933199046483,
+      "tpsa": 0.09524238211093962,
+      "fraction_csp3": -0.32529164366536134,
+      "fg_count": 0.09485233225956663
+    },
+    "PC2": {
+      "heavy_atoms": 0.26150687575274706,
+      "mol_wt": 0.2079260362687491,
+      "ring_count": 0.32798181629915973,
+      "ring_system_count": 0.15208667212391266,
+      "aromatic_ring_count": -0.009735564313348585,
+      "aromatic_atom_fraction": -0.16259198371232886,
+      "rotatable_bonds": 0.034112126451368935,
+      "heteroatom_count": 0.055812533803345575,
+      "stereocenters": 0.5176791941369291,
+      "stereocenter_density": 0.4563646918105099,
+      "bridgeheads": 0.3348953171313282,
+      "spiro_atoms": 0.17132459606951594,
+      "tpsa": 0.0898819482253297,
+      "fraction_csp3": 0.31091543401452326,
+      "fg_count": -0.06598664168399056
+    },
+    "PC3": {
+      "heavy_atoms": 0.08155566324979316,
+      "mol_wt": -0.011142591645586026,
+      "ring_count": -0.19331341997978926,
+      "ring_system_count": -0.026452351119482437,
+      "aromatic_ring_count": -0.19903980775793192,
+      "aromatic_atom_fraction": -0.2644997794070973,
+      "rotatable_bonds": 0.29057681361142446,
+      "heteroatom_count": 0.5484558793262823,
+      "stereocenters": 0.00121292144992875,
+      "stereocenter_density": -0.04983671757454344,
+      "bridgeheads": -0.1057687726598816,
+      "spiro_atoms": -0.03371333606355861,
+      "tpsa": 0.5630021715766975,
+      "fraction_csp3": -0.002192906317994575,
+      "fg_count": 0.3585442102874726
+    }
+  }
+}

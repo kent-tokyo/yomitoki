@@ -28,6 +28,16 @@ benchmarks/synthesizability/datasets/downloaded/
 benchmarks/synthesizability/results/raw/
 benchmarks/synthesizability/results/per_molecule.jsonl
 
+# Chemical-space error atlas (development tooling, round 22 part 12):
+# per-molecule feature/embedding tables are large and fully regeneratable
+# from a fixed seed (see chemical_space/README.md) -- not committed. The
+# small aggregate outputs (error_regions.csv, neighbor_pairs.csv,
+# summary.json) and plots ARE committed, as evidence.
+benchmarks/synthesizability/chemical_space/results/features.csv
+benchmarks/synthesizability/chemical_space/results/pca_coordinates.csv
+benchmarks/synthesizability/chemical_space/results/umap_coordinates.csv
+benchmarks/synthesizability/chemical_space/results/knn_local_rates_umap.csv
+
 # Python build/test artifacts (benchmarks/synthesizability is a Python
 # harness; the core crate has none of these).
 __pycache__/

@@ -1,0 +1,46 @@
+{
+  "n_folds": 5,
+  "seed": 0,
+  "folds": [
+    {
+      "fold": 0,
+      "n_molecules": 2109,
+      "n_hard": 1747,
+      "n_easy": 362,
+      "hard_fraction": 0.8283546704599336,
+      "n_scaffolds": 420
+    },
+    {
+      "fold": 1,
+      "n_molecules": 2109,
+      "n_hard": 1889,
+      "n_easy": 220,
+      "hard_fraction": 0.8956851588430536,
+      "n_scaffolds": 432
+    },
+    {
+      "fold": 2,
+      "n_molecules": 2109,
+      "n_hard": 1878,
+      "n_easy": 231,
+      "hard_fraction": 0.8904694167852063,
+      "n_scaffolds": 432
+    },
+    {
+      "fold": 3,
+      "n_molecules": 2108,
+      "n_hard": 1744,
+      "n_easy": 364,
+      "hard_fraction": 0.8273244781783681,
+      "n_scaffolds": 432
+    },
+    {
+      "fold": 4,
+      "n_molecules": 2108,
+      "n_hard": 1902,
+      "n_easy": 206,
+      "hard_fraction": 0.9022770398481973,
+      "n_scaffolds": 432
+    }
+  ]
+}

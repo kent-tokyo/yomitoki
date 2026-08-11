@@ -1,0 +1,15 @@
+{
+  "n_molecules": 10543,
+  "n_connectivity_groups_total": 9721,
+  "n_connectivity_groups_with_multiple_stereoisomers": 698,
+  "n_connectivity_groups_with_label_disagreement": 95,
+  "n_disagreeing_pairs": 126,
+  "category_counts": {
+    "no_shared_stereocenters": 7,
+    "diastereomer_relative_configuration_differs": 69,
+    "enantiomer_like_full_inversion": 42,
+    "stereo_annotation_completeness_only": 7,
+    "identical_stereo_but_grouped": 1
+  },
+  "single_rater_pairs": 108
+}

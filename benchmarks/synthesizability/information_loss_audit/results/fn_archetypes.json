@@ -1,0 +1,352 @@
+{
+  "n_fn": 7598,
+  "silhouette_by_k": {
+    "3": 0.18505538157398055,
+    "4": 0.18999433047802053,
+    "5": 0.19704206667514812,
+    "6": 0.20468943796597727,
+    "7": 0.19951863523456445,
+    "8": 0.19390052147068826
+  },
+  "silhouette_floor": 0.1,
+  "best_k": 6,
+  "best_silhouette": 0.20468943796597727,
+  "data_supports_archetypes": true,
+  "global_fn_means": {
+    "heavy_atoms": 14.801789944722294,
+    "mol_wt": 263.8119328635838,
+    "ring_count": 1.6097657278231114,
+    "ring_system_count": 1.1587259805211898,
+    "aromatic_ring_count": 0.9177415109239273,
+    "aromatic_atom_fraction": 0.2917239323524213,
+    "rotatable_bonds": 1.9368254803895761,
+    "heteroatom_count": 4.550144774940774,
+    "stereocenters": 0.8054751250329034,
+    "stereocenter_density": 0.06502452459980576,
+    "bridgeheads": 0.06633324559094499,
+    "spiro_atoms": 0.011318768096867597,
+    "tpsa": 49.040652803369305,
+    "fraction_csp3": 0.37568092015584725,
+    "fg_count": 2.0729139247170307
+  },
+  "archetypes": [
+    {
+      "archetype": 0,
+      "n": 2487,
+      "share_of_all_fn": 0.3273229797315083,
+      "mean_descriptors": {
+        "heavy_atoms": 11.06151990349819,
+        "mol_wt": 212.8593058822477,
+        "ring_count": 0.7221552070767994,
+        "ring_system_count": 0.6509851226377161,
+        "aromatic_ring_count": 0.39123441897868916,
+        "aromatic_atom_fraction": 0.19844685950759514,
+        "rotatable_bonds": 1.8548451950140732,
+        "heteroatom_count": 4.024125452352232,
+        "stereocenters": 0.20064334539605952,
+        "stereocenter_density": 0.018286245194107247,
+        "bridgeheads": 0.0,
+        "spiro_atoms": 0.0,
+        "tpsa": 42.40308403699236,
+        "fraction_csp3": 0.3623229772506009,
+        "fg_count": 1.9324487334137515
+      },
+      "mean_component_scores": {
+        "ring_contribution": 0.07413125174565419,
+        "size_contribution": 0.08772089396619893,
+        "stereo_contribution": 0.020640354926726147,
+        "fg_contribution": 0.16917549945340313
+      },
+      "mean_agreement_fraction": 0.9997319662243667,
+      "mean_n_raters": 1.0856453558504222,
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 4806
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 435
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 80
+        },
+        {
+          "code": "RING_MACROCYCLE",
+          "n": 41
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 4
+        }
+      ],
+      "label": "low-stereo-rich+low-ring-rich+low-aromatic-heavy"
+    },
+    {
+      "archetype": 1,
+      "n": 1892,
+      "share_of_all_fn": 0.24901289813108712,
+      "mean_descriptors": {
+        "heavy_atoms": 18.8953488372093,
+        "mol_wt": 320.47184099747994,
+        "ring_count": 1.9429175475687104,
+        "ring_system_count": 1.7288583509513742,
+        "aromatic_ring_count": 1.0560253699788584,
+        "aromatic_atom_fraction": 0.3216290075516301,
+        "rotatable_bonds": 2.630549682875264,
+        "heteroatom_count": 6.778012684989429,
+        "stereocenters": 0.23520084566596194,
+        "stereocenter_density": 0.012152516608489325,
+        "bridgeheads": 0.0,
+        "spiro_atoms": 0.0,
+        "tpsa": 77.39593551797041,
+        "fraction_csp3": 0.20533855137704896,
+        "fg_count": 3.4334038054968286
+      },
+      "mean_component_scores": {
+        "ring_contribution": 0.14959591302969272,
+        "size_contribution": 0.1270167679435672,
+        "stereo_contribution": 0.020311314366567166,
+        "fg_contribution": 0.2663808415823117
+      },
+      "mean_agreement_fraction": 1.0,
+      "mean_n_raters": 1.1067653276955602,
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 6496
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 299
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 114
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 91
+        },
+        {
+          "code": "RING_MACROCYCLE",
+          "n": 35
+        }
+      ],
+      "label": "low-stereo-rich+high-FG-dense+low-saturated"
+    },
+    {
+      "archetype": 2,
+      "n": 1462,
+      "share_of_all_fn": 0.19241905764674913,
+      "mean_descriptors": {
+        "heavy_atoms": 18.55266757865937,
+        "mol_wt": 321.16707503896856,
+        "ring_count": 2.8987688098495212,
+        "ring_system_count": 1.5157318741450068,
+        "aromatic_ring_count": 2.524623803009576,
+        "aromatic_atom_fraction": 0.6981676105211989,
+        "rotatable_bonds": 1.4883720930232558,
+        "heteroatom_count": 3.953488372093023,
+        "stereocenters": 0.3084815321477428,
+        "stereocenter_density": 0.016314580793936526,
+        "bridgeheads": 0.0,
+        "spiro_atoms": 0.0,
+        "tpsa": 34.48903556771546,
+        "fraction_csp3": 0.09913375731283225,
+        "fg_count": 1.5232558139534884
+      },
+      "mean_component_scores": {
+        "ring_contribution": 0.24461933788934379,
+        "size_contribution": 0.11151051487627524,
+        "stereo_contribution": 0.025455321566402463,
+        "fg_contribution": 0.15130600309971523
+      },
+      "mean_agreement_fraction": 0.999772024623803,
+      "mean_n_raters": 1.103967168262654,
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 2227
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 233
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 83
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 79
+        },
+        {
+          "code": "RING_FUSED_DENSE",
+          "n": 11
+        }
+      ],
+      "label": "low-stereo-rich+high-ring-rich+high-aromatic-heavy+low-saturated"
+    },
+    {
+      "archetype": 3,
+      "n": 1502,
+      "share_of_all_fn": 0.1976836009476178,
+      "mean_descriptors": {
+        "heavy_atoms": 11.66311584553928,
+        "mol_wt": 218.02192576761118,
+        "ring_count": 1.0239680426098536,
+        "ring_system_count": 0.9300932090545939,
+        "aromatic_ring_count": 0.03861517976031957,
+        "aromatic_atom_fraction": 0.01754232873756687,
+        "rotatable_bonds": 1.7676431424766976,
+        "heteroatom_count": 3.414780292942743,
+        "stereocenters": 2.789613848202397,
+        "stereocenter_density": 0.24316564470773536,
+        "bridgeheads": 0.0,
+        "spiro_atoms": 0.0,
+        "tpsa": 40.930319573901464,
+        "fraction_csp3": 0.8534506456927748,
+        "fg_count": 1.2250332889480693
+      },
+      "mean_component_scores": {
+        "ring_contribution": 0.10351133441039209,
+        "size_contribution": 0.08746629572067673,
+        "stereo_contribution": 0.22145374892234437,
+        "fg_contribution": 0.12577278775094813
+      },
+      "mean_agreement_fraction": 1.0,
+      "mean_n_raters": 1.085219707057257,
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 1840
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 1313
+        },
+        {
+          "code": "STEREO_DENSITY_HIGH",
+          "n": 402
+        },
+        {
+          "code": "RING_MACROCYCLE",
+          "n": 51
+        },
+        {
+          "code": "FUNCTIONAL_GROUP_DENSE",
+          "n": 39
+        }
+      ],
+      "label": "high-stereo-rich+low-aromatic-heavy+low-FG-dense+high-saturated"
+    },
+    {
+      "archetype": 4,
+      "n": 171,
+      "share_of_all_fn": 0.022505922611213477,
+      "mean_descriptors": {
+        "heavy_atoms": 16.86549707602339,
+        "mol_wt": 264.2044434013099,
+        "ring_count": 4.0701754385964914,
+        "ring_system_count": 1.1111111111111112,
+        "aromatic_ring_count": 0.9064327485380117,
+        "aromatic_atom_fraction": 0.24644056220186078,
+        "rotatable_bonds": 1.1403508771929824,
+        "heteroatom_count": 2.7953216374269005,
+        "stereocenters": 2.461988304093567,
+        "stereocenter_density": 0.16698762863644204,
+        "bridgeheads": 2.9473684210526314,
+        "spiro_atoms": 0.0,
+        "tpsa": 28.500175438596486,
+        "fraction_csp3": 0.5330689119104834,
+        "fg_count": 1.3157894736842106
+      },
+      "mean_component_scores": {
+        "ring_contribution": 0.33539253469056773,
+        "size_contribution": 0.0915673772739498,
+        "stereo_contribution": 0.03522225873367673,
+        "fg_contribution": 0.1298451470617073
+      },
+      "mean_agreement_fraction": 1.0,
+      "mean_n_raters": 1.105263157894737,
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 225
+        },
+        {
+          "code": "RING_BRIDGED_COMPLEXITY",
+          "n": 171
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 36
+        },
+        {
+          "code": "RING_MACROCYCLE",
+          "n": 8
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 3
+        }
+      ],
+      "label": "high-stereo-rich+high-ring-rich+low-flexible+high-saturated"
+    },
+    {
+      "archetype": 5,
+      "n": 84,
+      "share_of_all_fn": 0.011055540931824164,
+      "mean_descriptors": {
+        "heavy_atoms": 19.976190476190474,
+        "mol_wt": 315.89396392357145,
+        "ring_count": 3.4166666666666665,
+        "ring_system_count": 1.3214285714285714,
+        "aromatic_ring_count": 1.1666666666666667,
+        "aromatic_atom_fraction": 0.3005720910510403,
+        "rotatable_bonds": 1.1904761904761905,
+        "heteroatom_count": 4.2023809523809526,
+        "stereocenters": 1.3571428571428572,
+        "stereocenter_density": 0.09457481809205105,
+        "bridgeheads": 0.0,
+        "spiro_atoms": 1.0238095238095237,
+        "tpsa": 46.99357142857143,
+        "fraction_csp3": 0.557793342356012,
+        "fg_count": 1.8571428571428572
+      },
+      "mean_component_scores": {
+        "ring_contribution": 0.22889389524071058,
+        "size_contribution": 0.10607886679555524,
+        "stereo_contribution": 0.07929477252139414,
+        "fg_contribution": 0.1640873424997637
+      },
+      "mean_agreement_fraction": 1.0,
+      "mean_n_raters": 1.0714285714285714,
+      "dominant_finding_codes": [
+        {
+          "code": "FUNCTIONAL_GROUP_REACTIVE",
+          "n": 156
+        },
+        {
+          "code": "RING_SPIRO",
+          "n": 55
+        },
+        {
+          "code": "STEREO_CENTER_COUNT",
+          "n": 20
+        },
+        {
+          "code": "STEREO_DENSITY_HIGH",
+          "n": 10
+        },
+        {
+          "code": "SIZE_LARGE_MOLECULAR_WEIGHT",
+          "n": 5
+        }
+      ],
+      "label": "high-stereo-rich+high-ring-rich+high-saturated"
+    }
+  ]
+}

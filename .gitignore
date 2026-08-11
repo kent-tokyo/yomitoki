@@ -38,6 +38,15 @@ benchmarks/synthesizability/chemical_space/results/pca_coordinates.csv
 benchmarks/synthesizability/chemical_space/results/umap_coordinates.csv
 benchmarks/synthesizability/chemical_space/results/knn_local_rates_umap.csv
 
+# Information-loss audit (development tooling, round 22 part 13):
+# per-molecule feature tables are large and fully regeneratable from a
+# fixed seed (see information_loss_audit/README.md) -- not committed.
+# The small aggregate outputs (probe_results.json, add_drop_results.json,
+# fn_archetypes.json, fold_summary.json, stereo_contradiction_*) ARE
+# committed, as evidence.
+benchmarks/synthesizability/information_loss_audit/results/features.csv
+benchmarks/synthesizability/information_loss_audit/results/features_with_folds.csv
+
 # Python build/test artifacts (benchmarks/synthesizability is a Python
 # harness; the core crate has none of these).
 __pycache__/

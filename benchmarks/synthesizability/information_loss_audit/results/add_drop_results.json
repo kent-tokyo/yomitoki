@@ -1,0 +1,479 @@
+{
+  "add_one_group_in": {
+    "F0_baseline": {
+      "linear_auc": {
+        "mean": 0.6647146795627767,
+        "std": 0.03391492453755881,
+        "values": [
+          0.6094433393315137,
+          0.670843158958564,
+          0.7144055802202767,
+          0.6741693656114527,
+          0.6547119536920769
+        ]
+      },
+      "nonlinear_auc": {
+        "mean": 0.7677493509108647,
+        "std": 0.036100900506772386,
+        "values": [
+          0.7029524963077983,
+          0.7943681120361903,
+          0.8058275590224472,
+          0.7588765878616796,
+          0.7767219993262076
+        ]
+      }
+    },
+    "F0_plus_ring_detail": {
+      "n_features": 14,
+      "linear_auc": {
+        "mean": 0.7583918751867943,
+        "std": 0.04920241681979608,
+        "values": [
+          0.7018021422675652,
+          0.703663554550267,
+          0.7833584590773089,
+          0.8294529438451456,
+          0.7736822761936848
+        ]
+      },
+      "nonlinear_auc": {
+        "mean": 0.8171878049008321,
+        "std": 0.050731063867940955,
+        "values": [
+          0.7284476624489654,
+          0.7986669233360604,
+          0.8759917753527977,
+          0.8444509905232382,
+          0.8383816728430982
+        ]
+      },
+      "linear_vs_baseline": {
+        "mean_diff": 0.09367719562401751,
+        "std_diff": 0.04183699022287004,
+        "diffs_by_fold": [
+          0.09235880293605148,
+          0.03282039559170302,
+          0.06895287885703227,
+          0.15528357823369288,
+          0.11897032250160788
+        ],
+        "paired_ttest_p_value": 0.011005066736087919,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      },
+      "nonlinear_vs_baseline": {
+        "mean_diff": 0.0494384539899674,
+        "std_diff": 0.02998529837407438,
+        "diffs_by_fold": [
+          0.02549516614116709,
+          0.004298811299870087,
+          0.07016421633035053,
+          0.08557440266155869,
+          0.06165967351689061
+        ],
+        "paired_ttest_p_value": 0.03000328637552001,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      }
+    },
+    "F0_plus_stereo_detail": {
+      "n_features": 9,
+      "linear_auc": {
+        "mean": 0.662759780643412,
+        "std": 0.03600442389701411,
+        "values": [
+          0.6026851081728108,
+          0.6801001010635738,
+          0.7122226371427649,
+          0.6665624369896159,
+          0.6522286198482946
+        ]
+      },
+      "nonlinear_auc": {
+        "mean": 0.7670629129480657,
+        "std": 0.03402220953732926,
+        "values": [
+          0.7055876372123324,
+          0.7864478560084701,
+          0.8056350819929095,
+          0.7604983176227442,
+          0.7771456719038723
+        ]
+      },
+      "linear_vs_baseline": {
+        "mean_diff": -0.001954898919364778,
+        "std_diff": 0.00601754214147851,
+        "diffs_by_fold": [
+          -0.006758231158702888,
+          0.009256942105009824,
+          -0.0021829430775117675,
+          -0.0076069286218367616,
+          -0.0024833338437822983
+        ],
+        "paired_ttest_p_value": 0.5512906402697386,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      },
+      "nonlinear_vs_baseline": {
+        "mean_diff": -0.0006864379627988804,
+        "std_diff": 0.003746064362111702,
+        "diffs_by_fold": [
+          0.0026351409045340946,
+          -0.007920256027720174,
+          -0.00019247702953772983,
+          0.001621729761064672,
+          0.00042367257766473543
+        ],
+        "paired_ttest_p_value": 0.7325656944580868,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      }
+    },
+    "F0_plus_size_detail": {
+      "n_features": 10,
+      "linear_auc": {
+        "mean": 0.8059175678446799,
+        "std": 0.043576317102305105,
+        "values": [
+          0.7394973862058716,
+          0.7738413783146447,
+          0.8619397996394801,
+          0.8297467297610647,
+          0.8245625453023389
+        ]
+      },
+      "nonlinear_auc": {
+        "mean": 0.8535196051560551,
+        "std": 0.038134827433121764,
+        "values": [
+          0.7841769790042598,
+          0.8515676885316907,
+          0.8998646898007919,
+          0.866068278052223,
+          0.8659203903913102
+        ]
+      },
+      "linear_vs_baseline": {
+        "mean_diff": 0.1412028882819032,
+        "std_diff": 0.023027355944152363,
+        "diffs_by_fold": [
+          0.13005404687435784,
+          0.10299821935608078,
+          0.14753421941920342,
+          0.15557736414961199,
+          0.16985059161026195
+        ],
+        "paired_ttest_p_value": 0.0002538775069207107,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      },
+      "nonlinear_vs_baseline": {
+        "mean_diff": 0.08577025424519054,
+        "std_diff": 0.016588664525399147,
+        "diffs_by_fold": [
+          0.08122448269646143,
+          0.05719957649550045,
+          0.09403713077834475,
+          0.10719169019054342,
+          0.08919839106510263
+        ],
+        "paired_ttest_p_value": 0.0004935464752412041,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      }
+    },
+    "F0_plus_fg_detail": {
+      "n_features": 8,
+      "linear_auc": {
+        "mean": 0.7678761115570525,
+        "std": 0.029097789982234407,
+        "values": [
+          0.73932503075517,
+          0.7573439530295009,
+          0.8240863680160804,
+          0.7585859524649663,
+          0.760039253519545
+        ]
+      },
+      "nonlinear_auc": {
+        "mean": 0.8157902830656584,
+        "std": 0.04063405241239312,
+        "values": [
+          0.7457488290898051,
+          0.8118184224457385,
+          0.8711199166470731,
+          0.8321371862082871,
+          0.8181270609373883
+        ]
+      },
+      "linear_vs_baseline": {
+        "mean_diff": 0.10316143199427572,
+        "std_diff": 0.016673999657400265,
+        "diffs_by_fold": [
+          0.12988169142365624,
+          0.08650079407093691,
+          0.1096807877958037,
+          0.08441658685351361,
+          0.10532729982746813
+        ],
+        "paired_ttest_p_value": 0.0002451570030074764,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      },
+      "nonlinear_vs_baseline": {
+        "mean_diff": 0.04804093215479386,
+        "std_diff": 0.019702639329698988,
+        "diffs_by_fold": [
+          0.042796332782006785,
+          0.017450310409548253,
+          0.06529235762462593,
+          0.07326059834660759,
+          0.04140506161118074
+        ],
+        "paired_ttest_p_value": 0.00818064730299806,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      }
+    }
+  },
+  "leave_one_group_out": {
+    "F1_full": {
+      "n_features": 15,
+      "linear_auc": {
+        "mean": 0.8301186977862492,
+        "std": 0.028531194046014414,
+        "values": [
+          0.7845904739616769,
+          0.8111578998026855,
+          0.8437501440696328,
+          0.8644567874785765,
+          0.8466381836186743
+        ]
+      },
+      "nonlinear_auc": {
+        "mean": 0.8580690297663688,
+        "std": 0.037077582230645584,
+        "values": [
+          0.7942566103849693,
+          0.8441756099908562,
+          0.9026273690810434,
+          0.8807197676177034,
+          0.8685657917572713
+        ]
+      }
+    },
+    "F1_minus_ring_group": {
+      "n_features": 9,
+      "linear_auc": {
+        "mean": 0.8096979145485571,
+        "std": 0.0365248615579567,
+        "values": [
+          0.7528407024512425,
+          0.7871841763318735,
+          0.8596888556952456,
+          0.8242656139731828,
+          0.8245102242912417
+        ]
+      },
+      "nonlinear_auc": {
+        "mean": 0.8450454609203737,
+        "std": 0.03773898325125867,
+        "values": [
+          0.7835666193348028,
+          0.8324426103277348,
+          0.8994382436874448,
+          0.8509993446920052,
+          0.8587804865598808
+        ]
+      },
+      "linear_vs_full": {
+        "mean_diff": 0.020420783237691986,
+        "std_diff": 0.019270521569679226,
+        "diffs_by_fold": [
+          0.031749771510434455,
+          0.023973723470811947,
+          -0.015938711625612778,
+          0.040191173505393696,
+          0.02212795932743261
+        ],
+        "paired_ttest_p_value": 0.10141280136143659,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      },
+      "nonlinear_vs_full": {
+        "mean_diff": 0.013023568845995027,
+        "std_diff": 0.008866777540686651,
+        "diffs_by_fold": [
+          0.010689991050166547,
+          0.011732999663121357,
+          0.003189125393598502,
+          0.02972042292569821,
+          0.009785305197390515
+        ],
+        "paired_ttest_p_value": 0.04249016656583934,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      }
+    },
+    "F1_minus_stereo_group": {
+      "n_features": 13,
+      "linear_auc": {
+        "mean": 0.8284018130665729,
+        "std": 0.03079096092791029,
+        "values": [
+          0.7814849133637143,
+          0.805136195197074,
+          0.8425030773273585,
+          0.8670851081258191,
+          0.8457997713188978
+        ]
+      },
+      "nonlinear_auc": {
+        "mean": 0.8576888254790042,
+        "std": 0.03932341663619387,
+        "values": [
+          0.792210482373888,
+          0.8372479426343905,
+          0.9044553245831203,
+          0.8833000428470611,
+          0.8712303349565609
+        ]
+      },
+      "linear_vs_full": {
+        "mean_diff": 0.001716884719676437,
+        "std_diff": 0.002840181238949125,
+        "diffs_by_fold": [
+          0.003105560597962631,
+          0.0060217046056114665,
+          0.001247066742274261,
+          -0.00262832064724261,
+          0.0008384122997764365
+        ],
+        "paired_ttest_p_value": 0.2932386980381078,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      },
+      "nonlinear_vs_full": {
+        "mean_diff": 0.00038020428736456057,
+        "std_diff": 0.003702849453504953,
+        "diffs_by_fold": [
+          0.002046128011081283,
+          0.006927667356465661,
+          -0.0018279555020769278,
+          -0.0025802752293576647,
+          -0.0026645431992895485
+        ],
+        "paired_ttest_p_value": 0.8473200988805846,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      }
+    },
+    "F1_minus_size_group": {
+      "n_features": 9,
+      "linear_auc": {
+        "mean": 0.7678085864409269,
+        "std": 0.03644311387597333,
+        "values": [
+          0.7165440676518864,
+          0.739414793782184,
+          0.7766183053722989,
+          0.8208236717411029,
+          0.7856420936571621
+        ]
+      },
+      "nonlinear_auc": {
+        "mean": 0.8109478595111346,
+        "std": 0.049520661093876386,
+        "values": [
+          0.734646133703555,
+          0.7724589730015882,
+          0.8684091024346615,
+          0.8421629259501967,
+          0.8370621624656723
+        ]
+      },
+      "linear_vs_full": {
+        "mean_diff": 0.062310111345322314,
+        "std_diff": 0.00995683022102106,
+        "diffs_by_fold": [
+          0.06804640630979053,
+          0.07174310602050149,
+          0.06713183869733386,
+          0.04363311573747353,
+          0.06099608996151218
+        ],
+        "paired_ttest_p_value": 0.0002344345419125422,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      },
+      "nonlinear_vs_full": {
+        "mean_diff": 0.04712117025523397,
+        "std_diff": 0.01577757896713378,
+        "diffs_by_fold": [
+          0.05961047668141428,
+          0.071716636989268,
+          0.034218266646381834,
+          0.038556841667506725,
+          0.031503629291599
+        ],
+        "paired_ttest_p_value": 0.0039467878197039325,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      }
+    },
+    "F1_minus_fg_group": {
+      "n_features": 14,
+      "linear_auc": {
+        "mean": 0.8251105038653034,
+        "std": 0.030946317201423115,
+        "values": [
+          0.777841730258976,
+          0.8044528129361375,
+          0.8340732749678436,
+          0.867014221443694,
+          0.8421704797198657
+        ]
+      },
+      "nonlinear_auc": {
+        "mean": 0.8554414194197968,
+        "std": 0.03615383767547973,
+        "values": [
+          0.7938786933875593,
+          0.8418511477934454,
+          0.90045134134591,
+          0.8768627444802903,
+          0.8641631700917787
+        ]
+      },
+      "linear_vs_full": {
+        "mean_diff": 0.005008193920945847,
+        "std_diff": 0.004128833780384844,
+        "diffs_by_fold": [
+          0.0067487437027009545,
+          0.006705086866548027,
+          0.00967686910178922,
+          -0.0025574339651175393,
+          0.004467703898808573
+        ],
+        "paired_ttest_p_value": 0.07229573330050026,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      },
+      "nonlinear_vs_full": {
+        "mean_diff": 0.0026276103465719737,
+        "std_diff": 0.0014155611476116203,
+        "diffs_by_fold": [
+          0.0003779169974099661,
+          0.0023244621974107815,
+          0.002176027735133368,
+          0.003857023137413096,
+          0.004402621665492656
+        ],
+        "paired_ttest_p_value": 0.02060961838757079,
+        "n_folds": 5,
+        "caveat": "n=5 folds only -- low statistical power, read as a directional signal not a significance proof"
+      }
+    }
+  }
+}

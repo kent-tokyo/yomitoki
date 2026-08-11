@@ -1,11 +1,17 @@
 //! Size / topology burden component (AGENTS.md §5.1).
 //!
-//! Deliberately narrow: molecular weight and rotatable-bond count only.
-//! Ring-shape complexity (fused/bridged/spiro/macrocycle) is
-//! `ring_topology`'s job, not this component's — see `docs/architecture.md`
-//! for why the two stay separate rather than one combined "size" burden.
+//! Molecular weight, rotatable-bond count, and heteroatom count — see
+//! [`crate::rules::SIZE_WEIGHT_PER_HETEROATOM`] for the heteroatom term's
+//! full semantic contract and evidence. Ring-shape complexity
+//! (fused/bridged/spiro/macrocycle) is `ring_topology`'s job, not this
+//! component's — see `docs/architecture.md` for why the two stay separate
+//! rather than one combined "size" burden.
+//!
+//! No `Finding`/`FindingCode` is emitted for elevated heteroatom count —
+//! deliberately: a structured Finding is a separate, explanation-surface
+//! change from the scoring axis itself, not added here.
 
-use chematic::chem::{molecular_weight, rotatable_bond_count};
+use chematic::chem::{molecular_weight, num_heteroatoms, rotatable_bond_count};
 use chematic::core::Molecule;
 
 use crate::report::{
@@ -14,7 +20,8 @@ use crate::report::{
 };
 use crate::rules::{
     SIZE_BURDEN_SCALE, SIZE_HIGH_ROTATABLE_BOND_THRESHOLD, SIZE_LARGE_MOLECULAR_WEIGHT_THRESHOLD,
-    SIZE_WEIGHT_PER_MOLECULAR_WEIGHT_UNIT, SIZE_WEIGHT_PER_ROTATABLE_BOND,
+    SIZE_WEIGHT_PER_HETEROATOM, SIZE_WEIGHT_PER_MOLECULAR_WEIGHT_UNIT,
+    SIZE_WEIGHT_PER_ROTATABLE_BOND,
 };
 
 pub(crate) struct SizeTopologyOutcome {
@@ -29,10 +36,12 @@ pub(crate) struct SizeTopologyOutcome {
 pub(crate) fn compute(mol: &Molecule) -> SizeTopologyOutcome {
     let mw = molecular_weight(mol);
     let rotatable_bonds = rotatable_bond_count(mol);
+    let heteroatoms = num_heteroatoms(mol);
 
     let mw_weight = finite_or_zero(SIZE_WEIGHT_PER_MOLECULAR_WEIGHT_UNIT * mw);
     let rotatable_weight = finite_or_zero(SIZE_WEIGHT_PER_ROTATABLE_BOND * rotatable_bonds as f64);
-    let raw = finite_or_zero(mw_weight + rotatable_weight);
+    let heteroatom_weight = finite_or_zero(SIZE_WEIGHT_PER_HETEROATOM * heteroatoms as f64);
+    let raw = finite_or_zero(mw_weight + rotatable_weight + heteroatom_weight);
 
     let mut findings = Vec::new();
     let mut contributions = Vec::new();

@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `size_topology`'s raw burden gained a third term: heteroatom count
+  (non-C, non-H heavy atoms), weighted by a new constant
+  `SIZE_WEIGHT_PER_HETEROATOM = 0.03`, alongside the existing molecular
+  weight and rotatable-bond terms. Anchored to the existing per-rotatable
+  -bond weight rather than fit to data — a dedicated calibration attempt
+  (nested scaffold-grouped cross-validation over a fixed weight grid)
+  came back inconclusive on finding a better value (ROC-AUC rose
+  monotonically across the whole tested range with no plateau, so no
+  weight in that range could be called optimal) but found nothing
+  disqualifying this one, so it ships as a deliberately non-optimized
+  default. `RULESET_VERSION` bumped to `0.12.0`.
+
+  Development-set evidence (MPScore, not a confirmatory benchmark claim
+  — TS1/TS2/TS3 were not re-evaluated for this change): pooled ROC-AUC
+  0.5612→0.5706 (+0.0095, paired 95% bootstrap CI [0.0085, 0.0105]),
+  false negatives 7598→7403 (-195), false positives 78→98 (+20). Full
+  methodology: `benchmarks/synthesizability/size_topology_heteroatom/
+  README.md` (production-candidate evaluation) and
+  `benchmarks/synthesizability/heteroatom_weight_calibration/README.md`
+  (weight calibration attempt).
+
 - `ring_topology`'s ring-family burden aggregation changed from a plain
   sum (`Σ f_i` across separate ring families) to an L2 norm
   (`sqrt(Σ f_i²)`). Suppresses the linear over-penalty previously

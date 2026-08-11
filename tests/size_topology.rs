@@ -73,6 +73,38 @@ fn high_rotatable_bond_count_is_flagged() {
 }
 
 #[test]
+fn increasing_heteroatom_count_never_decreases_size_burden() {
+    // Isosteric CH2 -> NH substitution holds heavy-atom count exactly
+    // fixed (8 heavy atoms throughout) and MW nearly fixed (C vs. N
+    // differ by ~2 Da) while increasing heteroatom count 0 -> 1 -> 2 --
+    // isolates the heteroatom term from the existing MW/rotatable-bond
+    // terms, same spirit as `extending_a_chain_never_decreases_size_burden`.
+    let zero = size_difficulty("CCCCCCCC"); // octane
+    let one = size_difficulty("CCCCCCNC"); // one CH2 -> NH
+    let two = size_difficulty("CCCCCNNC"); // two CH2 -> NH
+    assert!(one >= zero, "zero={zero} one={one}");
+    assert!(two >= one, "one={one} two={two}");
+    assert!(
+        two > zero,
+        "burden must strictly increase from 0 to 2 heteroatoms: zero={zero} two={two}"
+    );
+}
+
+#[test]
+fn heteroatom_burden_does_not_spike_unnaturally() {
+    // Per-heteroatom marginal contribution should stay in the same order
+    // of magnitude as one rotatable bond's contribution
+    // (SIZE_WEIGHT_PER_ROTATABLE_BOND), not dominate the component.
+    let zero = size_difficulty("CCCCCCCC");
+    let one = size_difficulty("CCCCCCNC");
+    let marginal = one - zero;
+    assert!(
+        marginal < 0.05,
+        "one heteroatom's marginal burden should be modest, got {marginal}"
+    );
+}
+
+#[test]
 fn small_molecule_triggers_neither_size_finding() {
     let config = AnalysisConfig::default();
     let report = analyze_smiles("CCO", &config).expect("valid SMILES");

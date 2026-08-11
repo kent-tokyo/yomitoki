@@ -11,6 +11,13 @@
 /// at the crate root, in `tools/build-fragment-corpus`'s manifest
 /// provenance too.
 ///
+/// 0.12.0: `size_topology`'s raw burden gained a third term,
+/// `SIZE_WEIGHT_PER_HETEROATOM * heteroatom_count`, alongside the
+/// existing MW and rotatable-bond terms. See this module's
+/// `SIZE_WEIGHT_PER_HETEROATOM` doc for the full semantic contract,
+/// evidence, and the calibration attempt that shipped this value as a
+/// deliberately non-optimized default.
+///
 /// 0.11.0: `ring_topology`'s per-family burden aggregation changed from a
 /// plain sum (`Σ f_i`) to an L2 norm (`sqrt(Σ f_i²)`) — no constant in
 /// this module changed value, but the aggregation formula itself is
@@ -22,7 +29,7 @@
 /// 0.10.0: `CONFIDENCE_PENALTY_STEREO_UNCHECKABLE` removed (chematic
 /// 0.13.0 fixed the upstream bug it worked around, chematic#267) — see
 /// `docs/architecture.md`'s "Negatively charged atoms" section.
-pub const RULESET_VERSION: &str = "0.11.0";
+pub const RULESET_VERSION: &str = "0.12.0";
 
 // ---------------------------------------------------------------------------
 // Applicability
@@ -133,6 +140,68 @@ pub(crate) const SIZE_WEIGHT_PER_MOLECULAR_WEIGHT_UNIT: f64 = 0.0006;
 /// accessibility; some genuinely-easy-but-bioactivity-atypical scaffolds
 /// can still score *more* difficult with a corpus configured).
 pub(crate) const SIZE_WEIGHT_PER_ROTATABLE_BOND: f64 = 0.03;
+
+/// Burden per heteroatom (non-C, non-H heavy atom —
+/// `chematic::chem::num_heteroatoms`).
+///
+/// Semantic contract, fixed before this constant's value was chosen and
+/// not revised afterward: elevated heteroatom/compositional complexity
+/// — beyond what molecular weight and rotatable-bond count already
+/// capture — reflects a broader range of chemically distinct
+/// environments and selectivity constraints a synthesis route must
+/// navigate. This is deliberately *not* "heteroatom count = synthetic
+/// difficulty" — it is one bounded, compositional contributor among
+/// several, the same status MW and rotatable-bond count already have in
+/// this component.
+///
+/// Value anchored to [`SIZE_WEIGHT_PER_ROTATABLE_BOND`]'s per-unit
+/// weight, not fit to MPScore (round 22 part 15's explicit
+/// no-grid-search instruction): both are discrete, count-based
+/// compositional contributors within this same component, and absent a
+/// cleaner external reference point (unlike
+/// [`SIZE_LARGE_MOLECULAR_WEIGHT_THRESHOLD`]'s Lipinski citation), "one
+/// additional heteroatom matters about as much as one additional
+/// rotatable bond" is the most defensible non-arbitrary starting point.
+///
+/// A dedicated calibration attempt (round 22 part 16, nested
+/// scaffold-grouped CV over `{0.00, ..., 0.06}`,
+/// `benchmarks/synthesizability/heteroatom_weight_calibration/README.md`)
+/// came back **inconclusive** on locating a better value: ROC-AUC rose
+/// monotonically across the entire tested grid with no plateau, so no
+/// weight in that range can be called optimal — the grid's own boundary,
+/// not a real peak, is what any AUC-maximizing rule would land on. That
+/// round found nothing disqualifying this value specifically (every
+/// weight ≥ 0.03 helps by every tracked metric, all 6 FN archetypes
+/// recover, no plainly-easy structural category takes damage, no
+/// double-counting saturation, every controlled-panel molecule stays in
+/// its verdict band through the top of the tested grid) and explicitly
+/// recommended against promoting a larger value from that round's
+/// boundary-pinned selection (more false positives for metrics — MCC,
+/// balanced accuracy — that had already turned over by then). This
+/// value therefore ships as a deliberately non-optimized default, not a
+/// claim that `0.03` is the true optimum.
+///
+/// Evidence this constant exists to test (`benchmarks/synthesizability/
+/// size_topology_decomposition/README.md`, commit `b147e3d`): of three
+/// descriptors `size_topology` didn't previously see (`fraction_csp3`,
+/// `heteroatom_count`, `tpsa`), only `heteroatom_count` was
+/// independently significant on MPScore development data, both alone
+/// (+0.053 linear AUC, p=0.012) and conditional on raw MW/rotatable-
+/// bond count already being present (+0.051, p=0.022) — `fraction_csp3`
+/// and `tpsa` were not significant either way and are not implemented
+/// here. Checked for redundancy with `functional_group_liability`
+/// (moderate, not dominant correlation, r≈0.36-0.40 with
+/// `fg_contribution`/`fg_count` across the whole calibration weight
+/// grid) and for being a pure molecular-size proxy (survives
+/// conditioning on both MW bins and rotatable-bond bins, AUC 0.56-0.68
+/// in every stratum).
+///
+/// Full production-candidate evaluation (round 22 part 15,
+/// `benchmarks/synthesizability/size_topology_heteroatom/README.md`,
+/// branch `experiment/size-topology-heteroatom`): pooled MPScore
+/// ROC-AUC 0.5612→0.5706 (+0.0095, paired 95% CI [0.0085, 0.0105]), FN
+/// 7598→7403 (-195), FP 78→98 (+20).
+pub(crate) const SIZE_WEIGHT_PER_HETEROATOM: f64 = 0.03;
 
 /// Scale in the `normalized = 1 - exp(-raw / scale)` burden transform
 /// (AGENTS.md §5.1: burden should be non-linear).

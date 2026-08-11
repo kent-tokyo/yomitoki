@@ -1,0 +1,53 @@
+{
+  "correlations": {
+    "heteroatom_count_vs_fg_count": 0.3990238516004778,
+    "heteroatom_count_vs_fg_contribution": 0.3810533460643198,
+    "tpsa_vs_fg_count": 0.24835960320180797,
+    "tpsa_vs_fg_contribution": 0.29571529042738764,
+    "fraction_csp3_vs_fg_count": -0.27119480998890777,
+    "fraction_csp3_vs_ring_contribution": -0.1448311347138767,
+    "fraction_csp3_vs_stereocenters": 0.6098036434480003,
+    "fraction_csp3_vs_stereo_contribution": 0.6140819106922037,
+    "heteroatom_count_vs_tpsa": 0.7092787497146845,
+    "heteroatom_count_vs_mol_wt": 0.3315378387600804,
+    "tpsa_vs_mol_wt": -0.005865832277984764
+  },
+  "semantic_ownership": {
+    "fraction_csp3": {
+      "candidates_considered": [
+        "size/topology",
+        "ring/topological complexity",
+        "new structural-dimensionality evidence"
+      ],
+      "correlation_with_ring_contribution": -0.1448311347138767,
+      "correlation_with_stereo_contribution": 0.6140819106922037,
+      "conditional_significance_after_MW_RB": "NOT significant (p=0.23, decompose.py S1_plus_fsp3)",
+      "judgment": "Not independently informative once MW/RB are present (this round's own conditional test) -- moot for ownership since it doesn't clear the bar to add anywhere. If it had, low correlation with ring_contribution/stereo_contribution would have suggested 'new structural-dimensionality evidence' over 'ring/topological complexity', but this is not being pursued."
+    },
+    "heteroatom_count": {
+      "candidates_considered": [
+        "size/composition",
+        "functional-group burden",
+        "neither directly"
+      ],
+      "correlation_with_fg_count": 0.3990238516004778,
+      "correlation_with_fg_contribution": 0.3810533460643198,
+      "correlation_with_mol_wt": 0.3315378387600804,
+      "conditional_significance_after_MW_RB": "significant (p=0.022, decompose.py S1_plus_heteroatoms)",
+      "conditional_significance_after_fg_contribution": "F0 (baseline for every S1-S6 comparison) already includes fg_contribution -- heteroatom_count's standalone significance (S3 vs S0, p=0.012) is therefore ALREADY measured on top of the existing FG signal, not instead of it.",
+      "judgment": "size/composition -- see main text for the full reasoning."
+    },
+    "tpsa": {
+      "candidates_considered": [
+        "physicochemical/composition",
+        "functional-group-related evidence",
+        "neither directly"
+      ],
+      "correlation_with_fg_count": 0.24835960320180797,
+      "correlation_with_fg_contribution": 0.29571529042738764,
+      "correlation_with_heteroatom_count": 0.7092787497146845,
+      "conditional_significance_after_MW_RB": "NOT significant (p=0.39, decompose.py S1_plus_tpsa)",
+      "judgment": "Not independently informative -- moot for ownership, not pursued."
+    }
+  }
+}

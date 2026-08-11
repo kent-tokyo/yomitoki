@@ -1,0 +1,1736 @@
+{
+  "formula_verification": {
+    "max_diff": 0.04133686809982254,
+    "median_diff": 5.551115123125783e-17,
+    "n_diff_gt_1e-6": 463,
+    "n_diff_gt_1e-2": 91,
+    "note": "median match is exact (float noise only); a small population (~0.9% of molecules) shows a larger diff -- traced to a known rotatable-bond-count *definitional* difference between RDKit's counter and chematic's (e.g. amide/disulfide bond handling), not a formula error. Does not affect the collision analysis below, which uses the real size_contribution column directly, not this reproduction."
+  },
+  "monotonicity_violations_in_grid": 0,
+  "saturation": {
+    "marginal_gain_per_50Da_at_low_mw": 0.014666406054554493,
+    "marginal_gain_per_50Da_at_high_mw": 0.010387047280058792,
+    "saturation_ratio": 0.708220353467795,
+    "contribution_at_mw50_rb0": 0.014888060396937353,
+    "contribution_at_mw1300_rb0": 0.32294312550183524
+  },
+  "transform_grid": [
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.014888060396937353
+    },
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.04400251816690004
+    },
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.07225651367144714
+    },
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.09967547741373439
+    },
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.12628408831196558
+    },
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.15210629591208413
+    },
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.1771653419439816
+    },
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.20148378124062294
+    },
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.22508350203891903
+    },
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.24798574568061738
+    },
+    {
+      "mol_wt": 50,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.029554466451491845
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.05823546641575128
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.08606881472877181
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.11307956328284252
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.1392920235749422
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.164729788588728
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.18941575402981292
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.21337213893344653
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.23662050566314685
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.2591817793182821
+    },
+    {
+      "mol_wt": 100,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.04400251816690004
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.07225651367144714
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.09967547741373439
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.12628408831196558
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.15210629591208413
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.1771653419439816
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.20148378124062294
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.22508350203891903
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.24798574568061738
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 150,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.05823546641575128
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.08606881472877181
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.11307956328284252
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.1392920235749422
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.164729788588728
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.18941575402981292
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.21337213893344653
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.23662050566314685
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.2591817793182821
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 200,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.07225651367144714
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.09967547741373439
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.12628408831196558
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.15210629591208413
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.1771653419439816
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.20148378124062294
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.22508350203891903
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.24798574568061738
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 250,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.08606881472877181
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.11307956328284252
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.1392920235749422
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.164729788588728
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.18941575402981292
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.21337213893344653
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.23662050566314685
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.2591817793182821
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 300,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.32294312550183535
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.09967547741373439
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.12628408831196558
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.15210629591208413
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.1771653419439816
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.20148378124062294
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.22508350203891903
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.24798574568061738
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 350,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.3330231891415256
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.11307956328284252
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.1392920235749422
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.164729788588728
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.18941575402981292
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.21337213893344653
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.23662050566314685
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.2591817793182821
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.32294312550183535
+    },
+    {
+      "mol_wt": 400,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.34295318018494325
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.12628408831196558
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.15210629591208413
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.1771653419439816
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.20148378124062294
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.22508350203891903
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.24798574568061738
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.3330231891415256
+    },
+    {
+      "mol_wt": 450,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.35273533292196535
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.1392920235749422
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.164729788588728
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.18941575402981292
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.21337213893344653
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.23662050566314685
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.2591817793182821
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.32294312550183535
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.34295318018494325
+    },
+    {
+      "mol_wt": 500,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.36237184837822667
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.15210629591208413
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.1771653419439816
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.20148378124062294
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.22508350203891903
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.24798574568061738
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.3330231891415256
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.35273533292196535
+    },
+    {
+      "mol_wt": 550,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.3718648948103591
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.164729788588728
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.18941575402981292
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.21337213893344653
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.23662050566314685
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.2591817793182821
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.32294312550183535
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.34295318018494325
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.36237184837822667
+    },
+    {
+      "mol_wt": 600,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.38121660819385916
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.1771653419439816
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.20148378124062294
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.22508350203891903
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.24798574568061738
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.3330231891415256
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.35273533292196535
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.3718648948103591
+    },
+    {
+      "mol_wt": 650,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.39042909270369075
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.18941575402981292
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.21337213893344653
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.23662050566314685
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.2591817793182821
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.32294312550183535
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.34295318018494325
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.36237184837822667
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.38121660819385916
+    },
+    {
+      "mol_wt": 700,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.3995044211877341
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.20148378124062294
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.22508350203891903
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.24798574568061738
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.3330231891415256
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.35273533292196535
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.3718648948103591
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.39042909270369075
+    },
+    {
+      "mol_wt": 750,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.4084446356331849
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.21337213893344653
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.23662050566314685
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.2591817793182821
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.32294312550183535
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.34295318018494325
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.36237184837822667
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.38121660819385916
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.3995044211877341
+    },
+    {
+      "mol_wt": 800,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.41725174762601036
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.22508350203891903
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.24798574568061738
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.3330231891415256
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.35273533292196535
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.3718648948103591
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.39042909270369075
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.4084446356331849
+    },
+    {
+      "mol_wt": 850,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.42592773880356394
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.23662050566314674
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.2591817793182821
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.32294312550183524
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.34295318018494314
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.36237184837822667
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.38121660819385916
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.3995044211877341
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.41725174762601036
+    },
+    {
+      "mol_wt": 900,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.4344745613004629
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.24798574568061738
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.3330231891415256
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.35273533292196535
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.3718648948103591
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.39042909270369075
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.4084446356331849
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.42592773880356394
+    },
+    {
+      "mol_wt": 950,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.4428941381878261
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.2591817793182821
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.32294312550183535
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.34295318018494325
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.36237184837822667
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.38121660819385916
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.3995044211877341
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.41725174762601036
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.4344745613004629
+    },
+    {
+      "mol_wt": 1000,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.4511883639059736
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.2702111257309432
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.3330231891415255
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.35273533292196535
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.3718648948103591
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.39042909270369064
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.4084446356331849
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.42592773880356394
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.4428941381878261
+    },
+    {
+      "mol_wt": 1050,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.4593591046906834
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.28107626656807383
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.32294312550183524
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.34295318018494314
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.36237184837822667
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.38121660819385916
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.3995044211877341
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.41725174762601025
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.4344745613004629
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.4511883639059736
+    },
+    {
+      "mol_wt": 1100,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.4674081989931027
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.2917796465322
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.3330231891415256
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.35273533292196535
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.3718648948103591
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.39042909270369075
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.4084446356331849
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.42592773880356394
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.4428941381878261
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.4593591046906834
+    },
+    {
+      "mol_wt": 1150,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.4753374578934071
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.302323673928969
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.32294312550183535
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.34295318018494325
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.36237184837822667
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.38121660819385916
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.3995044211877341
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.41725174762601036
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.4344745613004629
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.4511883639059736
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.4674081989931028
+    },
+    {
+      "mol_wt": 1200,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.4831486655083007
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 0,
+      "size_contribution": 0.31271072120902776
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 2,
+      "size_contribution": 0.3330231891415255
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 4,
+      "size_contribution": 0.35273533292196535
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 6,
+      "size_contribution": 0.3718648948103591
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 8,
+      "size_contribution": 0.39042909270369064
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 10,
+      "size_contribution": 0.4084446356331849
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 12,
+      "size_contribution": 0.42592773880356394
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 14,
+      "size_contribution": 0.4428941381878261
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 16,
+      "size_contribution": 0.4593591046906834
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 18,
+      "size_contribution": 0.4753374578934071
+    },
+    {
+      "mol_wt": 1250,
+      "rotatable_bonds": 20,
+      "size_contribution": 0.4908435793924508
+    }
+  ],
+  "top_collision_groups": [
+    {
+      "contribution_bucket": 0.099,
+      "n": 160,
+      "hard_fraction": 0.89375,
+      "mol_wt_range": 203.149,
+      "rotatable_bonds_range": 4,
+      "heteroatom_count_range": 10,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.4899218428630193,
+      "example_ids": [
+        "MPSCORE_00027",
+        "MPSCORE_00196",
+        "MPSCORE_00268",
+        "MPSCORE_00275",
+        "MPSCORE_00451"
+      ]
+    },
+    {
+      "contribution_bucket": 0.095,
+      "n": 153,
+      "hard_fraction": 0.8823529411764706,
+      "mol_wt_range": 202.30700000000007,
+      "rotatable_bonds_range": 4,
+      "heteroatom_count_range": 8,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.6950617283950618,
+      "example_ids": [
+        "MPSCORE_00170",
+        "MPSCORE_00628",
+        "MPSCORE_00670",
+        "MPSCORE_00677",
+        "MPSCORE_00694"
+      ]
+    },
+    {
+      "contribution_bucket": 0.086,
+      "n": 146,
+      "hard_fraction": 0.9041095890410958,
+      "mol_wt_range": 201.049,
+      "rotatable_bonds_range": 4,
+      "heteroatom_count_range": 6,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.5024350649350651,
+      "example_ids": [
+        "MPSCORE_00008",
+        "MPSCORE_00023",
+        "MPSCORE_00044",
+        "MPSCORE_00045",
+        "MPSCORE_00177"
+      ]
+    },
+    {
+      "contribution_bucket": 0.104,
+      "n": 144,
+      "hard_fraction": 0.8333333333333334,
+      "mol_wt_range": 251.65800000000002,
+      "rotatable_bonds_range": 5,
+      "heteroatom_count_range": 8,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.6277777777777778,
+      "example_ids": [
+        "MPSCORE_00059",
+        "MPSCORE_00306",
+        "MPSCORE_00311",
+        "MPSCORE_00395",
+        "MPSCORE_00396"
+      ]
+    },
+    {
+      "contribution_bucket": 0.092,
+      "n": 138,
+      "hard_fraction": 0.9202898550724637,
+      "mol_wt_range": 203.26700000000002,
+      "rotatable_bonds_range": 4,
+      "heteroatom_count_range": 8,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.6370794559770938,
+      "example_ids": [
+        "MPSCORE_00095",
+        "MPSCORE_00186",
+        "MPSCORE_00189",
+        "MPSCORE_00252",
+        "MPSCORE_00254"
+      ]
+    },
+    {
+      "contribution_bucket": 0.113,
+      "n": 138,
+      "hard_fraction": 0.8913043478260869,
+      "mol_wt_range": 252.84700000000007,
+      "rotatable_bonds_range": 5,
+      "heteroatom_count_range": 9,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.5357723577235772,
+      "example_ids": [
+        "MPSCORE_00283",
+        "MPSCORE_00485",
+        "MPSCORE_00486",
+        "MPSCORE_00488",
+        "MPSCORE_00515"
+      ]
+    },
+    {
+      "contribution_bucket": 0.103,
+      "n": 135,
+      "hard_fraction": 0.8666666666666667,
+      "mol_wt_range": 203.017,
+      "rotatable_bonds_range": 4,
+      "heteroatom_count_range": 8,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.6749762583095917,
+      "example_ids": [
+        "MPSCORE_00003",
+        "MPSCORE_00030",
+        "MPSCORE_00118",
+        "MPSCORE_00127",
+        "MPSCORE_00153"
+      ]
+    },
+    {
+      "contribution_bucket": 0.102,
+      "n": 134,
+      "hard_fraction": 0.8656716417910447,
+      "mol_wt_range": 202.96800000000005,
+      "rotatable_bonds_range": 4,
+      "heteroatom_count_range": 8,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.7404214559386973,
+      "example_ids": [
+        "MPSCORE_00002",
+        "MPSCORE_00124",
+        "MPSCORE_00161",
+        "MPSCORE_00309",
+        "MPSCORE_00335"
+      ]
+    },
+    {
+      "contribution_bucket": 0.091,
+      "n": 127,
+      "hard_fraction": 0.8582677165354331,
+      "mol_wt_range": 202.71900000000002,
+      "rotatable_bonds_range": 4,
+      "heteroatom_count_range": 7,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.5481651376146789,
+      "example_ids": [
+        "MPSCORE_00005",
+        "MPSCORE_00013",
+        "MPSCORE_00137",
+        "MPSCORE_00138",
+        "MPSCORE_00267"
+      ]
+    },
+    {
+      "contribution_bucket": 0.106,
+      "n": 123,
+      "hard_fraction": 0.8292682926829268,
+      "mol_wt_range": 253.17700000000008,
+      "rotatable_bonds_range": 5,
+      "heteroatom_count_range": 8,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.5289449112978525,
+      "example_ids": [
+        "MPSCORE_00025",
+        "MPSCORE_00248",
+        "MPSCORE_00273",
+        "MPSCORE_00302",
+        "MPSCORE_00633"
+      ]
+    },
+    {
+      "contribution_bucket": 0.105,
+      "n": 122,
+      "hard_fraction": 0.9262295081967213,
+      "mol_wt_range": 252.78300000000002,
+      "rotatable_bonds_range": 5,
+      "heteroatom_count_range": 12,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.4891838741396264,
+      "example_ids": [
+        "MPSCORE_00035",
+        "MPSCORE_00081",
+        "MPSCORE_00099",
+        "MPSCORE_00102",
+        "MPSCORE_00121"
+      ]
+    },
+    {
+      "contribution_bucket": 0.121,
+      "n": 122,
+      "hard_fraction": 0.8442622950819673,
+      "mol_wt_range": 303.2710000000002,
+      "rotatable_bonds_range": 6,
+      "heteroatom_count_range": 14,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.6668369954011243,
+      "example_ids": [
+        "MPSCORE_00069",
+        "MPSCORE_00091",
+        "MPSCORE_00106",
+        "MPSCORE_00667",
+        "MPSCORE_00750"
+      ]
+    },
+    {
+      "contribution_bucket": 0.096,
+      "n": 121,
+      "hard_fraction": 0.8512396694214877,
+      "mol_wt_range": 199.83600000000007,
+      "rotatable_bonds_range": 4,
+      "heteroatom_count_range": 8,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.680151024811219,
+      "example_ids": [
+        "MPSCORE_00054",
+        "MPSCORE_00282",
+        "MPSCORE_00291",
+        "MPSCORE_00292",
+        "MPSCORE_00322"
+      ]
+    },
+    {
+      "contribution_bucket": 0.098,
+      "n": 121,
+      "hard_fraction": 0.8925619834710744,
+      "mol_wt_range": 202.88000000000008,
+      "rotatable_bonds_range": 4,
+      "heteroatom_count_range": 9,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.43091168091168086,
+      "example_ids": [
+        "MPSCORE_00034",
+        "MPSCORE_00080",
+        "MPSCORE_00100",
+        "MPSCORE_00101",
+        "MPSCORE_00176"
+      ]
+    },
+    {
+      "contribution_bucket": 0.112,
+      "n": 121,
+      "hard_fraction": 0.8429752066115702,
+      "mol_wt_range": 253.65300000000002,
+      "rotatable_bonds_range": 5,
+      "heteroatom_count_range": 10,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.5608875128998968,
+      "example_ids": [
+        "MPSCORE_00324",
+        "MPSCORE_00443",
+        "MPSCORE_00666",
+        "MPSCORE_00682",
+        "MPSCORE_00842"
+      ]
+    },
+    {
+      "contribution_bucket": 0.087,
+      "n": 120,
+      "hard_fraction": 0.8833333333333333,
+      "mol_wt_range": 202.78799999999998,
+      "rotatable_bonds_range": 4,
+      "heteroatom_count_range": 8,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.5599730458221025,
+      "example_ids": [
+        "MPSCORE_00055",
+        "MPSCORE_00079",
+        "MPSCORE_00104",
+        "MPSCORE_00129",
+        "MPSCORE_00444"
+      ]
+    },
+    {
+      "contribution_bucket": 0.108,
+      "n": 119,
+      "hard_fraction": 0.9243697478991597,
+      "mol_wt_range": 252.53200000000004,
+      "rotatable_bonds_range": 5,
+      "heteroatom_count_range": 8,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.5186868686868686,
+      "example_ids": [
+        "MPSCORE_00136",
+        "MPSCORE_00279",
+        "MPSCORE_00419",
+        "MPSCORE_00706",
+        "MPSCORE_00707"
+      ]
+    },
+    {
+      "contribution_bucket": 0.111,
+      "n": 119,
+      "hard_fraction": 0.8067226890756303,
+      "mol_wt_range": 251.8350000000001,
+      "rotatable_bonds_range": 5,
+      "heteroatom_count_range": 10,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.6338315217391305,
+      "example_ids": [
+        "MPSCORE_00037",
+        "MPSCORE_00398",
+        "MPSCORE_00464",
+        "MPSCORE_00481",
+        "MPSCORE_00719"
+      ]
+    },
+    {
+      "contribution_bucket": 0.116,
+      "n": 115,
+      "hard_fraction": 0.8956521739130435,
+      "mol_wt_range": 252.70900000000006,
+      "rotatable_bonds_range": 5,
+      "heteroatom_count_range": 12,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.627831715210356,
+      "example_ids": [
+        "MPSCORE_00036",
+        "MPSCORE_00168",
+        "MPSCORE_00236",
+        "MPSCORE_00287",
+        "MPSCORE_00362"
+      ]
+    },
+    {
+      "contribution_bucket": 0.107,
+      "n": 114,
+      "hard_fraction": 0.8947368421052632,
+      "mol_wt_range": 250.81199999999998,
+      "rotatable_bonds_range": 5,
+      "heteroatom_count_range": 12,
+      "fraction_csp3_range": 1.0,
+      "local_heteroatom_count_auc_within_bucket": 0.6417483660130718,
+      "example_ids": [
+        "MPSCORE_00007",
+        "MPSCORE_00165",
+        "MPSCORE_00261",
+        "MPSCORE_00278",
+        "MPSCORE_00701"
+      ]
+    }
+  ]
+}

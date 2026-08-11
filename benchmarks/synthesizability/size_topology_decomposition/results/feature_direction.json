@@ -1,0 +1,324 @@
+{
+  "mol_wt": {
+    "unconditional": {
+      "median_hard": 261.030504176,
+      "median_easy": 264.042258736,
+      "iqr_hard": [
+        194.16639398200002,
+        337.979081448
+      ],
+      "iqr_easy": [
+        186.089877624,
+        385.930574584
+      ],
+      "cohens_d": -0.22665037097510735,
+      "univariate_roc_auc": 0.4806717644384242
+    },
+    "conditional_on_mol_wt_bins": null,
+    "conditional_on_rotatable_bonds_bins": [
+      {
+        "bin": "(-0.001, 1.0]",
+        "n": 4347,
+        "n_hard": 3989,
+        "n_easy": 358,
+        "univariate_roc_auc": 0.5293082513224215
+      },
+      {
+        "bin": "(1.0, 2.0]",
+        "n": 2460,
+        "n_hard": 2142,
+        "n_easy": 318,
+        "univariate_roc_auc": 0.6017402768235176
+      },
+      {
+        "bin": "(2.0, 3.0]",
+        "n": 2269,
+        "n_hard": 1915,
+        "n_easy": 354,
+        "univariate_roc_auc": 0.49466300836394217
+      },
+      {
+        "bin": "(3.0, 21.0]",
+        "n": 1467,
+        "n_hard": 1114,
+        "n_easy": 353,
+        "univariate_roc_auc": 0.28901922988897427
+      }
+    ]
+  },
+  "rotatable_bonds": {
+    "unconditional": {
+      "median_hard": 2.0,
+      "median_easy": 3.0,
+      "iqr_hard": [
+        1.0,
+        3.0
+      ],
+      "iqr_easy": [
+        1.0,
+        4.0
+      ],
+      "cohens_d": -0.46562198997475973,
+      "univariate_roc_auc": 0.38152673448960717
+    },
+    "conditional_on_mol_wt_bins": [
+      {
+        "bin": "(58.052, 194.039]",
+        "n": 2636,
+        "n_hard": 2258,
+        "n_easy": 378,
+        "univariate_roc_auc": 0.4320206578842539
+      },
+      {
+        "bin": "(194.039, 261.123]",
+        "n": 2636,
+        "n_hard": 2333,
+        "n_easy": 303,
+        "univariate_roc_auc": 0.41745072492675755
+      },
+      {
+        "bin": "(261.123, 342.14]",
+        "n": 2635,
+        "n_hard": 2366,
+        "n_easy": 269,
+        "univariate_roc_auc": 0.45678399381573537
+      },
+      {
+        "bin": "(342.14, 1295.859]",
+        "n": 2636,
+        "n_hard": 2203,
+        "n_easy": 433,
+        "univariate_roc_auc": 0.2596627106224034
+      }
+    ],
+    "conditional_on_rotatable_bonds_bins": null
+  },
+  "fraction_csp3": {
+    "unconditional": {
+      "median_hard": 0.3333333333333333,
+      "median_easy": 0.1428571428571428,
+      "iqr_hard": [
+        0.1052631578947368,
+        0.7333333333333333
+      ],
+      "iqr_easy": [
+        0.0,
+        0.4
+      ],
+      "cohens_d": 0.3836242245491533,
+      "univariate_roc_auc": 0.6247533208928125
+    },
+    "conditional_on_mol_wt_bins": [
+      {
+        "bin": "(58.052, 194.039]",
+        "n": 2636,
+        "n_hard": 2258,
+        "n_easy": 378,
+        "univariate_roc_auc": 0.4768213899081924
+      },
+      {
+        "bin": "(194.039, 261.123]",
+        "n": 2636,
+        "n_hard": 2333,
+        "n_easy": 303,
+        "univariate_roc_auc": 0.6636485551684187
+      },
+      {
+        "bin": "(261.123, 342.14]",
+        "n": 2635,
+        "n_hard": 2366,
+        "n_easy": 269,
+        "univariate_roc_auc": 0.6523048012896455
+      },
+      {
+        "bin": "(342.14, 1295.859]",
+        "n": 2636,
+        "n_hard": 2203,
+        "n_easy": 433,
+        "univariate_roc_auc": 0.7340929175940011
+      }
+    ],
+    "conditional_on_rotatable_bonds_bins": [
+      {
+        "bin": "(-0.001, 1.0]",
+        "n": 4347,
+        "n_hard": 3989,
+        "n_easy": 358,
+        "univariate_roc_auc": 0.6286089119379971
+      },
+      {
+        "bin": "(1.0, 2.0]",
+        "n": 2460,
+        "n_hard": 2142,
+        "n_easy": 318,
+        "univariate_roc_auc": 0.6196363241313296
+      },
+      {
+        "bin": "(2.0, 3.0]",
+        "n": 2269,
+        "n_hard": 1915,
+        "n_easy": 354,
+        "univariate_roc_auc": 0.630629434585712
+      },
+      {
+        "bin": "(3.0, 21.0]",
+        "n": 1467,
+        "n_hard": 1114,
+        "n_easy": 353,
+        "univariate_roc_auc": 0.6478923919622014
+      }
+    ]
+  },
+  "heteroatom_count": {
+    "unconditional": {
+      "median_hard": 4.0,
+      "median_easy": 4.0,
+      "iqr_hard": [
+        3.0,
+        6.0
+      ],
+      "iqr_easy": [
+        2.0,
+        4.0
+      ],
+      "cohens_d": 0.3538209673143448,
+      "univariate_roc_auc": 0.6007660471666241
+    },
+    "conditional_on_mol_wt_bins": [
+      {
+        "bin": "(58.052, 194.039]",
+        "n": 2636,
+        "n_hard": 2258,
+        "n_easy": 378,
+        "univariate_roc_auc": 0.5758777726226797
+      },
+      {
+        "bin": "(194.039, 261.123]",
+        "n": 2636,
+        "n_hard": 2333,
+        "n_easy": 303,
+        "univariate_roc_auc": 0.6296295510391159
+      },
+      {
+        "bin": "(261.123, 342.14]",
+        "n": 2635,
+        "n_hard": 2366,
+        "n_easy": 269,
+        "univariate_roc_auc": 0.6839787321628901
+      },
+      {
+        "bin": "(342.14, 1295.859]",
+        "n": 2636,
+        "n_hard": 2203,
+        "n_easy": 433,
+        "univariate_roc_auc": 0.5628819193646287
+      }
+    ],
+    "conditional_on_rotatable_bonds_bins": [
+      {
+        "bin": "(-0.001, 1.0]",
+        "n": 4347,
+        "n_hard": 3989,
+        "n_easy": 358,
+        "univariate_roc_auc": 0.6063675806792702
+      },
+      {
+        "bin": "(1.0, 2.0]",
+        "n": 2460,
+        "n_hard": 2142,
+        "n_easy": 318,
+        "univariate_roc_auc": 0.665265372396338
+      },
+      {
+        "bin": "(2.0, 3.0]",
+        "n": 2269,
+        "n_hard": 1915,
+        "n_easy": 354,
+        "univariate_roc_auc": 0.6495877033824549
+      },
+      {
+        "bin": "(3.0, 21.0]",
+        "n": 1467,
+        "n_hard": 1114,
+        "n_easy": 353,
+        "univariate_roc_auc": 0.6263916367020816
+      }
+    ]
+  },
+  "tpsa": {
+    "unconditional": {
+      "median_hard": 47.58,
+      "median_easy": 52.04,
+      "iqr_hard": [
+        17.3,
+        74.6
+      ],
+      "iqr_easy": [
+        34.14,
+        77.76
+      ],
+      "cohens_d": -0.10991853996357967,
+      "univariate_roc_auc": 0.4628629932398084
+    },
+    "conditional_on_mol_wt_bins": [
+      {
+        "bin": "(58.052, 194.039]",
+        "n": 2636,
+        "n_hard": 2258,
+        "n_easy": 378,
+        "univariate_roc_auc": 0.38533011374021114
+      },
+      {
+        "bin": "(194.039, 261.123]",
+        "n": 2636,
+        "n_hard": 2333,
+        "n_easy": 303,
+        "univariate_roc_auc": 0.5004894617194252
+      },
+      {
+        "bin": "(261.123, 342.14]",
+        "n": 2635,
+        "n_hard": 2366,
+        "n_easy": 269,
+        "univariate_roc_auc": 0.5305450197500526
+      },
+      {
+        "bin": "(342.14, 1295.859]",
+        "n": 2636,
+        "n_hard": 2203,
+        "n_easy": 433,
+        "univariate_roc_auc": 0.44993285452652737
+      }
+    ],
+    "conditional_on_rotatable_bonds_bins": [
+      {
+        "bin": "(-0.001, 1.0]",
+        "n": 4347,
+        "n_hard": 3989,
+        "n_easy": 358,
+        "univariate_roc_auc": 0.4468202360961919
+      },
+      {
+        "bin": "(1.0, 2.0]",
+        "n": 2460,
+        "n_hard": 2142,
+        "n_easy": 318,
+        "univariate_roc_auc": 0.524117823229921
+      },
+      {
+        "bin": "(2.0, 3.0]",
+        "n": 2269,
+        "n_hard": 1915,
+        "n_easy": 354,
+        "univariate_roc_auc": 0.5330501098965938
+      },
+      {
+        "bin": "(3.0, 21.0]",
+        "n": 1467,
+        "n_hard": 1114,
+        "n_easy": 353,
+        "univariate_roc_auc": 0.5960731559701152
+      }
+    ]
+  }
+}

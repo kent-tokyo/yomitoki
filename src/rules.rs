@@ -164,22 +164,44 @@ pub(crate) const SIZE_WEIGHT_PER_ROTATABLE_BOND: f64 = 0.03;
 /// rotatable bond" is the most defensible non-arbitrary starting point.
 ///
 /// A dedicated calibration attempt (round 22 part 16, nested
-/// scaffold-grouped CV over `{0.00, ..., 0.06}`,
+/// scaffold-grouped CV, outer 5 / inner 4, 0 scaffold leakage, over
+/// `{0.00, ..., 0.06}`,
 /// `benchmarks/synthesizability/heteroatom_weight_calibration/README.md`)
-/// came back **inconclusive** on locating a better value: ROC-AUC rose
-/// monotonically across the entire tested grid with no plateau, so no
-/// weight in that range can be called optimal — the grid's own boundary,
-/// not a real peak, is what any AUC-maximizing rule would land on. That
-/// round found nothing disqualifying this value specifically (every
-/// weight ≥ 0.03 helps by every tracked metric, all 6 FN archetypes
-/// recover, no plainly-easy structural category takes damage, no
-/// double-counting saturation, every controlled-panel molecule stays in
-/// its verdict band through the top of the tested grid) and explicitly
-/// recommended against promoting a larger value from that round's
-/// boundary-pinned selection (more false positives for metrics — MCC,
-/// balanced accuracy — that had already turned over by then). This
-/// value therefore ships as a deliberately non-optimized default, not a
-/// claim that `0.03` is the true optimum.
+/// found ROC-AUC rises monotonically across the entire tested grid with
+/// no plateau — a real, reproducible trend (consistent sign and rough
+/// magnitude across all 5 independent outer-training-subset inner CVs,
+/// not grid-boundary noise), not merely "no weight in range can be
+/// called optimal." That round labeled the *pinpoint-the-optimum*
+/// question inconclusive for exactly that reason (this grid can't
+/// bracket a maximum) but found nothing disqualifying `0.03` itself.
+///
+/// **round 22 part 17 resolved this into a final freeze decision: GO,
+/// `0.03` retained, frozen.** The primary metric's rise past `0.03` is
+/// real but the metrics that track the deployed system's actual
+/// decision boundary (`threshold = 0.5`) do not follow it: balanced
+/// accuracy and MCC peak in roughly the `0.01`–`0.04` window and decline
+/// beyond it, while false positives grow faster than false negatives
+/// shrink as the weight increases (`w=0.03`: FP 78→98, +25.6%, FN
+/// 7598→7403, −2.6%; `w=0.06`: FP 78→129, +65.4%, FN 7598→7205, −5.2%
+/// — accelerating cost for decelerating decision-relevant benefit).
+/// `0.04` is measurably but not decisively better than `0.03` in every
+/// outer fold (inner-CV delta gap ≈1.3–1.7 SE, not the "clearly and
+/// consistently superior" bar this round's decision rule required to
+/// justify a change) and is a wash on the threshold-based metrics. Given
+/// that and the simple-contract tiebreak (matching
+/// [`SIZE_WEIGHT_PER_ROTATABLE_BOND`]'s per-unit weight),
+/// `0.03` stays. This value therefore ships as a deliberately
+/// non-optimized default chosen for decision-boundary robustness, not a
+/// claim that `0.03` is the ROC-AUC-optimal point in `{0.00, ..., 0.06}`
+/// — it measurably is not.
+///
+/// **Frozen as of round 22 part 17**: do not re-tune this value by
+/// re-running MPScore and nudging it (`0.03` → `0.04` → `0.05`, ...).
+/// Reopening this axis needs a materially new signal (a different
+/// dataset, a citable external calibration source, or a redesign of
+/// `size_topology` itself), not incremental development-set pressure —
+/// the same discipline this ruleset applies to every other hand-set
+/// constant here.
 ///
 /// Evidence this constant exists to test (`benchmarks/synthesizability/
 /// size_topology_decomposition/README.md`, commit `b147e3d`): of three

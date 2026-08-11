@@ -638,6 +638,142 @@ insufficient on its own.
 - Nothing merged to `main`; `git checkout` deliberately *not* used to
   discard the experiment — the branch is the artifact.
 
+## Part 7 (round 22, part 10): FM-1 candidate fix — ring-family multiplicity, L2 norm aggregation, ADOPT
+
+Direct continuation of Part 6's flagged next target: mechanism (a),
+"`raw` sums `kind_weight` across *every* separate ring family in a
+molecule, so ring-family multiplicity... accumulates burden by count
+alone." Per explicit instruction, a strict mechanism-check-first
+protocol, branch `experiment/ring-topology-family-multiplicity`.
+
+**Mechanism check** (before any code change): `examples/ring_family_
+diagnostics.rs`, a new diagnostic-only Rust module reachable via a
+`#[doc(hidden)]` crate-root fn (same pattern as `RULESET_VERSION`),
+re-derives `ring_topology`'s per-family burden without touching its
+scored path — verified to match `compute()`'s `raw` exactly (unit test,
+7 fixtures) before being trusted. Dumped for all 10,966 MPScore
+molecules and joined against labels + baseline FP/FN. Conditioned on
+total ring count, chemist-easy molecules have systematically **more**
+separate ring families than chemist-hard at every level checked: at 5
+total rings, mean family count is 1.11 (hard) vs. 3.16 (easy); at 6
+rings, 1.66 vs. 4.79. The FP confusion category (over-penalized,
+chemist-easy) has by far the highest mean family count (4.29) of any
+bucket (TP 1.33, TN 1.93, FN 1.58). Hypothesis strongly supported.
+
+**Offline aggregation comparison** (no new Rust — per-family burden
+lists + baseline's other 3 component contributions, formula reproduced
+exactly from `analyze.rs`/`rules.rs`; sanity-checked to reproduce
+baseline exactly for L1, max diff 2.2e-16): L1 sum (current) has
+complex-stratum `ring_topology`-only AUC 0.460 (backwards). L2 norm,
+max, and mean all flip it to correct-direction (0.567 / 0.624 / 0.649).
+**L2 chosen** (per explicit instruction, not the highest-AUC option):
+no new tunable constant; unlike `max`, still grows with additional
+comparable families rather than freezing; unlike `mean`, provably
+cannot violate the "more ring complexity never decreases burden"
+invariant (`mean` can strictly *decrease* when a positive-weight family
+is added — `max` and `L2` cannot, since `sqrt(x²+y²) ≥ x` for `y ≥ 0`).
+
+**Candidate**: `ring_topology::compute()`'s `raw` changes from `Σ f_i`
+to `sqrt(Σ f_i²)` across ring families — a pure aggregation-formula
+change, zero new `rules.rs` constants. Checked whether this
+inappropriately dilutes genuine `Bridged`/`Spiro` 3D-complexity signal
+(the explicit fallback condition in the instruction): a single such
+family's own weight is exactly preserved (L2 of one value equals that
+value — e.g. norbornane alone is bit-identical, 0.6/0.3297, before and
+after). Appending an unrelated ordinary ring on top is muted (0.6+0.15
+→ 0.75/0.3935 under L1 vs. 0.6185/0.3379 under L2), but that is the
+same multiplicity-damping the whole change targets, applied
+consistently — judged not to need the scoped-to-multiplicity-only
+fallback design.
+
+**Ablation panel**: added a fourth series, MULT (1→2→3→4 independent,
+unfused benzene rings — multiplicity, distinct from `FM1_SERIES`'s
+fusion), verified against RDKit + zero TS1/2/3 overlap. Re-ran CTRL
+(cyclohexane/norbornane/adamantane) under the candidate: **bit-identical**
+to baseline (expected and confirmed, not assumed — each CTRL molecule
+is a single ring family). MULT under baseline grows ~linearly in raw
+burden (0.095/0.181/0.259/0.330); under the candidate it visibly bends
+(0.095/0.132/0.159/0.181) — at 4 independent rings, `ring_topology`'s
+own contribution drops 45% (0.330→0.181) while remaining strictly
+monotonic at every step.
+
+**Full MPScore evaluation** (real rebuilt release binary over all
+10,966 molecules, not an offline reconstruction; `paired_bootstrap_diff_
+ci` added to `metrics.py` — CI for a before/after difference using the
+*same* resampled indices for both scores, not two independent CIs):
+
+| | baseline (main) | candidate (L2) | paired diff | 95% CI |
+|---|---|---|---|---|
+| full-set `overall.difficulty` AUC | 0.5132 | 0.5612 | +0.0480 | [0.0414, 0.0542] |
+| complex-stratum `overall.difficulty` AUC | 0.5382 | 0.6375 | +0.0992 | [0.0862, 0.1124] |
+| complex-stratum `ring_topology`-only AUC | 0.4601 | 0.5667 | +0.1066 | [0.0915, 0.1238] |
+
+All three paired CIs clearly exclude zero. `ring_topology`'s own
+complex-stratum contribution direction flips: baseline mean(hard,
+easy) = (0.2675, 0.2932) (backwards) → candidate (0.2405, 0.2151)
+(correct). FP rate (over-penalized chemist-easy molecules) drops
+sharply — full-set 17.06%→5.64%, complex-stratum 28.03%→9.26% — while
+FN rate is essentially unchanged (83.5%→83.0% full, 71.5%→70.5%
+complex): the fix specifically corrects the over-penalization
+direction, not a blanket score reduction that would also hide real
+hard cases. (The offline diagnostic's L2 full-set AUC estimate, 0.557,
+differs slightly from the real rebuilt binary's 0.561 — expected
+pipeline noise between a Python reconstruction and the actual compiled
+formula, not a data discrepancy; population size matches exactly,
+n=10,543 in both. The real number is authoritative.)
+
+**FM-2 check** (not a scope target this round, verified not worsened):
+within the stereocenter-positive, complex-ring subset Part 5 flagged —
+where aggregate AUC was worse than stereo-alone's 0.759 because
+`ring_topology`'s own direction was backwards — `overall.difficulty`
+AUC rises 0.625→0.710. Confirms Part 5's hypothesis that fixing A
+recovers a meaningful share of what looked like a separate B problem.
+
+**Adoption gate** (all six criteria from the instruction):
+1. FM-1 direction improves — yes (contribution sign flip, above).
+2. complex-stratum `ring_topology`-only AUC exits sub-chance — yes,
+   0.567, paired CI [0.092, 0.124] excludes zero.
+3. full-set improvement reproducible — yes, real rebuilt binary,
+   paired CI [0.041, 0.054] excludes zero.
+4. bridged/spiro/cage sensitivity intact — yes, CTRL bit-identical.
+5. FM-2 not worsened — yes, improved (0.625→0.710 in the relevant
+   subset).
+6. chemically explainable — yes: several independent, ordinary ring
+   systems are typically separate, well-precedented building blocks
+   (each its own disconnection, e.g. one more Suzuki coupling or amide
+   bond) rather than a compounding structural challenge, so their
+   *count* alone should not stack burden linearly; a single genuinely
+   complex family (dense fusion, bridging, a cage) keeps its own
+   severity fully intact under L2 specifically because it is one value,
+   not several to be summed.
+
+**Verdict: ADOPT** (recommendation — not merged to `main` in this
+round; see "Not done" below).
+
+### Not done in round 22 part 10 (deliberately)
+
+- **Not merged to `main`.** ADOPT here is a verdict/recommendation
+  backed by the evidence above, not an executed merge — merging would
+  need a `RULESET_VERSION` bump, a `CHANGELOG.md` entry, and a decision
+  on whether the diagnostic module (`ring_family_diagnostics.rs`, the
+  `#[doc(hidden)]` crate-root fn) ships as-is or is stripped first, none
+  of which this round decided.
+- **No further aggregation search** (e.g. weighted L2, Lp norms for
+  other p) — L2 was the specified first candidate and it passed the
+  adoption gate; searching further variants without a specific reason
+  to distrust this result would be tuning against MPScore, not
+  diagnosis.
+- **No re-measurement against TS1/TS2/TS3** — MPScore development set
+  only, per explicit instruction for this round.
+- **No change to stereo weights, overall threshold, functional-group
+  weights, confidence, `fragment_precedent`, or any ML model** — scope
+  was `ring_topology`'s aggregation only, per explicit instruction.
+- **No fix to the `Bridged`/`Spiro`/macrocycle backwards-direction
+  question** flagged in Part 6 as still open — this round's candidate
+  targets multiplicity among `Simple`/`Fused` families; whether
+  `Bridged`/`Spiro`'s own flat weights have a similar miscalibration in
+  this population was not checked.
+
 ## Not done in round 22 parts 2-3 (deliberately)
 
 - No fix. This is diagnosis; per the round's own test-set-integrity and

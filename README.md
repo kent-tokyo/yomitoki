@@ -26,9 +26,16 @@ to read it and explain what it finds.
 > yomitoki does not merely estimate synthesizability; it exposes
 > the evidence and reasoning behind the estimate.
 
-> **Status: `0.1.1` — correctness/dependency/infrastructure patch on
-> `0.1.0`, the first non-alpha release.**
-> All six planned components are implemented, including
+> **Status: `0.2.0-alpha.1` — first release of the `v0.2`
+> accuracy-redesign generation, built on `0.1.1`.** Two real
+> scoring-behavior changes so far: `ring_topology`'s ring-family
+> aggregation moved from a plain sum to an L2 norm, and `size_topology`
+> gained a heteroatom-count burden term (weight frozen at `0.03` after a
+> dedicated calibration attempt). Both are development-set-only findings
+> (MPScore) — TS1/TS2/TS3 and a new holdout haven't been re-evaluated
+> yet, which is why this is still an alpha; see `CHANGELOG.md` for the
+> full evidence behind each change. All six planned components are
+> implemented, including
 > `fragment_precedent` (renamed from `fragment_rarity` in round 18, since
 > it argues difficulty both up *and* down, not just up) — opt-in: no
 > fragment-frequency corpus ships with yomitoki itself (AGENTS.md §5.4

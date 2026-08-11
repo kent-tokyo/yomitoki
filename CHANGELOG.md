@@ -7,19 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-alpha.1] - 2026-08-11
+
+First release of the `v0.2` accuracy-redesign generation — the
+territory `0.1.1`'s own entry below explicitly named as out of scope:
+the first two real scoring-behavior changes from the
+false-negative-dominance root-causing work (`docs/benchmark.md`/
+`DEVELOPMENT_SET.md`), plus the atom-level stereo finding improvement.
+Alpha because the redesign isn't finished and because neither scoring
+change has been re-confirmed against TS1/TS2/TS3 or a new holdout —
+MPScore is a development set, not the confirmatory benchmark; see each
+entry's own development-set-evidence note. A stable `0.2.0` follows once
+the remaining planned scoring candidates (capped at 1-2 more) are
+decided and frozen the same way these were, and a single new holdout has
+been opened and evaluated exactly once.
+
 ### Changed
 
 - `size_topology`'s raw burden gained a third term: heteroatom count
   (non-C, non-H heavy atoms), weighted by a new constant
   `SIZE_WEIGHT_PER_HETEROATOM = 0.03`, alongside the existing molecular
   weight and rotatable-bond terms. Anchored to the existing per-rotatable
-  -bond weight rather than fit to data — a dedicated calibration attempt
+  -bond weight rather than fit to data. A dedicated calibration attempt
   (nested scaffold-grouped cross-validation over a fixed weight grid)
-  came back inconclusive on finding a better value (ROC-AUC rose
-  monotonically across the whole tested range with no plateau, so no
-  weight in that range could be called optimal) but found nothing
-  disqualifying this one, so it ships as a deliberately non-optimized
-  default. `RULESET_VERSION` bumped to `0.12.0`.
+  found ROC-AUC rising monotonically across the whole tested range with
+  no plateau — a real, reproducible trend, not grid-boundary noise — so
+  no weight in that range could be called optimal by that metric alone.
+  A follow-up decision resolved this using the same evidence: the
+  deployed system's actual decision-boundary metrics (balanced accuracy,
+  MCC, at the real `threshold = 0.5`) peak around weight 0.01-0.04 and
+  decline beyond it, while false positives grow faster than false
+  negatives shrink as weight increases — so `0.03` ships and is now
+  **frozen**: no further ad-hoc weight retuning against MPScore without
+  a materially new signal. `RULESET_VERSION` bumped to `0.12.0`.
 
   Development-set evidence (MPScore, not a confirmatory benchmark claim
   — TS1/TS2/TS3 were not re-evaluated for this change): pooled ROC-AUC

@@ -35,6 +35,7 @@ benchmarks/synthesizability/results/per_molecule.jsonl
 # itself ARE committed, as the pre-registration record.
 benchmarks/synthesizability/final_holdout/downloaded/
 benchmarks/synthesizability/final_holdout/results/*.csv
+benchmarks/synthesizability/final_holdout/results/*.jsonl
 
 # Chemical-space error atlas (development tooling, round 22 part 12):
 # per-molecule feature/embedding tables are large and fully regeneratable

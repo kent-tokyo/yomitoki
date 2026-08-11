@@ -1,0 +1,147 @@
+{
+  "n": 9996,
+  "binary_threshold": 3.0,
+  "n_hard_binary": 1849,
+  "primary_table": {
+    "yomitoki_v0.1.1": {
+      "spearman_rho": 0.15854316852756034,
+      "spearman_p": 2.8426116988658706e-57,
+      "pearson_r": 0.14676449191659752,
+      "pearson_p": 3.00362906724073e-49,
+      "roc_auc": 0.5876095830515042,
+      "pr_auc": 0.21966222686567088,
+      "balanced_accuracy": 0.5291917983792008,
+      "mcc": 0.05838359675840158,
+      "fp": 1419,
+      "fn": 1419
+    },
+    "yomitoki_v0.2.0-alpha.1": {
+      "spearman_rho": 0.14913062914428085,
+      "spearman_p": 8.267254044813408e-51,
+      "pearson_r": 0.1362075027710764,
+      "pearson_p": 1.3347188652341598e-42,
+      "roc_auc": 0.5817745027600267,
+      "pr_auc": 0.2156427746492364,
+      "balanced_accuracy": 0.5205652915137035,
+      "mcc": 0.041130583027406825,
+      "fp": 1445,
+      "fn": 1445
+    },
+    "sascore": {
+      "spearman_rho": 0.07650949148435354,
+      "spearman_p": 1.8638115867692648e-14,
+      "pearson_r": 0.06311612830049931,
+      "pearson_p": 2.6866555117123134e-10,
+      "roc_auc": 0.559894868513615,
+      "pr_auc": 0.2058812384729003,
+      "balanced_accuracy": 0.5139295170017824,
+      "mcc": 0.027859034003564705,
+      "fp": 1465,
+      "fn": 1465
+    },
+    "brsascore": {
+      "spearman_rho": 0.06870048504276768,
+      "spearman_p": 6.158248876708109e-12,
+      "pearson_r": 0.04944310321357687,
+      "pearson_p": 7.58598406505219e-07,
+      "roc_auc": 0.5441491766720529,
+      "pr_auc": 0.19683305994612074,
+      "balanced_accuracy": 0.5023169116059205,
+      "mcc": 0.004633823211840994,
+      "fp": 1500,
+      "fn": 1500
+    }
+  },
+  "pairwise_spearman_diff": {
+    "v0.2_minus_yomitoki_v0.1.1": {
+      "point": -0.009412539383279489,
+      "low": -0.01578665123779021,
+      "high": -0.0036965146628711986,
+      "n_valid_resamples": 1000
+    },
+    "v0.2_minus_sascore": {
+      "point": 0.07262113765992731,
+      "low": 0.053726890909873364,
+      "high": 0.09148187350707322,
+      "n_valid_resamples": 1000
+    },
+    "v0.2_minus_brsascore": {
+      "point": 0.08043014410151317,
+      "low": 0.062300705893282404,
+      "high": 0.09716075147821192,
+      "n_valid_resamples": 1000
+    }
+  },
+  "structural_strata": {
+    "mw_stratum": {
+      "low": {
+        "n": 4998,
+        "spearman_rho": 0.11925400677597392
+      },
+      "high": {
+        "n": 4998,
+        "spearman_rho": 0.023272161751775565
+      }
+    },
+    "ring_stratum": {
+      "low": {
+        "n": 6545,
+        "spearman_rho": 0.16144877294713858
+      },
+      "high": {
+        "n": 3451,
+        "spearman_rho": -0.0005150317271918279
+      }
+    },
+    "aromatic_stratum": {
+      "low": {
+        "n": 5906,
+        "spearman_rho": 0.1565903365947067
+      },
+      "high": {
+        "n": 4090,
+        "spearman_rho": 0.0567058177862526
+      }
+    },
+    "stereo_stratum": {
+      "low": {
+        "n": 6763,
+        "spearman_rho": 0.1691692165913308
+      },
+      "high": {
+        "n": 3233,
+        "spearman_rho": 0.07486689143161991
+      }
+    },
+    "heteroatom_stratum": {
+      "low": {
+        "n": 5245,
+        "spearman_rho": 0.15157847806972002
+      },
+      "high": {
+        "n": 4751,
+        "spearman_rho": 0.06385880644918047
+      }
+    }
+  },
+  "pairwise_auc_diff": {
+    "v0.2_minus_yomitoki_v0.1.1": {
+      "point": -0.005835080291477501,
+      "low": -0.01074339056608284,
+      "high": -0.0015263424132686643,
+      "n_valid_resamples": 1000
+    },
+    "v0.2_minus_sascore": {
+      "point": 0.021879634246411706,
+      "low": 0.008620973643064892,
+      "high": 0.03469063119293773,
+      "n_valid_resamples": 1000
+    },
+    "v0.2_minus_brsascore": {
+      "point": 0.037625326087973865,
+      "low": 0.024115837995993462,
+      "high": 0.05061036699933857,
+      "n_valid_resamples": 1000
+    }
+  }
+}

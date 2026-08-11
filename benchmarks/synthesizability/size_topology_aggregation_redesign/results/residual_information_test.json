@@ -1,0 +1,32 @@
+{
+  "L1_current": {
+    "f0_only_linear_mean": 0.6199252738068555,
+    "f0_plus_raw_linear_mean": 0.741919845784343,
+    "residual_gap_linear": 0.12199457197748753,
+    "f0_only_nonlinear_mean": 0.7609860612490984,
+    "f0_plus_raw_nonlinear_mean": 0.8104543958692979,
+    "residual_gap_nonlinear": 0.049468334620199506,
+    "reduction_vs_L1_nonlinear": 0.0,
+    "meets_adoption_bar": false
+  },
+  "L2": {
+    "f0_only_linear_mean": 0.6150027423216308,
+    "f0_plus_raw_linear_mean": 0.7344780757186637,
+    "residual_gap_linear": 0.11947533339703298,
+    "f0_only_nonlinear_mean": 0.7611042693551184,
+    "f0_plus_raw_nonlinear_mean": 0.8096533885395427,
+    "residual_gap_nonlinear": 0.04854911918442428,
+    "reduction_vs_L1_nonlinear": 0.01858189572850255,
+    "meets_adoption_bar": false
+  },
+  "MAX": {
+    "f0_only_linear_mean": 0.616693707265641,
+    "f0_plus_raw_linear_mean": 0.7298730788591923,
+    "residual_gap_linear": 0.11317937159355129,
+    "f0_only_nonlinear_mean": 0.7636913454324965,
+    "f0_plus_raw_nonlinear_mean": 0.8114063700888785,
+    "residual_gap_nonlinear": 0.047715024656382,
+    "reduction_vs_L1_nonlinear": 0.035443076409966134,
+    "meets_adoption_bar": false
+  }
+}

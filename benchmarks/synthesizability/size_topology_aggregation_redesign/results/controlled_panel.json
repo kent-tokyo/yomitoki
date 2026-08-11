@@ -1,0 +1,245 @@
+[
+  {
+    "id": "high_mw_zero_flex",
+    "smiles": "CC(C)(C)CC(C)(C)C",
+    "mw": 128.259,
+    "rotatable_bonds": 0,
+    "heteroatom_count": 0,
+    "mw_burden": 0.07695539999999998,
+    "rotatable_burden": 0.0,
+    "heteroatom_burden": 0.0,
+    "by_candidate": {
+      "L1_current": {
+        "size_contribution": 0.0377,
+        "difficulty": 0.0151,
+        "verdict": "LikelyAccessible"
+      },
+      "L2": {
+        "size_contribution": 0.0377,
+        "difficulty": 0.0151,
+        "verdict": "LikelyAccessible"
+      },
+      "MAX": {
+        "size_contribution": 0.0377,
+        "difficulty": 0.0151,
+        "verdict": "LikelyAccessible"
+      }
+    }
+  },
+  {
+    "id": "same_mw_high_flex",
+    "smiles": "CCC(CC)(CC)CC",
+    "mw": 128.259,
+    "rotatable_bonds": 4,
+    "heteroatom_count": 0,
+    "mw_burden": 0.07695539999999998,
+    "rotatable_burden": 0.12,
+    "heteroatom_burden": 0.0,
+    "by_candidate": {
+      "L1_current": {
+        "size_contribution": 0.0938,
+        "difficulty": 0.0375,
+        "verdict": "LikelyAccessible"
+      },
+      "L2": {
+        "size_contribution": 0.0688,
+        "difficulty": 0.0275,
+        "verdict": "LikelyAccessible"
+      },
+      "MAX": {
+        "size_contribution": 0.0582,
+        "difficulty": 0.0233,
+        "verdict": "LikelyAccessible"
+      }
+    }
+  },
+  {
+    "id": "low_rb_high_het",
+    "smiles": "COC(OC)(OC)OC",
+    "mw": 136.147,
+    "rotatable_bonds": 4,
+    "heteroatom_count": 4,
+    "mw_burden": 0.08168819999999999,
+    "rotatable_burden": 0.12,
+    "heteroatom_burden": 0.12,
+    "by_candidate": {
+      "L1_current": {
+        "size_contribution": 0.1486,
+        "difficulty": 0.0594,
+        "verdict": "LikelyAccessible"
+      },
+      "L2": {
+        "size_contribution": 0.0899,
+        "difficulty": 0.0359,
+        "verdict": "LikelyAccessible"
+      },
+      "MAX": {
+        "size_contribution": 0.0582,
+        "difficulty": 0.0233,
+        "verdict": "LikelyAccessible"
+      }
+    }
+  },
+  {
+    "id": "high_rb_low_het",
+    "smiles": "CCCCCCCC",
+    "mw": 114.232,
+    "rotatable_bonds": 5,
+    "heteroatom_count": 0,
+    "mw_burden": 0.0685392,
+    "rotatable_burden": 0.15,
+    "heteroatom_burden": 0.0,
+    "by_candidate": {
+      "L1_current": {
+        "size_contribution": 0.1035,
+        "difficulty": 0.0414,
+        "verdict": "LikelyAccessible"
+      },
+      "L2": {
+        "size_contribution": 0.0792,
+        "difficulty": 0.0317,
+        "verdict": "LikelyAccessible"
+      },
+      "MAX": {
+        "size_contribution": 0.0723,
+        "difficulty": 0.0289,
+        "verdict": "LikelyAccessible"
+      }
+    }
+  },
+  {
+    "id": "pyridine",
+    "smiles": "c1ccncc1",
+    "mw": 79.10199999999998,
+    "rotatable_bonds": 0,
+    "heteroatom_count": 1,
+    "mw_burden": 0.04746119999999998,
+    "rotatable_burden": 0.0,
+    "heteroatom_burden": 0.03,
+    "by_candidate": {
+      "L1_current": {
+        "size_contribution": 0.038,
+        "difficulty": 0.1104,
+        "verdict": "LikelyAccessible"
+      },
+      "L2": {
+        "size_contribution": 0.0277,
+        "difficulty": 0.1062,
+        "verdict": "LikelyAccessible"
+      },
+      "MAX": {
+        "size_contribution": 0.0235,
+        "difficulty": 0.1045,
+        "verdict": "LikelyAccessible"
+      }
+    }
+  },
+  {
+    "id": "morpholine",
+    "smiles": "C1COCCN1",
+    "mw": 87.122,
+    "rotatable_bonds": 0,
+    "heteroatom_count": 2,
+    "mw_burden": 0.05227319999999999,
+    "rotatable_burden": 0.0,
+    "heteroatom_burden": 0.06,
+    "by_candidate": {
+      "L1_current": {
+        "size_contribution": 0.0546,
+        "difficulty": 0.1478,
+        "verdict": "LikelyAccessible"
+      },
+      "L2": {
+        "size_contribution": 0.039,
+        "difficulty": 0.1415,
+        "verdict": "LikelyAccessible"
+      },
+      "MAX": {
+        "size_contribution": 0.0296,
+        "difficulty": 0.1377,
+        "verdict": "LikelyAccessible"
+      }
+    }
+  },
+  {
+    "id": "cyclohexane",
+    "smiles": "C1CCCCC1",
+    "mw": 84.162,
+    "rotatable_bonds": 0,
+    "heteroatom_count": 0,
+    "mw_burden": 0.0504972,
+    "rotatable_burden": 0.0,
+    "heteroatom_burden": 0.0,
+    "by_candidate": {
+      "L1_current": {
+        "size_contribution": 0.0249,
+        "difficulty": 0.1051,
+        "verdict": "LikelyAccessible"
+      },
+      "L2": {
+        "size_contribution": 0.0249,
+        "difficulty": 0.1051,
+        "verdict": "LikelyAccessible"
+      },
+      "MAX": {
+        "size_contribution": 0.0249,
+        "difficulty": 0.1051,
+        "verdict": "LikelyAccessible"
+      }
+    }
+  },
+  {
+    "id": "benzene",
+    "smiles": "c1ccccc1",
+    "mw": 78.11399999999999,
+    "rotatable_bonds": 0,
+    "heteroatom_count": 0,
+    "mw_burden": 0.04686839999999999,
+    "rotatable_burden": 0.0,
+    "heteroatom_burden": 0.0,
+    "by_candidate": {
+      "L1_current": {
+        "size_contribution": 0.0232,
+        "difficulty": 0.1044,
+        "verdict": "LikelyAccessible"
+      },
+      "L2": {
+        "size_contribution": 0.0232,
+        "difficulty": 0.1044,
+        "verdict": "LikelyAccessible"
+      },
+      "MAX": {
+        "size_contribution": 0.0232,
+        "difficulty": 0.1044,
+        "verdict": "LikelyAccessible"
+      }
+    }
+  },
+  {
+    "id": "long_flexible_chain",
+    "smiles": "CCCCCCCCCCCCCCCCCCCC",
+    "mw": 282.5559999999999,
+    "rotatable_bonds": 17,
+    "heteroatom_count": 0,
+    "mw_burden": 0.16953359999999995,
+    "rotatable_burden": 0.51,
+    "heteroatom_burden": 0.0,
+    "by_candidate": {
+      "L1_current": {
+        "size_contribution": 0.2881,
+        "difficulty": 0.1152,
+        "verdict": "LikelyAccessible"
+      },
+      "L2": {
+        "size_contribution": 0.2356,
+        "difficulty": 0.0943,
+        "verdict": "LikelyAccessible"
+      },
+      "MAX": {
+        "size_contribution": 0.2251,
+        "difficulty": 0.09,
+        "verdict": "LikelyAccessible"
+      }
+    }
+  }
+]

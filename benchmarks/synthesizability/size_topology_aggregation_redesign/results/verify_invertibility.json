@@ -1,0 +1,7 @@
+{
+  "n": 10543,
+  "max_abs_diff": 0.0037127012399997827,
+  "mean_abs_diff": 0.0003736292089464997,
+  "corr": 0.9999937583811572,
+  "verdict": "INVERTIBLE (transform is not the information-loss source; residual gap fully attributable to the known mol_wt definition difference)"
+}

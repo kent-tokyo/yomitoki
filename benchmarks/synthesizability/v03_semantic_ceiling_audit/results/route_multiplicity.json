@@ -1,0 +1,11 @@
+{
+  "n1_n5_target_overlap": 2642,
+  "n1_total_targets": 10000,
+  "n5_total_targets": 10000,
+  "overlap_fraction": 0.2642,
+  "scope_restriction": "only the n1/n5 overlap is used -- the ~73% of n5 targets absent from the already-opened n1 evaluation subset are never scored or analyzed by this or any script in this round",
+  "n_targets_with_multiple_n5_routes": 0,
+  "mean_within_target_route_step_variance": null,
+  "mean_abs_diff_n1_vs_best_n5_route": 0.0003785011355034065,
+  "max_abs_diff_n1_vs_best_n5_route": 1.0
+}

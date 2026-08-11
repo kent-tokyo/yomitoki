@@ -1,0 +1,124 @@
+{
+  "n_high_ring": 3451,
+  "n_low_ring": 6545,
+  "within_high_ring": {
+    "ring_count": {
+      "spearman_rho": -0.021880409145228506,
+      "p": 0.19877220504176193
+    },
+    "ring_system_count": {
+      "spearman_rho": 0.043428572340738485,
+      "p": 0.01072602556909015
+    },
+    "largest_family_size": {
+      "spearman_rho": -0.04224935053053219,
+      "p": 0.01305900156575436
+    },
+    "fused_ring_atom_count": {
+      "spearman_rho": -0.06725891730444998,
+      "p": 7.67956616494016e-05
+    },
+    "macrocycle_ring_count": {
+      "spearman_rho": -0.011228094126193888,
+      "p": 0.5096526777155699
+    },
+    "max_ring_size": {
+      "spearman_rho": -0.019142315655354267,
+      "p": 0.2609218201142298
+    },
+    "aromatic_ring_count": {
+      "spearman_rho": -0.01507141480509265,
+      "p": 0.3761010895227918
+    },
+    "aromatic_atom_fraction": {
+      "spearman_rho": -0.04256686648160188,
+      "p": 0.012390362503952819
+    },
+    "bridgeheads": {
+      "spearman_rho": -0.02230524852621638,
+      "p": 0.19019081632254467
+    },
+    "spiro_atoms": {
+      "spearman_rho": 0.006719085492509751,
+      "p": 0.6931561501136978
+    },
+    "mol_wt": {
+      "spearman_rho": 0.049793684096881306,
+      "p": 0.003434659178589605
+    },
+    "rotatable_bonds": {
+      "spearman_rho": 0.06112367782093246,
+      "p": 0.00032716613884182453
+    },
+    "heteroatom_count": {
+      "spearman_rho": 0.04836112426354791,
+      "p": 0.004488524108187344
+    },
+    "tpsa": {
+      "spearman_rho": 0.04536760175657707,
+      "p": 0.007686562749648068
+    }
+  },
+  "within_low_ring": {
+    "ring_count": {
+      "spearman_rho": 0.12854195922036543,
+      "p": 1.6187556806680776e-25
+    },
+    "ring_system_count": {
+      "spearman_rho": 0.10206908950262131,
+      "p": 1.2572769082311137e-16
+    },
+    "largest_family_size": {
+      "spearman_rho": 0.08181794113473054,
+      "p": 3.379249209542019e-11
+    },
+    "fused_ring_atom_count": {
+      "spearman_rho": 0.05213009398555553,
+      "p": 2.4489985408759042e-05
+    },
+    "macrocycle_ring_count": {
+      "spearman_rho": -0.011530034378475608,
+      "p": 0.351002695166624
+    },
+    "max_ring_size": {
+      "spearman_rho": 0.09324379119690301,
+      "p": 4.0754742900359384e-14
+    },
+    "aromatic_ring_count": {
+      "spearman_rho": 0.11104654825191829,
+      "p": 2.0613663947794692e-19
+    },
+    "aromatic_atom_fraction": {
+      "spearman_rho": 0.010005634290566466,
+      "p": 0.41832350842118243
+    },
+    "bridgeheads": {
+      "spearman_rho": 0.008921463120186204,
+      "p": 0.47051993234563877
+    },
+    "spiro_atoms": {
+      "spearman_rho": 0.012300253705751196,
+      "p": 0.31975934918764043
+    },
+    "mol_wt": {
+      "spearman_rho": 0.14450445803872747,
+      "p": 7.056380531455034e-32
+    },
+    "rotatable_bonds": {
+      "spearman_rho": 0.09274490756974575,
+      "p": 5.5643309513894956e-14
+    },
+    "heteroatom_count": {
+      "spearman_rho": 0.08334166605641627,
+      "p": 1.44917876745531e-11
+    },
+    "tpsa": {
+      "spearman_rho": 0.0768312253488919,
+      "p": 4.854107471518036e-10
+    }
+  },
+  "within_high_ring_yomitoki": {
+    "spearman_rho": -0.0005150317271918279,
+    "p": 0.9758719077840001
+  }
+}

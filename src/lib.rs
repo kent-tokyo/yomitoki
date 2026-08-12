@@ -1,6 +1,15 @@
 //! yomitoki: fast, explainable, route-free molecular synthesizability
 //! diagnostics, built on [chematic](https://docs.rs/chematic).
 //!
+//! yomitoki diagnoses **intrinsic structural synthesizability** — burden
+//! explainable from the target molecule itself (size, ring topology,
+//! stereochemistry, functional-group liability). It does not predict
+//! **route-dependent difficulty** (precursor availability, route length,
+//! protecting-group strategy, or retrosynthetic search success) — that is
+//! a separate, external-context question by design, not current
+//! limitation; see [`OverallAssessment`] and `docs/architecture.md`'s
+//! "Ecosystem boundary" section.
+//!
 //! See `docs/architecture.md` for the full design contract and current
 //! implementation status.
 #![warn(missing_docs)]

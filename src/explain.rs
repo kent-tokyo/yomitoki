@@ -15,7 +15,7 @@ pub(crate) fn render(
     match code {
         FindingCode::RingBridgedComplexity => format!(
             "Bridged ring system spanning {atom_count} atoms — bridgehead \
-             connectivity typically increases synthetic difficulty."
+             connectivity typically increases structural synthetic difficulty."
         ),
         FindingCode::RingSpiro => format!("Spiro ring junction spanning {atom_count} atoms."),
         FindingCode::RingFusedDense => format!(

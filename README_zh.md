@@ -9,6 +9,8 @@
 
 快速、可解释、无需路线搜索的分子可合成性诊断库。
 
+yomitoki 诊断的是**intrinsic structural synthesizability(分子固有的结构性可合成性)**——可从目标分子本身解释的负担(大小、ring topology、立体化学、functional-group liability)。它不预测**route-dependent difficulty(路线/上下文依赖的难度)**——前体的可获得性、路线长度、保护基策略,或逆合成搜索是否成功。这不是当前的局限,而是设计上的边界:这是一个独立的、依赖外部上下文的问题,属于 [RENKIN](https://github.com/kent-tokyo/renkin) 的职责。为何这是对测量对象的科学澄清而非范围收缩,详见下方"生态定位"。
+
 yomitoki 是一个基于 [chematic](https://github.com/kent-tokyo/chematic) 构建的、快速、可解释、route-free(无需逆合成路线搜索)的分子可合成性诊断库。
 
 yomitoki 不仅仅返回一个单一的合成可及性分数,而是读取分子结构,解释一个分子为何看起来易于合成或难以合成。它会指出支撑该评估的结构性证据,并报告这一判断的可信程度。
@@ -22,22 +24,27 @@ yomitoki 不仅仅返回一个单一的合成可及性分数,而是读取分子�
 ## 生态定位
 
 ```text
-chematic    分子表示与化学信息学
-    |
-yomitoki    读取并解释分子的可合成性
-    |
-renkin      规划逆合成路线
+chematic
+  ↓ 分子/反应 primitive
+yomitoki
+  ↓ intrinsic structural synthesizability(分子固有的结构性可合成性)
+    "这个分子的什么结构特征使合成变得困难?"
+renkin
+     route-dependent planning and evidence(路线依赖的规划与证据)
+     "实际上要如何合成它?"
 ```
 
 [chematic](https://github.com/kent-tokyo/chematic) · [renkin](https://github.com/kent-tokyo/renkin)
 
 yomitoki 从不执行路线搜索 — 这不是 v0.1 阶段的范围限制,而是永久性的职责边界。详见下方“yomitoki 不做什么”。
 
+**这是对测量对象的澄清,而不是范围的收缩。** yomitoki 自身在 v0.3 阶段针对真实专利文献合成路线(PaRoutes)的评估发现,intrinsic structural burden(分子固有的结构性负担)与 route-dependent difficulty(路线依赖的难度)是本质不同的两件事,而非同一量的两种视角:真实路线长度与任何尝试过的 route-free 结构表示的相关性都很弱(最好情况 ρ≈0.23,从未达到本项目自身预先登记的"moderate"标准),而与已可购得起始原料的相似度——这是任何单分子表示都无法看到的信息——相关性反而更强,在结构复杂的目标分子上尤为明显。明确区分这两条轴线是证据本身支持的结论;它是在收窄"intrinsic structural synthesizability"所声称测量的内容,而不是缩减其范围。完整分析见 [`benchmarks/synthesizability/v03_two_axis_product_framing/README.md`](benchmarks/synthesizability/v03_two_axis_product_framing/README.md)。yomitoki → RENKIN 之间的接口约定本身(report 会以何种形式交接哪些内容)尚未正式化——这是未来的工作,并非本定位所隐含的内容。
+
 ## yomitoki 做什么
 
 * 解析分子(通过 `chematic`),返回结构化的 `SynthesizabilityReport`,而不是单一数值。
 * 将评估分解为独立的组件(ring topology、size/topology、stereochemical burden、functional-group liability、input quality/applicability、fragment precedent —— 最后一项为可选启用,详见下方"局限性")。
-* 将 **score**(可合成性/难度)、**confidence**(判断的可信度)与 **applicability**(该分子是否在模型的适用范围内)分为不同字段 — 难以合成的分子不会因此自动被判定为低置信度。
+* 将 **score**(可合成性/难度)、**confidence**(判断的可信度)与 **applicability**(该分子是否在模型的适用范围内)分为不同字段 — 难以合成的分子不会因此自动被判定为低置信度。**`overall.difficulty` 指的是 intrinsic structural difficulty(分子固有的结构性难度),而不是预测的 route difficulty** —— 它不估计真实合成所需的步骤数、前体的可获得性,或路线搜索的结果;参见上方"生态定位"。
 * 输出机器可读的 finding code 与结构化 evidence,而非仅有文字说明。
 * 从不运行逆合成搜索。yomitoki 仅对分子本身进行评估,不会为其规划合成路线。
 * 提供 `yomitoki` 命令行工具,支持单分子及批量(`.sdf`/SMILES 文件)分析 — 详见下方“命令行界面”。

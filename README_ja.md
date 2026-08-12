@@ -9,6 +9,8 @@
 
 高速で説明可能な、経路探索を伴わない分子合成容易性診断ライブラリ。
 
+yomitokiが診断するのは**intrinsic structural synthesizability(分子固有の構造的合成容易性)**です — 対象分子そのものから説明できる負荷(サイズ、ring topology、stereochemistry、functional-group liability)です。**route-dependent difficulty(経路・文脈依存の困難性)** — precursorの入手可能性、route長、protecting-group戦略、retrosynthesis探索の成否 — は予測しません。これは現時点の制約ではなく設計上の境界です。それは別の、外部文脈に依存する問いであり、[RENKIN](https://github.com/kent-tokyo/renkin)の役割です。なぜこれが「scienceに基づく測定対象の明確化」であって「scopeの後退」ではないのかは、下記「位置付け」を参照してください。
+
 yomitokiは、[chematic](https://github.com/kent-tokyo/chematic)上に構築された、高速・説明可能・route-free(経路探索を伴わない)な分子合成容易性診断ライブラリです。
 
 単一の合成容易性スコアだけを返すのではなく、yomitokiは分子構造を読み解き、なぜその分子が作りやすい、あるいは作りにくいと評価されたのかを説明します。判断の根拠となる構造的な証拠を特定し、その判断がどの程度信頼できるのかを報告します。
@@ -22,22 +24,27 @@ yomitokiは、[chematic](https://github.com/kent-tokyo/chematic)上に構築さ�
 ## 位置付け
 
 ```text
-chematic    分子表現とケモインフォマティクス
-    |
-yomitoki    分子の合成容易性を読み解き、説明する
-    |
-renkin      逆合成ルートを計画する
+chematic
+  ↓ 分子・反応のprimitive
+yomitoki
+  ↓ intrinsic structural synthesizability(分子固有の構造的合成容易性)
+    「この分子の何が構造的に合成を難しくしているのか?」
+renkin
+     route-dependent planning and evidence(経路依存のplanning・evidence)
+     「実際にどう作るか?」
 ```
 
 [chematic](https://github.com/kent-tokyo/chematic) · [renkin](https://github.com/kent-tokyo/renkin)
 
 yomitokiはroute searchを一切実行しません — これはv0.1のスコープ上の制約ではなく、恒久的な境界です。詳細は下記「yomitokiがしないこと」を参照してください。
 
+**これは測定対象の明確化であり、scopeの後退ではありません。** yomitoki自身がv0.3で実際の特許文献ベースの合成route(PaRoutes)に対して行った評価により、intrinsic structural burden(分子固有の構造的負荷)とroute-dependent difficulty(経路依存の困難性)は、一つの量の二つの側面ではなく、本質的に別物であることが分かりました: 実際のroute長は、試したどのroute-freeな構造表現とも弱い相関しか持たず(最良でもρ≈0.23、本プロジェクト自身が事前登録した基準で言う「moderate」水準にすら届きません)、一方で既に購入可能な出発原料との類似度 — 単一分子の表現からは決して見えない情報 — の方が、特に構造的に複雑な対象分子ほど強く相関します。二つの軸を明示的に分けて呼ぶことは、evidenceが支持する結論であり、「intrinsic structural synthesizability」が何を測っているかを絞り込むものであって、範囲を狭めるものではありません。詳細な分析: [`benchmarks/synthesizability/v03_two_axis_product_framing/README.md`](benchmarks/synthesizability/v03_two_axis_product_framing/README.md)。yomitoki → RENKIN間のインターフェース契約自体(reportが何をどのような形でhand-offするか)はまだ正式化されていません — これは将来の作業であり、この位置付けが暗に示すものではありません。
+
 ## yomitokiがすること
 
 * 分子を(`chematic`経由で)パースし、単一の数値ではなく構造化された`SynthesizabilityReport`を返す。
 * 評価を独立したコンポーネントに分解する(ring topology、size/topology、stereochemical burden、functional-group liability、input quality/applicability、fragment precedent — 最後のものはopt-in、詳細は下記「制限事項」)。
-* **score**(合成容易性/困難性)、**confidence**(その判断の信頼性)、**applicability**(その分子がそもそもモデルの適用範囲内かどうか)を別々のフィールドとして分離する — 作りにくい分子だからといって自動的に低confidenceになるわけではない。
+* **score**(合成容易性/困難性)、**confidence**(その判断の信頼性)、**applicability**(その分子がそもそもモデルの適用範囲内かどうか)を別々のフィールドとして分離する — 作りにくい分子だからといって自動的に低confidenceになるわけではない。**`overall.difficulty`が意味するのはintrinsic structural difficulty(分子固有の構造的困難性)であり、予測されたroute difficultyではありません** — 実際の合成step数、precursorの入手可能性、route探索の成否を推定するものではありません。上記「位置付け」を参照。
 * 単なる文章ではなく、機械可読なfinding codeと構造化されたevidenceを出力する。
 * retrosynthesis探索を一切実行しない。yomitokiは分子単体を評価するのみで、それを作るための経路を計画することはしない。
 * 単一分子およびバッチ(`.sdf`/SMILESファイル)解析用の`yomitoki` CLIを同梱する — 詳細は下記「コマンドラインインターフェース」を参照。

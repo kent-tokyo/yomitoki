@@ -17,6 +17,19 @@ retune anything — see "Test-set integrity" below.
 Full methodology, scripts, and machine-readable results:
 `benchmarks/synthesizability/`.
 
+**Reading TS2 and the later PaRoutes/semantic-ceiling results below**:
+yomitoki reports **intrinsic structural synthesizability** only (v0.3
+product decision, round 22 part 23 —
+`benchmarks/synthesizability/v03_two_axis_product_framing/README.md`).
+TS2's chance-level result (§ Accuracy) and the PaRoutes final holdout's
+weak, high-ring-collapsing route-length correlation (`benchmarks/
+synthesizability/final_holdout/RESULTS.md`) are exactly the evidence
+that motivated that decision — both measure something closer to
+route-dependent difficulty (does a route exist within N steps; how many
+steps did the real route take), an axis this project now explicitly
+holds is out of yomitoki's structural scope by design, not a shortfall
+to keep chasing with further target-only tuning.
+
 ## Dataset
 
 **TS1 / TS2 / TS3**, from Chen & Jung, "Estimating the synthetic

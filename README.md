@@ -9,6 +9,16 @@
 
 Fast, explainable, route-free molecular synthesizability diagnostics.
 
+yomitoki diagnoses **intrinsic structural synthesizability** — burden
+explainable from the target molecule itself (size, ring topology,
+stereochemistry, functional-group liability). It does not predict
+**route-dependent difficulty** — precursor availability, route length,
+protecting-group strategy, or retrosynthetic search success — by
+design, not current limitation; that's a separate, external-context
+question and belongs to [RENKIN](https://github.com/kent-tokyo/renkin).
+See "Where it sits" below for why this is a scientific clarification of
+what yomitoki measures, not a narrowing of scope.
+
 yomitoki is a fast, explainable, route-free molecular
 synthesizability diagnostics library built on [chematic](https://github.com/kent-tokyo/chematic).
 
@@ -64,17 +74,40 @@ to read it and explain what it finds.
 ## Where it sits
 
 ```text
-chematic    Molecular representation and cheminformatics
-    |
-yomitoki    Read and explain molecular synthesizability
-    |
-renkin      Plan retrosynthetic routes
+chematic
+  |  molecular/reaction primitives
+  v
+yomitoki
+  |  intrinsic structural synthesizability
+  |  "What about this molecule makes synthesis structurally demanding?"
+  v
+renkin
+     route-dependent planning and evidence
+     "How can we actually make it?"
 ```
 
 [chematic](https://github.com/kent-tokyo/chematic) · [renkin](https://github.com/kent-tokyo/renkin)
 
 yomitoki never runs route search — that boundary is permanent, not a v0.1
 scoping choice. See "What it does not do" below.
+
+**This is a measurement-target clarification, not a scope retreat.**
+yomitoki's own v0.3 evaluation against real patent-literature synthesis
+routes (PaRoutes) found that intrinsic structural burden and
+route-dependent difficulty are genuinely different things, not two
+views of one underlying quantity: a molecule's real route length
+correlates only weakly with any route-free structural representation
+tried (best case ρ≈0.23, never reaching a "moderate" relationship by
+this project's own pre-registered bands), while similarity to
+already-purchasable starting materials — information no single-molecule
+representation can see — correlates more strongly, especially for
+structurally complex targets. Naming the two axes explicitly is what
+the evidence supports; it sharpens what "intrinsic structural
+synthesizability" claims to measure rather than reducing it. Full
+analysis: [`benchmarks/synthesizability/v03_two_axis_product_framing/README.md`](benchmarks/synthesizability/v03_two_axis_product_framing/README.md).
+The yomitoki → RENKIN interface contract itself (what a report would
+hand off, and in what shape) is not yet formalized — that's future
+work, not implied by this framing.
 
 ## What it does
 
@@ -87,7 +120,10 @@ scoping choice. See "What it does not do" below.
 * Separates **score** (synthesizability/difficulty), **confidence** (how
   reliable the judgment is), and **applicability** (whether the molecule is
   even in the model's domain) into distinct fields — a hard-to-make molecule
-  is not automatically a low-confidence one.
+  is not automatically a low-confidence one. **`overall.difficulty` means
+  intrinsic structural difficulty, not predicted route difficulty** — it
+  does not estimate real-world synthetic step count, precursor
+  availability, or route-search outcome; see "Where it sits" above.
 * Emits machine-readable finding codes with structured evidence, not just
   prose.
 * Never runs retrosynthesis search. yomitoki evaluates a molecule on its own;

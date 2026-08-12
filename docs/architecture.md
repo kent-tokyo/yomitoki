@@ -10,6 +10,32 @@ yomitoki reads and explains molecular structure — it does not modify,
 optimize, or regenerate molecules. That functionality, if it's ever built,
 belongs to a different, unrelated project.
 
+**Ecosystem boundary (decided v0.3, round 22 part 23 — see
+`benchmarks/synthesizability/v03_two_axis_product_framing/README.md`):**
+
+```text
+chematic  -> molecular/reaction primitives
+yomitoki  -> intrinsic structural synthesizability
+             ("What about this molecule makes synthesis structurally demanding?")
+renkin    -> route-dependent planning and evidence
+             ("How can we actually make it?")
+```
+
+yomitoki computes and reports intrinsic structural synthesizability only.
+Route-dependent difficulty (precursor availability, protecting-group
+strategy, convergence, reaction precedent, historical route choice) is out
+of scope **by design**, established by evidence (PaRoutes final holdout +
+semantic ceiling audit: real route length correlates only weakly with any
+route-free structural representation tried, while purchasable-stock
+similarity — information no single-molecule representation can see —
+correlates more strongly in exactly the structurally complex population
+where it matters most), not by current limitation. That axis belongs to
+[RENKIN](https://github.com/kent-tokyo/renkin), a real, independently
+-developed retrosynthesis/CASP project whose own stated scope matches it.
+The yomitoki -> RENKIN interface contract (what a report would hand off,
+and in what shape) is not yet formalized — open future work, not implied
+by this boundary.
+
 ## Crate boundary
 
 Single crate, `yomitoki`, no workspace split. `fragment_precedent` now
@@ -305,6 +331,18 @@ data would imply a precision this crate doesn't have.
 
 * `synthesizability`: 1.0 = easy to make.
 * `difficulty`: 1.0 = hard to make.
+
+Both describe **intrinsic structural difficulty** — burden explainable
+from the target molecule alone — not predicted route-dependent
+difficulty. Neither field estimates real synthetic step count, precursor
+availability, or retrosynthetic search outcome; see the ecosystem
+-boundary note above. This is a semantic-contract clarification (v0.3,
+round 22 part 23), not a field rename — `overall.difficulty`/
+`overall.synthesizability` keep their current names and `schema_version`
+is unchanged (still `0.5.0`); a rename is deferred to a future
+major/API-redesign decision, since `report.rs`'s own doc comment already
+treats the current names as "an implementation choice, not a permanent
+API guarantee" (see "Versioning" below).
 
 `difficulty` is a **weighted sum**, not a weighted average, of exactly these
 four components' normalized scores — an unnormalized sum of `weight *

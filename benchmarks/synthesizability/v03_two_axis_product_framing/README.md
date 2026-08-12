@@ -1,5 +1,14 @@
 # v0.3 Two-Axis Product Framing (round 22 part 23)
 
+**Decision: Option C, adopted.** Corrected after initial report: an
+earlier draft wrongly stated RENKIN doesn't exist as running code — it
+does (`kent-tokyo/renkin`, public, actively developed), which makes
+Option C's evidentiary basis *stronger* than first reported, not
+weaker. See the "Corrected" notes under § Evidence matrix and §
+Option analysis for the exact fix. This document (post-correction) is
+adopted for future work, not a rejected experiment — see git log for
+how it was merged to `main`.
+
 Evidence-synthesis-only. No new molecule population scored, no new
 dataset opened, no weight/threshold/formula/schema touched. **Zero
 production diff** (`git diff main -- src/ tests/ Cargo.toml` returns
@@ -103,17 +112,38 @@ come from a single target molecule, by construction. Any future
 YOMITOKI component trying to compute Axis B would need exactly the kind
 of stock/precedent/planner data that defines RENKIN's job.
 
-**What the matrix is silent on**: RENKIN doesn't exist yet as running
-code. Nothing above measures RENKIN specifically — Option C's "→
-RENKIN" half is a placement decision, not a measurement. It rests on a
-boundary this project has already declared standing in two prior
-rounds (semantic ceiling audit §10, reaction-evidence audit §8, both:
-"`chematic → yomitoki → renkin` stays intact") and in the currently
-shipped `README.md` ("yomitoki never runs route search — that boundary
-is permanent, not a v0.1 scoping choice"; "What it does not do" lists
-retrosynthesis planning/route ranking as RENKIN's job). Option C is
-therefore **ratifying and sharpening an already-standing, already-
-enforced product boundary**, not proposing a new architectural bet.
+**Correction (post-report)**: an earlier draft of this section stated
+"RENKIN doesn't exist yet as running code." **That was wrong and has
+been corrected.** `kent-tokyo/renkin` is a real, public GitHub
+repository (created 2026-06-20, actively pushed to as recently as
+2026-08-11 at the time of this correction) — "an open-source
+retrosynthesis engine for computer-aided synthesis planning (CASP)
+that automatically discovers optimal chemical reaction routes from a
+target molecule back to cheap, commercially available starting
+materials," per its own description. Verified via `gh repo view
+kent-tokyo/renkin`, not assumed from memory.
+
+**What the matrix is silent on, corrected**: not RENKIN's existence —
+RENKIN exists and is under active development. What's genuinely
+unformalized is **the YOMITOKI → RENKIN interface contract**: no
+committed spec yet defines what YOMITOKI's intrinsic report hands off
+to RENKIN, or what shape RENKIN would consume it in. Nothing in this
+round's evidence measures that contract directly — Option C's "→
+RENKIN" half rests on a boundary this project has already declared
+standing in two prior rounds (semantic ceiling audit §10,
+reaction-evidence audit §8, both: "`chematic → yomitoki → renkin`
+stays intact") and in the currently shipped `README.md` ("yomitoki
+never runs route search — that boundary is permanent, not a v0.1
+scoping choice"; "What it does not do" lists retrosynthesis
+planning/route ranking as RENKIN's job), reinforced by RENKIN's own
+real, independently-developed scope matching exactly what this round's
+evidence says YOMITOKI cannot compute (stock/precedent-dependent route
+planning). Option C is therefore **stronger than originally reported**:
+not just ratifying a standing internal product boundary, but ratifying
+one where the other side is a real, actively-developed project whose
+own stated scope independently corroborates the split. The
+unformalized piece is narrower than "does RENKIN exist" — it's the
+handoff contract between the two tools.
 
 ## Six key questions
 
@@ -237,11 +267,17 @@ strongest finding (Axis B needs stock/precedent data YOMITOKI
 structurally cannot see) and ratifies a boundary two prior rounds
 already declared standing and the current README already documents in
 practice — the architecture is not new, only the explicit naming of
-*why* is. *Weakness*: RENKIN doesn't exist yet as running code, so the
-"→ renkin" half is a placement/roadmap claim, not something this
-round's evidence can measure directly (disclosed above, under the
-evidence matrix) — its correctness rests on the boundary decision being
-right, not on new data confirming RENKIN specifically.
+*why* is. **Corrected** (see § above): RENKIN is a real, public,
+actively-developed repository (`kent-tokyo/renkin`), and its own
+independently-stated scope — retrosynthesis/route search/CASP — matches
+exactly the Axis B content this round's evidence says YOMITOKI cannot
+compute. *Weakness, corrected*: not RENKIN's existence, but that the
+YOMITOKI → RENKIN **interface contract** (what YOMITOKI's report hands
+off, in what shape) is not yet formalized — this round's evidence
+establishes *that* the split is right, not the wire format of the
+handoff. That is a smaller, more tractable gap than the one originally
+reported, and this option is correspondingly **stronger** than
+originally stated, not weaker.
 
 **D — Status quo.** Ruled out by the evidence matrix: TS2 at chance,
 PaRoutes NO-GO with high-ring collapse to ρ≈0, and the reaction-evidence
@@ -262,12 +298,19 @@ too, plus the explicit RENKIN placement. Rationale, in order of weight:
    *structurally cannot* do otherwise without becoming a different kind
    of tool (one that needs stock/planner data). That is a category
    boundary, and C is the only option that names it explicitly.
-2. **C is not a new bet.** `chematic → yomitoki → renkin` is already a
-   standing decision (semantic ceiling audit §10, reaction-evidence
-   audit §8) and already partly documented in the shipped `README.md`.
-   Adopting C mostly means finishing work already implicitly underway
-   — tightening terminology (Q1, Q5) and making the axis split and its
-   evidentiary basis explicit — not reorganizing the project.
+2. **C is not a new bet, and is better-evidenced than first reported.**
+   `chematic → yomitoki → renkin` is already a standing decision
+   (semantic ceiling audit §10, reaction-evidence audit §8) and already
+   partly documented in the shipped `README.md`. **Corrected**: RENKIN
+   is a real, independently-developed project (`kent-tokyo/renkin`,
+   public, actively pushed) whose own stated scope —
+   retrosynthesis/route search/CASP — matches Axis B exactly. That is
+   external corroboration this round's evidence did not need to
+   manufacture; adopting C mostly means finishing work already
+   implicitly underway — tightening terminology (Q1, Q5), making the
+   axis split and its evidentiary basis explicit, and (future work)
+   formalizing the YOMITOKI → RENKIN handoff contract — not reorganizing
+   the project or betting on an architecture that doesn't exist yet.
 3. **It matches the evidence-driven verdict of the prior round most
    directly comparable** — `v03_semantic_ceiling_audit`'s own "C,
    qualified" (which, per the terminology-collision note above, maps

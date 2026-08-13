@@ -339,7 +339,7 @@ availability, or retrosynthetic search outcome; see the ecosystem
 -boundary note above. This is a semantic-contract clarification (v0.3,
 round 22 part 23), not a field rename — `overall.difficulty`/
 `overall.synthesizability` keep their current names and `schema_version`
-is unchanged (still `0.5.0`); a rename is deferred to a future
+is unchanged (still `0.6.0`); a rename is deferred to a future
 major/API-redesign decision, since `report.rs`'s own doc comment already
 treats the current names as "an implementation choice, not a permanent
 API guarantee" (see "Versioning" below).
@@ -676,7 +676,7 @@ this.
 
 | Field | Source |
 |---|---|
-| `schema_version` | literal constant in `provenance.rs` (currently `0.5.0`) |
+| `schema_version` | literal constant in `provenance.rs` (currently `0.6.0`) |
 | `yomitoki_version` | `env!("CARGO_PKG_VERSION")` |
 | `chematic_version` | chematic's declared version requirement |
 | `ruleset_version` | `rules::RULESET_VERSION` |

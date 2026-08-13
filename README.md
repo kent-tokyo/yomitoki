@@ -206,7 +206,7 @@ Verdict: ModeratelyAccessible
 Synthesizability: 0.66
 Confidence: 1.00
 Dominant penalties:
-1. Bridged ring system spanning 7 atoms — bridgehead connectivity typically increases synthetic difficulty.
+1. Bridged ring system spanning 7 atoms — bridgehead connectivity can increase intrinsic structural difficulty.
 Simplification suggestions (heuristic, not a guarantee):
 1. ReplaceBridgedRingWithMonocyclicAnalog: Bridgehead connectivity in this ring system is a direct driver of the ring_topology contribution to difficulty. A monocyclic (or less-fused) analog, if the target application allows one, would remove this specific burden — this is a structural heuristic, not a guarantee the replacement is chemically equivalent or that synthesis actually becomes easier.
 ```

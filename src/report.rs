@@ -297,12 +297,26 @@ pub enum Verdict {
 
 /// AGENTS.md §6. `synthesizability`/`difficulty` are complementary in v0.1
 /// as an implementation choice, not a permanent API guarantee.
+///
+/// Both fields describe **intrinsic structural difficulty** — burden
+/// explainable from the target molecule alone (size, ring topology,
+/// stereochemistry, functional-group liability). Neither predicts
+/// **route-dependent difficulty**: precursor availability, real synthetic
+/// step count, protecting-group strategy, or retrosynthetic search
+/// outcome. That axis is out of scope by design (v0.3 product decision,
+/// `benchmarks/synthesizability/v03_two_axis_product_framing/README.md`),
+/// not a current limitation — see `docs/architecture.md`'s "Ecosystem
+/// boundary" section.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OverallAssessment {
-    /// `1.0 - difficulty.value()` in v0.1.
+    /// `1.0 - difficulty.value()` in v0.1. Intrinsic structural
+    /// synthesizability — see the struct-level doc above for what this
+    /// does and does not claim.
     pub synthesizability: ProbabilityLikeScore,
     /// The weighted-sum aggregate of every implemented difficulty-
-    /// contributing component's `normalized` score.
+    /// contributing component's `normalized` score. Intrinsic structural
+    /// difficulty, not predicted route difficulty — see the struct-level
+    /// doc above.
     pub difficulty: ProbabilityLikeScore,
     /// How reliable this assessment is — from `input_quality`/applicability
     /// only in v0.1, never conflated with `difficulty` (AGENTS.md §6).

@@ -36,9 +36,13 @@ to read it and explain what it finds.
 > yomitoki does not merely estimate synthesizability; it exposes
 > the evidence and reasoning behind the estimate.
 
-> **Status: `0.2.0-alpha.1` — first release of the `v0.2`
-> accuracy-redesign generation, built on `0.1.1`.** Two real
-> scoring-behavior changes so far: `ring_topology`'s ring-family
+> **Status: `0.2.0-alpha.2` — semantic-contract release, no scoring
+> change.** `0.2.0-alpha.1`'s computed values are unchanged; this release
+> clarifies, everywhere a consumer would look (docs.rs, this README,
+> CLI output), that `overall.difficulty` measures **intrinsic structural
+> difficulty**, not route-dependent difficulty — see `CHANGELOG.md`.
+> `v0.2` accuracy-redesign generation, built on `0.1.1`, still applies:
+> two real scoring-behavior changes so far, `ring_topology`'s ring-family
 > aggregation moved from a plain sum to an L2 norm, and `size_topology`
 > gained a heteroatom-count burden term (weight frozen at `0.03` after a
 > dedicated calibration attempt). Both are development-set-only findings

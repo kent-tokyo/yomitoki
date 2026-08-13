@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-alpha.2] - 2026-08-13
+
+Semantic-contract release, not a new scoring generation: **no scoring
+behavior changed** in this release. `0.2.0-alpha.1`'s computed values are
+unchanged; what changes is how clearly they're documented.
+
+Round 22 parts 23-24 (`benchmarks/synthesizability/v03_two_axis_product_framing/README.md`)
+established, against the full accumulated v0.3 evidence base (MPScore,
+TS1/TS2/TS3, the PaRoutes final holdout, the semantic ceiling audit, the
+reaction-evidence REJECT), that YOMITOKI's score has real, evidenced
+signal for **intrinsic structural synthesizability** — burden explainable
+from the target molecule alone — but no evidenced signal for
+**route-dependent difficulty** (precursor availability, real route
+length, protecting-group strategy, retrosynthetic search success), and
+should say so explicitly rather than leave the distinction implicit.
+That axis is out of scope by design, not current limitation, and belongs
+to [RENKIN](https://github.com/kent-tokyo/renkin).
+
+Cut now (rather than left as an unreleased `main`-only change) because
+crates.io's published `0.2.0-alpha.1` and its docs.rs pages still carried
+the old, unqualified description — the corrected contract was reachable
+on GitHub's `README.md` but not for anyone installing from crates.io or
+reading docs.rs, the two surfaces most consumers actually use.
+
+### Documentation
+
+- YOMITOKI's measurement target is now stated explicitly as **intrinsic
+  structural synthesizability** everywhere a consumer would look: crate
+  -root docs (`src/lib.rs`, the docs.rs landing page), `OverallAssessment`'s
+  struct and field docs (`overall.difficulty`/`overall.synthesizability`
+  — the actual docs.rs page for these fields), `README.md` and its
+  Japanese/Chinese translations, and `docs/architecture.md`.
+- Documented explicitly, in the same locations: route length, precursor
+  availability, and retrosynthetic search success are **not** predicted
+  by this score. This is a semantic clarification of what `0.2.0-alpha.1`
+  already measured, not a new claim about new behavior.
+- `overall.difficulty`'s meaning is now documented in-code as "intrinsic
+  structural difficulty, not predicted route difficulty" directly on the
+  field itself, not only in prose elsewhere.
+- One user-facing finding string (`RingBridgedComplexity`) reworded from
+  an unqualified "increases synthetic difficulty" to "can increase
+  intrinsic structural difficulty" — the one explanation string that
+  read as an unqualified route-difficulty-shaped claim; every other
+  finding string was reviewed and already correctly scoped or hedged.
+- **Unchanged**: `overall.difficulty`/`overall.synthesizability` field
+  names, `ProbabilityLikeScore`/`OverallAssessment`/`SynthesizabilityReport`
+  shapes, `schema_version` (`0.6.0`), `RULESET_VERSION` (`0.12.0`), every
+  scoring weight/threshold/formula, and the `chematic` API surface used.
+  `cargo test`'s full suite (128 tests) passes unchanged from
+  `0.2.0-alpha.1`.
+
 ## [0.2.0-alpha.1] - 2026-08-11
 
 First release of the `v0.2` accuracy-redesign generation — the
